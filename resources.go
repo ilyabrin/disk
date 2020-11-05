@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -66,7 +67,56 @@ func (c *Client) GetMetadata(ctx context.Context, path string) (*Resource, *Erro
 	return resource, nil
 }
 
-func (c *Client) UpdateResource(path string) {} // patch
+/* todo: add examples to README
+newMeta := map[string]map[string]string{
+	"custom_properties": {
+		"key_01": "value_01",
+		"key_02": "value_02",
+		"key_07": "value_07",
+	},
+}
+*/
+func (c *Client) UpdateMetadata(ctx context.Context, path string, custom_properties map[string]map[string]string) (*Resource, *ErrorResponse) {
+	if len(path) < 1 {
+		return nil, nil
+	}
+
+	var resource *Resource
+	var errorResponse *ErrorResponse
+	var err error
+	var decoded *json.Decoder
+
+	var body []byte
+
+	body, err = json.Marshal(custom_properties)
+	fmt.Println(string(body))
+	// os.Exit(1)
+
+	if haveError(err) {
+		log.Fatal("payload error")
+	}
+
+	resp, err := c.doRequest(ctx, PATCH, "disk/resources?path="+path, bytes.NewBuffer([]byte(body)))
+	if haveError(err) {
+		log.Fatal("Request failed")
+	}
+
+	if resp.StatusCode != 200 {
+		decoded = json.NewDecoder(resp.Body)
+		err := decoded.Decode(&errorResponse)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return nil, errorResponse
+	}
+
+	decoded = json.NewDecoder(resp.Body)
+	if err := decoded.Decode(&resource); err != nil {
+		log.Fatal(err)
+		return nil, nil
+	}
+	return resource, nil
+}
 
 // CreateDir creates a new dorectory with 'path'(string) name
 // todo: can't create nested dirs like newDir/subDir/anotherDir
