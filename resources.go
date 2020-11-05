@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 )
 
+// todo: add *ErrorResponse to return
 func (c *Client) DeleteResource(ctx context.Context, path string, permanently bool) error {
 	if len(path) < 1 {
 		return errors.New("delete error")
@@ -22,17 +24,48 @@ func (c *Client) DeleteResource(ctx context.Context, path string, permanently bo
 	}
 
 	resp, err := c.doRequest(ctx, DELETE, url, nil)
-	if err != nil {
+	if haveError(err) {
 		log.Fatal(err)
 		return err
 	}
 
-	checkStatusCode(resp.StatusCode)
+	fmt.Println(resp.Body)
 
 	return nil
 }
 
-func (c *Client) GetMetadata(path string)    {} // get
+func (c *Client) GetMetadata(ctx context.Context, path string) (*Resource, *ErrorResponse) {
+	if len(path) < 1 {
+		return nil, nil
+	}
+
+	var resource *Resource
+	var errorResponse *ErrorResponse
+	var err error
+	var decoded *json.Decoder
+
+	resp, err := c.doRequest(ctx, GET, "disk/resources?path="+path, nil)
+	if haveError(err) {
+		log.Fatal("Request failed")
+	}
+
+	if resp.StatusCode != 200 {
+		decoded = json.NewDecoder(resp.Body)
+		err := decoded.Decode(&errorResponse)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return nil, errorResponse
+	}
+
+	decoded = json.NewDecoder(resp.Body)
+	if err := decoded.Decode(&resource); err != nil {
+		log.Fatal(err)
+		return nil, nil
+	}
+	return resource, nil
+}
+
 func (c *Client) UpdateResource(path string) {} // patch
 
 // CreateDir creates a new dorectory with 'path'(string) name
