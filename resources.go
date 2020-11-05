@@ -89,8 +89,6 @@ func (c *Client) UpdateMetadata(ctx context.Context, path string, custom_propert
 	var body []byte
 
 	body, err = json.Marshal(custom_properties)
-	fmt.Println(string(body))
-	// os.Exit(1)
 
 	if haveError(err) {
 		log.Fatal("payload error")
@@ -186,7 +184,38 @@ func (c *Client) CopyResource(ctx context.Context, from, path string) (*Link, *E
 	return link, nil
 }
 
-func (c *Client) GetDownloadURL(ctx context.Context, path string)                {} // get
+func (c *Client) GetDownloadURL(ctx context.Context, path string) (*Link, *ErrorResponse) {
+	if len(path) < 1 {
+		return nil, nil
+	}
+
+	var link *Link
+	var errorResponse *ErrorResponse
+	var err error
+	var decoded *json.Decoder
+
+	resp, err := c.doRequest(ctx, GET, "disk/resources/download?path="+path, nil)
+	if haveError(err) {
+		log.Fatal("Request failed")
+	}
+
+	if resp.StatusCode != 200 {
+		decoded = json.NewDecoder(resp.Body)
+		err := decoded.Decode(&errorResponse)
+		if haveError(err) {
+			log.Fatal(err)
+		}
+		return nil, errorResponse
+	}
+
+	decoded = json.NewDecoder(resp.Body)
+	if err := decoded.Decode(&link); err != nil {
+		log.Fatal(err)
+		return nil, nil
+	}
+	return link, nil
+}
+
 func (c *Client) GetSortedFiles(ctx context.Context, path string, sortBy string) {} // get | sortBy = [name = default, uploadDate]
 func (c *Client) MoveResource(ctx context.Context, path string)                  {} // post
 func (c *Client) GetPublicResources(ctx context.Context, path string)            {} // get
