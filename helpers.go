@@ -2,23 +2,21 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 )
 
 func prettyPrint(data interface{}) []byte {
 	result, err := json.MarshalIndent(data, "", " ")
-	if err != nil {
-		fmt.Println(err)
+	if haveError(err) {
+		log.Fatal(err)
 	}
 	return result
 }
 
-func checkStatusCode(code int) {
-	fmt.Printf("\n\n http.StatusCode is: %d \n\n", code)
-}
-
-// fmt.Println(humanize.Bytes(uint64(disk.MaxFileSize)))
-
-func jsonErrorResponse(httpStatusCode int) *ErrorResponse {
-	return possibleErrorResponses[httpStatusCode]
+func haveError(err error) bool {
+	if err != nil {
+		log.Fatal(err)
+		return true
+	}
+	return false
 }

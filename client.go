@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -27,16 +26,16 @@ type Client struct {
 	Logger      *log.Logger
 }
 
-func New(token ...string) *Client {
-	if len(token) < 1 {
-		token = append(token, os.Getenv("YANDEX_DISK_ACCESS_TOKEN"))
-	}
+func New(token string) *Client {
+	// if len(token) == nil {
+	// 	token = append(token, os.Getenv("YANDEX_DISK_ACCESS_TOKEN"))
+	// }
 
-	if len(token) <= 1 {
-		return nil
-	}
+	// if len(token) <= 1 {
+	// 	return nil
+	// }
 	return &Client{
-		AccessToken: token[0],
+		AccessToken: token,
 		HTTPClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
