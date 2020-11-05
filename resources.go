@@ -276,7 +276,34 @@ func (c *Client) GetLastUploadedResources(ctx context.Context) (*LastUploadedRes
 	return files, nil
 }
 
-func (c *Client) MoveResource(ctx context.Context, path string) {} // post
+func (c *Client) MoveResource(ctx context.Context, from, path string) (*Link, *ErrorResponse) {
+
+	var link *Link
+	var errorResponse *ErrorResponse
+	var err error
+	var decoded *json.Decoder
+
+	resp, err := c.doRequest(ctx, POST, "disk/resources/move?from="+from+"&path="+path, nil)
+	if haveError(err) {
+		log.Fatal("Request failed")
+	}
+
+	if resp.StatusCode != 201 || resp.StatusCode != 202 {
+		decoded = json.NewDecoder(resp.Body)
+		err := decoded.Decode(&errorResponse)
+		if haveError(err) {
+			log.Fatal(err)
+		}
+		return nil, errorResponse
+	}
+
+	decoded = json.NewDecoder(resp.Body)
+	if err := decoded.Decode(&link); err != nil {
+		log.Fatal(err)
+	}
+
+	return link, nil
+}
 
 func (c *Client) GetPublicResources(ctx context.Context, path string) {} // get
 
