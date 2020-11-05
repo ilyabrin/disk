@@ -1,14 +1,11 @@
 on: [push, pull_request]
   
 name: run tests
-env:
-  GO_VERSIONS: [1.14.x, 1.15.x]
-  GO_COVERAGE: 1.14x
 jobs:
   lint:
     strategy:
       matrix:
-        go-version: ${{ env.GO_VERSIONS }}
+        go-version: [1.14.x, 1.15.x]
         platform: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.platform }}
     steps:
@@ -26,7 +23,7 @@ jobs:
     test:
       strategy:
         matrix:
-          go-version: ${{ env.GO_VERSIONS }}
+          go-version: [1.14.x, 1.15.x]
           platform: [ubuntu-latest, macos-latest, windows-latest]
       runs-on: ${{ matrix.platform }}
       steps:
@@ -47,7 +44,7 @@ jobs:
         if: success()
         uses: actions/setup-go@v2
         with:
-          go-version: ${{ env.GO_COVERAGE }}
+          go-version: 1.14.x
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Calc coverage
