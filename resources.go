@@ -389,6 +389,59 @@ func (c *Client) UnpublishResource(ctx context.Context, path string) (*Link, *Er
 	return link, nil
 }
 
-func (c *Client) GetLinkForUpload(ctx context.Context, path string) {} // get
+func (c *Client) GetLinkForUpload(ctx context.Context, path string) (*ResourceUploadLink, *ErrorResponse) {
+	var resource *ResourceUploadLink
+	var errorResponse *ErrorResponse
+	var err error
+	var decoded *json.Decoder
 
-func (c *Client) UploadFile(ctx context.Context, url string) {} // post
+	resp, err := c.doRequest(ctx, GET, "disk/resources/upload?path="+path, nil)
+	if haveError(err) {
+		log.Fatal("Request failed")
+	}
+
+	if resp.StatusCode != 200 {
+		decoded = json.NewDecoder(resp.Body)
+		err := decoded.Decode(&errorResponse)
+		if haveError(err) {
+			log.Fatal(err)
+		}
+		return nil, errorResponse
+	}
+
+	decoded = json.NewDecoder(resp.Body)
+	if err := decoded.Decode(&resource); err != nil {
+		log.Fatal(err)
+	}
+
+	return resource, nil
+}
+
+// todo: empty resonses - fix it
+func (c *Client) UploadFile(ctx context.Context, path, url string) (*Link, *ErrorResponse) {
+	var link *Link
+	var errorResponse *ErrorResponse
+	var err error
+	var decoded *json.Decoder
+
+	resp, err := c.doRequest(ctx, POST, "disk/resources/upload?path="+path+"&url="+url, nil)
+	if haveError(err) {
+		log.Fatal("Request failed")
+	}
+
+	if resp.StatusCode != 200 || resp.StatusCode != 202 {
+		decoded = json.NewDecoder(resp.Body)
+		err := decoded.Decode(&errorResponse)
+		if haveError(err) {
+			log.Fatal(err)
+		}
+		return nil, errorResponse
+	}
+
+	decoded = json.NewDecoder(resp.Body)
+	if err := decoded.Decode(&link); err != nil {
+		log.Fatal(err)
+	}
+
+	return link, nil
+}
