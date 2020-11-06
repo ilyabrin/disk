@@ -333,9 +333,61 @@ func (c *Client) GetPublicResources(ctx context.Context) (*PublicResourcesList, 
 	return list, nil
 }
 
-func (c *Client) PublishResource(ctx context.Context, path string) {} // put
+func (c *Client) PublishResource(ctx context.Context, path string) (*Link, *ErrorResponse) {
+	var link *Link
+	var errorResponse *ErrorResponse
+	var err error
+	var decoded *json.Decoder
 
-func (c *Client) UnpublishResource(ctx context.Context, path string) {} // put
+	resp, err := c.doRequest(ctx, PUT, "disk/resources/publish?path="+path, nil)
+	if haveError(err) {
+		log.Fatal("Request failed")
+	}
+
+	if resp.StatusCode != 200 {
+		decoded = json.NewDecoder(resp.Body)
+		err := decoded.Decode(&errorResponse)
+		if haveError(err) {
+			log.Fatal(err)
+		}
+		return nil, errorResponse
+	}
+
+	decoded = json.NewDecoder(resp.Body)
+	if err := decoded.Decode(&link); err != nil {
+		log.Fatal(err)
+	}
+
+	return link, nil
+}
+
+func (c *Client) UnpublishResource(ctx context.Context, path string) (*Link, *ErrorResponse) {
+	var link *Link
+	var errorResponse *ErrorResponse
+	var err error
+	var decoded *json.Decoder
+
+	resp, err := c.doRequest(ctx, PUT, "disk/resources/unpublish?path="+path, nil)
+	if haveError(err) {
+		log.Fatal("Request failed")
+	}
+
+	if resp.StatusCode != 200 {
+		decoded = json.NewDecoder(resp.Body)
+		err := decoded.Decode(&errorResponse)
+		if haveError(err) {
+			log.Fatal(err)
+		}
+		return nil, errorResponse
+	}
+
+	decoded = json.NewDecoder(resp.Body)
+	if err := decoded.Decode(&link); err != nil {
+		log.Fatal(err)
+	}
+
+	return link, nil
+}
 
 func (c *Client) GetLinkForUpload(ctx context.Context, path string) {} // get
 
