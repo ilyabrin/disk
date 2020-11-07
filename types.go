@@ -60,6 +60,12 @@ type Resource struct {
 	CommentIDs       *CommentIds   `json:"comment_ids,omitempty"`      // (CommentIds, optional)
 }
 
+type PublicResource struct {
+	Resource
+	Owner      *UserPublicInformation `json:"owner,omitempty"`
+	ViewsCount int                    `json:"views_count,omitempty"`
+}
+
 type ShareInfo struct {
 	IsRoot  bool   `json:"is_root,omitempty"`
 	IsOwned bool   `json:"is_owned,omitempty"`
