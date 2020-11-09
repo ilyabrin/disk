@@ -16,3 +16,5 @@
 
 # developer config
 .dev.config.yml
+
+example.go
