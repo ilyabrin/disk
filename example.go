@@ -1,19 +1,21 @@
 package main
 
-import "context"
+import (
+	"context"
+	"log"
+)
 
 func main() {
 
+	// todo: WithCancel(ctx)
 	ctx := context.Background()
 
-	client := New()
-	disk, _ := client.DiskInfo(ctx)
+	api := New("paste access_token here if not set in YANDEX_DISK_ACCESS_TOKEN envvar")
 
-	println(string(prettyPrint(disk)))
+	diskInfo, err := api.DiskInfo(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	link := client.CreateDir(ctx, "000_created_with_api")
-	println(string(prettyPrint(link)))
-
-	_ = client.DeleteResource(ctx, "000_created_with_api", false)
-
+	log.Println(diskInfo)
 }
