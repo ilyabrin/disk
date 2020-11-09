@@ -1,4 +1,4 @@
-package main
+package disk
 
 // GET /v1/disk
 type Disk struct {
