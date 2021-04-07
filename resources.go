@@ -167,7 +167,7 @@ func (c *Client) CopyResource(ctx context.Context, from, path string) (*Link, *E
 		log.Fatal("Request failed")
 	}
 
-	if resp.StatusCode != 200 || resp.StatusCode != 201 || resp.StatusCode != 202 {
+	if !inArray(resp.StatusCode, []int{200, 201, 202}) {
 		decoded = json.NewDecoder(resp.Body)
 		err := decoded.Decode(&errorResponse)
 		if err != nil {
@@ -288,7 +288,7 @@ func (c *Client) MoveResource(ctx context.Context, from, path string) (*Link, *E
 		log.Fatal("Request failed")
 	}
 
-	if resp.StatusCode != 201 || resp.StatusCode != 202 {
+	if !inArray(resp.StatusCode, []int{201, 202}) {
 		decoded = json.NewDecoder(resp.Body)
 		err := decoded.Decode(&errorResponse)
 		if haveError(err) {
@@ -429,7 +429,7 @@ func (c *Client) UploadFile(ctx context.Context, path, url string) (*Link, *Erro
 		log.Fatal("Request failed")
 	}
 
-	if resp.StatusCode != 200 || resp.StatusCode != 202 {
+	if !inArray(resp.StatusCode, []int{200, 202}) {
 		decoded = json.NewDecoder(resp.Body)
 		err := decoded.Decode(&errorResponse)
 		if haveError(err) {

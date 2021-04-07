@@ -76,7 +76,7 @@ func (c *Client) SavePublicResource(ctx context.Context, public_key string) (*Li
 	// Если сохранение происходит асинхронно,
 	// то вернёт ответ с кодом 202 и ссылкой на асинхронную операцию.
 	// Иначе вернёт ответ с кодом 201 и ссылкой на созданный ресурс.
-	if resp.StatusCode != 200 || resp.StatusCode != 201 || resp.StatusCode != 202 {
+	if !inArray(resp.StatusCode, []int{200, 201, 202}) {
 		decoded = json.NewDecoder(resp.Body)
 		err := decoded.Decode(&errorResponse)
 		if haveError(err) {
