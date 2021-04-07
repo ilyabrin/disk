@@ -20,3 +20,12 @@ func haveError(err error) bool {
 	}
 	return false
 }
+
+func inArray(n int, array []int) bool {
+	for _, b := range array {
+		if b == n {
+			return true
+		}
+	}
+	return false
+}
