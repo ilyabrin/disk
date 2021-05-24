@@ -11,7 +11,7 @@ import (
 
 // todo: add context cancellation
 
-const API_URL = "https://cloud-api.yandex.net/v1/"
+const API_URL = "https://cloud-api.yandex.net/v1/disk/"
 
 type Method string
 
