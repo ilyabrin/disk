@@ -32,7 +32,7 @@ func testingHTTPClient(handler http.Handler) (*http.Client, func()) {
 }
 
 func loadTestResponse(actionName string) []byte {
-	response, _ := ioutil.ReadFile(TEST_DATA_DIR + "disk.json")
+	response, _ := ioutil.ReadFile(TEST_DATA_DIR + "GET_disk.json")
 	return response
 }
 
