@@ -1,0 +1,5 @@
+{
+    "href": "https://downloader.disk.yandex.ru/zip/12345/123/321?uid=12345678&filename=000_API_DEMO.zip&disposition=attachment&hash=&limit=0&owner_uid=12345678&tknv=v2",
+    "method": "GET",
+    "templated": false
+  }
