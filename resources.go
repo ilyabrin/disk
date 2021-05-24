@@ -19,9 +19,9 @@ func (c *Client) DeleteResource(ctx context.Context, path string, permanently bo
 
 	// todo: make it better
 	if permanently {
-		url = "disk/resources?path=" + path + "&permanent=true"
+		url = "resources?path=" + path + "&permanent=true"
 	} else {
-		url = "disk/resources?path=" + path + "&permanent=false"
+		url = "resources?path=" + path + "&permanent=false"
 	}
 
 	resp, err := c.doRequest(ctx, DELETE, url, nil)
@@ -45,7 +45,7 @@ func (c *Client) GetMetadata(ctx context.Context, path string) (*Resource, *Erro
 	var err error
 	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, GET, "disk/resources?path="+path, nil)
+	resp, err := c.doRequest(ctx, GET, "resources?path="+path, nil)
 	if haveError(err) {
 		log.Fatal("Request failed")
 	}
@@ -94,7 +94,7 @@ func (c *Client) UpdateMetadata(ctx context.Context, path string, custom_propert
 		log.Fatal("payload error")
 	}
 
-	resp, err := c.doRequest(ctx, PATCH, "disk/resources?path="+path, bytes.NewBuffer([]byte(body)))
+	resp, err := c.doRequest(ctx, PATCH, "resources?path="+path, bytes.NewBuffer([]byte(body)))
 	if haveError(err) {
 		log.Fatal("Request failed")
 	}
@@ -128,7 +128,7 @@ func (c *Client) CreateDir(ctx context.Context, path string) (*Link, *ErrorRespo
 	var err error
 	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, PUT, "disk/resources?path="+path, nil)
+	resp, err := c.doRequest(ctx, PUT, "resources?path="+path, nil)
 	if haveError(err) {
 		log.Fatal("Request failed")
 		return nil, nil
@@ -162,7 +162,7 @@ func (c *Client) CopyResource(ctx context.Context, from, path string) (*Link, *E
 	var err error
 	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, POST, "disk/resources/copy?from="+from+"&path="+path, nil)
+	resp, err := c.doRequest(ctx, POST, "resources/copy?from="+from+"&path="+path, nil)
 	if haveError(err) {
 		log.Fatal("Request failed")
 	}
@@ -194,7 +194,7 @@ func (c *Client) GetDownloadURL(ctx context.Context, path string) (*Link, *Error
 	var err error
 	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, GET, "disk/resources/download?path="+path, nil)
+	resp, err := c.doRequest(ctx, GET, "resources/download?path="+path, nil)
 	if haveError(err) {
 		log.Fatal("Request failed")
 	}
@@ -223,7 +223,7 @@ func (c *Client) GetSortedFiles(ctx context.Context) (*FilesResourceList, *Error
 	var err error
 	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, GET, "disk/resources/files", nil)
+	resp, err := c.doRequest(ctx, GET, "resources/files", nil)
 	if haveError(err) {
 		log.Fatal("Request failed")
 	}
@@ -253,7 +253,7 @@ func (c *Client) GetLastUploadedResources(ctx context.Context) (*LastUploadedRes
 	var err error
 	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, GET, "disk/resources/last-uploaded", nil)
+	resp, err := c.doRequest(ctx, GET, "resources/last-uploaded", nil)
 	if haveError(err) {
 		log.Fatal("Request failed")
 	}
@@ -283,7 +283,7 @@ func (c *Client) MoveResource(ctx context.Context, from, path string) (*Link, *E
 	var err error
 	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, POST, "disk/resources/move?from="+from+"&path="+path, nil)
+	resp, err := c.doRequest(ctx, POST, "resources/move?from="+from+"&path="+path, nil)
 	if haveError(err) {
 		log.Fatal("Request failed")
 	}
@@ -311,7 +311,7 @@ func (c *Client) GetPublicResources(ctx context.Context) (*PublicResourcesList, 
 	var err error
 	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, GET, "disk/resources/public", nil)
+	resp, err := c.doRequest(ctx, GET, "resources/public", nil)
 	if haveError(err) {
 		log.Fatal("Request failed")
 	}
@@ -339,7 +339,7 @@ func (c *Client) PublishResource(ctx context.Context, path string) (*Link, *Erro
 	var err error
 	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, PUT, "disk/resources/publish?path="+path, nil)
+	resp, err := c.doRequest(ctx, PUT, "resources/publish?path="+path, nil)
 	if haveError(err) {
 		log.Fatal("Request failed")
 	}
@@ -367,7 +367,7 @@ func (c *Client) UnpublishResource(ctx context.Context, path string) (*Link, *Er
 	var err error
 	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, PUT, "disk/resources/unpublish?path="+path, nil)
+	resp, err := c.doRequest(ctx, PUT, "resources/unpublish?path="+path, nil)
 	if haveError(err) {
 		log.Fatal("Request failed")
 	}
@@ -395,7 +395,7 @@ func (c *Client) GetLinkForUpload(ctx context.Context, path string) (*ResourceUp
 	var err error
 	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, GET, "disk/resources/upload?path="+path, nil)
+	resp, err := c.doRequest(ctx, GET, "resources/upload?path="+path, nil)
 	if haveError(err) {
 		log.Fatal("Request failed")
 	}
@@ -424,7 +424,7 @@ func (c *Client) UploadFile(ctx context.Context, path, url string) (*Link, *Erro
 	var err error
 	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, POST, "disk/resources/upload?path="+path+"&url="+url, nil)
+	resp, err := c.doRequest(ctx, POST, "resources/upload?path="+path+"&url="+url, nil)
 	if haveError(err) {
 		log.Fatal("Request failed")
 	}

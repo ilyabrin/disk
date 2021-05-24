@@ -8,7 +8,7 @@ import (
 
 func (c *Client) DiskInfo(ctx context.Context) (*Disk, error) {
 	var disk *Disk
-	resp, _ := c.doRequest(ctx, GET, "disk", nil)
+	resp, _ := c.doRequest(ctx, GET, "", nil)
 
 	decoded := json.NewDecoder(resp.Body)
 	// decoded.DisallowUnknownFields()

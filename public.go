@@ -12,7 +12,7 @@ func (c *Client) GetMetadataForPublicResource(ctx context.Context, public_key st
 	var err error
 	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, GET, "disk/public/resources?public_key="+public_key, nil)
+	resp, err := c.doRequest(ctx, GET, "public/resources?public_key="+public_key, nil)
 	if haveError(err) {
 		log.Fatal("Request failed")
 	}
@@ -40,7 +40,7 @@ func (c *Client) GetDownloadURLForPublicResource(ctx context.Context, public_key
 	var err error
 	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, GET, "disk/public/resources/download?public_key="+public_key, nil)
+	resp, err := c.doRequest(ctx, GET, "public/resources/download?public_key="+public_key, nil)
 	if haveError(err) {
 		log.Fatal("Request failed")
 	}
@@ -68,7 +68,7 @@ func (c *Client) SavePublicResource(ctx context.Context, public_key string) (*Li
 	var err error
 	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, POST, "disk/public/resources/save-to-disk?public_key="+public_key, nil)
+	resp, err := c.doRequest(ctx, POST, "public/resources/save-to-disk?public_key="+public_key, nil)
 	if haveError(err) {
 		log.Fatal("Request failed")
 	}
