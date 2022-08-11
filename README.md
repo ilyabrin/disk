@@ -23,7 +23,7 @@ go get -v github.com/ilyabrin/disk
 Set the environment variable:
 
 ```sh
-> export YANDEX_DISK_ACCESS_TOKEN=_<your access_token string>_
+export YANDEX_DISK_ACCESS_TOKEN=_<your access_token string>_
 ```
 
 Working example (errors checks omitted):
