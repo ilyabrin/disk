@@ -1,0 +1,67 @@
+{
+    "_embedded": {
+      "sort": "",
+      "items": [
+        {
+          "name": "copied",
+          "exif": {},
+          "created": "2020-11-05T14:00:38+00:00",
+          "resource_id": "01234567:c2944a34bedea19933452e6c69d4b8c0a6ae5e250f10fbb6d964690d7b987654",
+          "modified": "2020-11-05T14:00:38+00:00",
+          "path": "disk:/000_API_DEMO/copied",
+          "comment_ids": {
+            "private_resource": "01234567:c2944a34bedea19933452e6c69d4b8c0a6ae5e250f10fbb6d964690d7b987654",
+            "public_resource": "01234567:c2944a34bedea19933452e6c69d4b8c0a6ae5e250f10fbb6d964690d7b987654"
+          },
+          "type": "dir",
+          "revision": 1604584838783183
+        },
+        {
+          "antivirus_status": "clean",
+          "public_key": "w88bpXeT5Wrz2oxkqQQk4qh4EJRnq3jYT58q9on4Unprivatniew64wSzNK1D0Leq/QWEpmRyOJonT3VoXnQWE==",
+          "public_url": "https://yadi.sk/i/SpXTrlBU9yf-1w",
+          "name": "nihuhe.jpg",
+          "exif": {
+            "date_time": "2015-01-10T12:34:34+00:00"
+          },
+          "created": "2020-11-06T14:03:05+00:00",
+          "size": 3033746,
+          "resource_id": "01234567:1243a3e7ab47a4960053379300452a70208edcd7959e3ad4a38e8cae87759f50",
+          "modified": "2020-11-06T14:03:05+00:00",
+          "preview": "https://downloader.disk.yandex.ru/preview/20cda2a52ca41596156b551e41fc1dbfd12f82a3371ec8566b80d6ffca630e68/inf/wEkwHB-kHDcJGOdS3-epOjGYjOVmM8huYjg9PSSGOV6wYvDaUB_GuQtP5lVkS2EZGg8D8b240AOJbRtjA2Pyrw%3D%3D?uid=01234567&filename=nihuhe.jpg&disposition=inline&hash=&limit=0&content_type=image%2Fjpeg&owner_uid=01234567&tknv=v2&size=S&crop=0",
+          "comment_ids": {
+            "private_resource": "01234567:1243a3e7ab47a4960053379300452a70208edcd7959e3ad4a38e8cae87759f50",
+            "public_resource": "01234567:1243a3e7ab47a4960053379300452a70208edcd7959e3ad4a38e8cae87759f50"
+          },
+          "mime_type": "image/jpeg",
+          "file": "https://downloader.disk.yandex.ru/disk/5670ec60b10daf8322eab7e95d41dbc4a5b569b1bf1626b3317bbd3795092888/80ac0s84/jEkwER-kHDcJGOdS3-epOjMikh1M9j3qXWT1TZjtS8Fk-A4opXAt4WP1-gng0k6b-3KwYe2D-YxQIeYmiL3pXw%3D%3D?uid=01234567&filename=nihuhe.jpg&disposition=attachment&hash=&limit=0&content_type=image%2Fjpeg&owner_uid=01234567&fsize=3033746&hid=3e31599d81084b5dc58ed9943501ba03&media_type=image&tknv=v2&etag=08a26cc0efd185fb5c39203010812a80",
+          "media_type": "image",
+          "photoslice_time": "2015-01-10T12:34:34+00:00",
+          "path": "disk:/000_API_DEMO/nihuhe.jpg",
+          "sha256": "5cfcc85f5d8c7044ba446995ca720a3fd5361c690951d683f53283fe57cee020",
+          "type": "file",
+          "md5": "08a26cc0efd185fb5c39203010812a80",
+          "revision": 1604750387001315
+        }
+      ],
+      "limit": 20,
+      "offset": 0,
+      "path": "disk:/000_API_DEMO",
+      "total": 2
+    },
+    "name": "000_API_DEMO",
+    "exif": {},
+    "resource_id": "01234567:3d0159315f0763f9cd7f24bfc12bf54cfe140a341509debb826782b797087499",
+    "custom_properties": {
+      "new_meta_field": "hop hey lala ley"
+    },
+    "created": "2020-11-05T13:43:15+00:00",
+    "modified": "2020-11-05T17:50:09+00:00",
+    "path": "disk:/000_API_DEMO",
+    "comment_ids": {
+      "private_resource": "01234567:3d0159315f0763f9cd7f24bfc12bf54cfe140a341509debb826782b797087499",
+      "public_resource": "01234567:3d0159315f0763f9cd7f24bfc12bf54cfe140a341509debb826782b797087499"
+    },
+    "type": "dir",
+    "revision": 1604750321243705
+  }

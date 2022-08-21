@@ -1,4 +1,4 @@
-package main
+package disk
 
 import (
 	"context"
@@ -32,7 +32,7 @@ func testingHTTPClient(handler http.Handler) (*http.Client, func()) {
 }
 
 func loadTestResponse(actionName string) []byte {
-	response, _ := ioutil.ReadFile(TEST_DATA_DIR + "disk.json")
+	response, _ := ioutil.ReadFile(TEST_DATA_DIR + actionName + ".json")
 	return response
 }
 
@@ -41,7 +41,7 @@ func TestClientGetDiskInfo(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.NotEmpty(t, r.Header.Get("Authorization"))
 		assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
-		w.Write(loadTestResponse("disk"))
+		w.Write(loadTestResponse("GET_disk"))
 	})
 
 	httpClient, teardown := testingHTTPClient(h)

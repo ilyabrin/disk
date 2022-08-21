@@ -1,4 +1,4 @@
-package main
+package disk
 
 import (
 	"context"
@@ -11,14 +11,16 @@ import (
 
 // todo: add context cancellation
 
-const API_URL = "https://cloud-api.yandex.net/v1/"
+const API_URL = "https://cloud-api.yandex.net/v1/disk/"
+
+type Method string
 
 const (
-	GET    = "GET"
-	POST   = "POST"
-	PUT    = "PUT"
-	PATCH  = "PATCH"
-	DELETE = "DELETE"
+	GET    Method = "GET"
+	POST   Method = "POST"
+	PUT    Method = "PUT"
+	PATCH  Method = "PATCH"
+	DELETE Method = "DELETE"
 )
 
 type Client struct {
@@ -27,14 +29,16 @@ type Client struct {
 	Logger      *log.Logger
 }
 
+// New(token ...string) fetch token from OS env var if has not direct defined
 func New(token ...string) *Client {
-	if len(token) < 1 {
-		token = append(token, os.Getenv("YANDEX_DISK_ACCESS_TOKEN"))
+	if len(token) == 0 {
+		envToken := os.Getenv("YANDEX_DISK_ACCESS_TOKEN")
+		if envToken == "" {
+			return nil
+		}
+		token = append(token, envToken)
 	}
 
-	if len(token) <= 1 {
-		return nil
-	}
 	return &Client{
 		AccessToken: token[0],
 		HTTPClient: &http.Client{
@@ -43,19 +47,21 @@ func New(token ...string) *Client {
 	}
 }
 
-func (c *Client) doRequest(ctx context.Context, method string, resource string, body io.Reader) (*http.Response, error) {
+func (c *Client) doRequest(ctx context.Context, method Method, resource string, body io.Reader) (*http.Response, error) {
 
 	var resp *http.Response
 	var err error
 	var data io.Reader
 
 	// ctx, cancel := context.WithCancel(ctx)
+
+	data = body
+
 	if method == GET || method == DELETE {
 		data = nil
 	}
-	data = body
 
-	req, err := http.NewRequestWithContext(ctx, method, API_URL+resource, data)
+	req, err := http.NewRequestWithContext(ctx, string(method), API_URL+resource, data)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "OAuth "+c.AccessToken)
 
