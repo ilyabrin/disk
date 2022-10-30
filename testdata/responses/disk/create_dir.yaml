@@ -1,0 +1,56 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: cloud-api.yandex.net
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers:
+            Content-Type:
+                - application/json
+        url: https://cloud-api.yandex.net/v1/disk/resources?path=test_dir
+        method: PUT
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: 114
+        uncompressed: false
+        body: '{"href":"https://cloud-api.yandex.net/v1/disk/resources?path=disk%3A%2Ftest_dir","method":"GET","templated":false}'
+        headers:
+            Access-Control-Allow-Credentials:
+                - "true"
+            Access-Control-Allow-Headers:
+                - Accept-Language, Accept, X-Uid, X-HTTP-Method, X-Requested-With, Content-Type, Authorization
+            Access-Control-Allow-Methods:
+                - PUT, PATCH, DELETE, GET, OPTIONS
+            Access-Control-Allow-Origin:
+                - '*'
+            Cache-Control:
+                - no-cache
+            Connection:
+                - keep-alive
+            Content-Length:
+                - "114"
+            Content-Type:
+                - application/json; charset=utf-8
+            Date:
+                - Fri, 28 Oct 2022 10:11:39 GMT
+            Server:
+                - nginx
+            Yandex-Cloud-Request-Id:
+                - rest-cdbf9fe6e1281df6f513acbca7e58d3a-api20h
+        status: 201 CREATED
+        code: 201
+        duration: 634.643957ms

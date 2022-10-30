@@ -1,0 +1,57 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: cloud-api.yandex.net
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers:
+            Content-Type:
+                - application/json
+        url: https://cloud-api.yandex.net/v1/disk/resources/last-uploaded?limit=1
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding:
+            - chunked
+        trailer: {}
+        content_length: -1
+        uncompressed: true
+        body: '{"items":[{"antivirus_status":"clean","public_key":"KwR80RYcjMVoqBDguvDs7kjVb7JS8YlbVRqgxjCrebJLymDkWgrG4Vn2KNwc86piq/J6bpmRyOJonT3VoXnDag==","public_url":"https://yadi.sk/i/y4fo3xGXjiDlZg","name":"The Ink Black Heart.epub","exif":{},"created":"2022-10-19T11:21:56+00:00","size":5889324,"resource_id":"12345678:ff6cece9204096ee6ce14996bd978f1deed83c8ebd9df9dc3817f523fee61cb5","modified":"2022-10-19T11:21:56+00:00","comment_ids":{"private_resource":"12345678:ff6cece9204096ee6ce14996bd978f1deed83c8ebd9df9dc3817f523fee61cb5","public_resource":"12345678:ff6cece9204096ee6ce14996bd978f1deed83c8ebd9df9dc3817f523fee61cb5"},"mime_type":"application/epub+zip","file":"https://downloader.disk.yandex.ru/disk/32a773f4ed4e4a477e35ef091fa5ea88edd2414e83c9129d64e6813cd203caf6/635bf65e/9lD9PIzv5eYKyCi-LjffrqnY1SJUgKY1NymkAsJnsWnWoxuCWfdDhJJhe9rnfZ2E84iJDHATjfx6DQx4HMHfyg%3D%3D?uid=12345678&filename=The%20Ink%20Black%20Heart.epub&disposition=attachment&hash=&limit=0&content_type=application%2Fepub%2Bzip&owner_uid=12345678&fsize=5889324&hid=14aaf5a2ee99e89bcd7ec568d63c3568&media_type=book&tknv=v2&etag=9c8e7e126416611fdf41df6938013747","media_type":"book","preview":"https://downloader.disk.yandex.ru/preview/730eea8a987f0026cd0bd526e0b5af9c7c4179d04765e95e9d29ea9a8d4622a9/inf/L8Uhjp78k1CBf_OgvhtF-BShIDwvR8mRcMag_ptUcgk8JerxgO2ERoIhr18PMjALbo5QWeyQ15rLLLZ9_9QWCg%3D%3D?uid=12345678&filename=The%20Ink%20Black%20Heart.epub&disposition=inline&hash=&limit=0&content_type=image%2Fjpeg&owner_uid=12345678&tknv=v2&size=S&crop=0","path":"disk:/Книги/The Ink Black Heart.epub","sha256":"cef69970ad13aef565f2c9aad99d6d944d0eaaa745f7ab6ab7673254c7b0c65b","type":"file","md5":"9c8e7e126416611fdf41df6938013747","revision":1666178518844984}],"limit":1}'
+        headers:
+            Access-Control-Allow-Credentials:
+                - "true"
+            Access-Control-Allow-Headers:
+                - Accept-Language, Accept, X-Uid, X-HTTP-Method, X-Requested-With, Content-Type, Authorization
+            Access-Control-Allow-Methods:
+                - GET, OPTIONS
+            Access-Control-Allow-Origin:
+                - '*'
+            Cache-Control:
+                - no-cache
+            Connection:
+                - keep-alive
+            Content-Type:
+                - application/json; charset=utf-8
+            Date:
+                - Fri, 28 Oct 2022 11:33:50 GMT
+            Server:
+                - nginx
+            Vary:
+                - Accept-Encoding
+            Yandex-Cloud-Request-Id:
+                - rest-fc305209380c6c57cd6e4bd8720f606d-api34e
+        status: 200 OK
+        code: 200
+        duration: 14.39525482s

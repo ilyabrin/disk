@@ -6,9 +6,9 @@ import (
 	"log"
 )
 
-func (c *Client) DiskInfo(ctx context.Context) (*Disk, error) {
+func (c *Client) DiskInfo(ctx context.Context, params *optional_params) (*Disk, error) {
 	var disk *Disk
-	resp, _ := c.doRequest(ctx, GET, "", nil)
+	resp, _ := c.doRequest(ctx, GET, c.api_url, nil, params)
 
 	decoded := json.NewDecoder(resp.Body)
 	// decoded.DisallowUnknownFields()

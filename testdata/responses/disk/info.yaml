@@ -1,0 +1,57 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: cloud-api.yandex.net
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers:
+            Content-Type:
+                - application/json
+        url: https://cloud-api.yandex.net/v1/disk/
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding:
+            - chunked
+        trailer: {}
+        content_length: -1
+        uncompressed: true
+        body: '{"max_file_size":53687091200,"paid_max_file_size":53687091200,"total_space":3389266067456,"trash_size":0,"is_paid":true,"used_space":2099324681420,"system_folders":{"odnoklassniki":"disk:/Социальные сети/Одноклассники","google":"disk:/Социальные сети/Google+","instagram":"disk:/Социальные сети/Instagram","vkontakte":"disk:/Социальные сети/ВКонтакте","attach":"disk:/Почтовые вложения","mailru":"disk:/Социальные сети/Мой Мир","downloads":"disk:/Загрузки/","applications":"disk:/Приложения","facebook":"disk:/Социальные сети/Facebook","social":"disk:/Социальные сети/","messenger":"disk:/Файлы Мессенджера","calendar":"disk:/Материалы встреч","scans":"disk:/Сканы","screenshots":"disk:/Скриншоты/","photostream":"disk:/Фотокамера/"},"user":{"country":"ru","login":"username","display_name":"Test","uid":"12345678"},"unlimited_autoupload_enabled":false,"revision":1666882618584058}'
+        headers:
+            Access-Control-Allow-Credentials:
+                - "true"
+            Access-Control-Allow-Headers:
+                - Accept-Language, Accept, X-Uid, X-HTTP-Method, X-Requested-With, Content-Type, Authorization
+            Access-Control-Allow-Methods:
+                - GET, OPTIONS
+            Access-Control-Allow-Origin:
+                - '*'
+            Cache-Control:
+                - no-cache
+            Connection:
+                - keep-alive
+            Content-Type:
+                - application/json; charset=utf-8
+            Date:
+                - Thu, 27 Oct 2022 15:02:08 GMT
+            Server:
+                - nginx
+            Vary:
+                - Accept-Encoding
+            Yandex-Cloud-Request-Id:
+                - rest-b9ff3c1aabfc7ba66fbde4e478ae764b-api18f
+        status: 200 OK
+        code: 200
+        duration: 167.471674ms
