@@ -135,7 +135,7 @@ type ErrorResponse struct {
 	Message     string `json:"message"`
 	Description string `json:"description"`
 	StatusCode  int    `json:"status_code"`
-	Error       string `json:"error"`
+	Error       error  `json:"error"` // TODO: []errors
 }
 
 type TrashResource Resource

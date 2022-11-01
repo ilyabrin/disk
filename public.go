@@ -6,13 +6,13 @@ import (
 	"log"
 )
 
-func (c *Client) GetMetadataForPublicResource(ctx context.Context, public_key string, params *optional_params) (*PublicResource, *ErrorResponse) {
+func (c *Client) GetMetadataForPublicResource(ctx context.Context, public_key string, params *queryParams) (*PublicResource, *ErrorResponse) {
 	var resource *PublicResource
 	var errorResponse *ErrorResponse
 	var err error
 	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, GET, c.api_url+"public/resources?public_key="+public_key, nil, params)
+	resp, err := c.doRequest(ctx, "GET", c.api_url+"public/resources?public_key="+public_key, nil, nil, params)
 	if haveError(err) {
 		log.Fatal("Request failed")
 	}
@@ -34,13 +34,13 @@ func (c *Client) GetMetadataForPublicResource(ctx context.Context, public_key st
 	return resource, nil
 }
 
-func (c *Client) GetDownloadURLForPublicResource(ctx context.Context, public_key string, params *optional_params) (*Link, *ErrorResponse) {
+func (c *Client) GetDownloadURLForPublicResource(ctx context.Context, public_key string, params *queryParams) (*Link, *ErrorResponse) {
 	var link *Link
 	var errorResponse *ErrorResponse
 	var err error
 	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, GET, c.api_url+"public/resources/download?public_key="+public_key, nil, params)
+	resp, err := c.doRequest(ctx, "GET", c.api_url+"public/resources/download?public_key="+public_key, nil, nil, params)
 	if haveError(err) {
 		log.Fatal("Request failed")
 	}
@@ -62,13 +62,13 @@ func (c *Client) GetDownloadURLForPublicResource(ctx context.Context, public_key
 	return link, nil
 }
 
-func (c *Client) SavePublicResource(ctx context.Context, public_key string, params *optional_params) (*Link, *ErrorResponse) {
+func (c *Client) SavePublicResource(ctx context.Context, public_key string, params *queryParams) (*Link, *ErrorResponse) {
 	var link *Link
 	var errorResponse *ErrorResponse
 	var err error
 	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, POST, c.api_url+"public/resources/save-to-disk?public_key="+public_key, nil, params)
+	resp, err := c.doRequest(ctx, "POST", c.api_url+"public/resources/save-to-disk?public_key="+public_key, nil, nil, params)
 	if haveError(err) {
 		log.Fatal("Request failed")
 	}
