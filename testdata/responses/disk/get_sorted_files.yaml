@@ -1,0 +1,57 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: cloud-api.yandex.net
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers:
+            Content-Type:
+                - application/json
+        url: https://cloud-api.yandex.net/v1/disk/resources/files?limit=1
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding:
+            - chunked
+        trailer: {}
+        content_length: -1
+        uncompressed: true
+        body: '{"items":[{"antivirus_status":"clean","size":1771331,"comment_ids":{"private_resource":"12345678:57c4ee83eb3ceeb2f18bc6998cc063ff0af447296298bbc8917967bcec12d603","public_resource":"12345678:57c4ee83eb3ceeb2f18bc6998cc063ff0af447296298bbc8917967bcec12d603"},"name":"BecomeAnXcoder.Russian.pdf","exif":{},"created":"2012-06-12T14:10:23+00:00","resource_id":"12345678:57c4ee83eb3ceeb2f18bc6998cc063ff0af447296298bbc8917967bcec12d603","modified":"2012-06-12T14:10:23+00:00","mime_type":"application/pdf","file":"https://downloader.disk.yandex.ru/disk/5fada11bab65d21e1f955d03c6c67021dfa572cbb46a8e5227db7e42c251ef7d/635bf697/pEuHK5PJgmPBpWoQjSxrZpcHRRVwB_1TsWpns42PAgjPJV2cd48ftYZjPa3904daujDyEoSwTRKaApGlP2uhxA%3D%3D?uid=12345678&filename=BecomeAnXcoder.Russian.pdf&disposition=attachment&hash=&limit=0&content_type=application%2Fpdf&owner_uid=12345678&fsize=1771331&hid=bdd02a4b304ef7709e0c16e0890c867b&media_type=document&tknv=v2&etag=219d5b6e0b5a90ffa95b79db1d3c8aa7","media_type":"document","preview":"https://downloader.disk.yandex.ru/preview/04a9229e87b226e2708db51e9f7e128728f6bbaee9601d8c05d5eb8486cedf0a/inf/qxNRKmaykcabm3fqiYkrOAuRPD8zF8GXv13R1x_8nRTNTo-Mh_vlq9_q8A1f9K9s36a0e1BurVcWt-gwgcJjdA%3D%3D?uid=12345678&filename=BecomeAnXcoder.Russian.pdf&disposition=inline&hash=&limit=0&content_type=image%2Fjpeg&owner_uid=12345678&tknv=v2&size=S&crop=0","path":"disk:/Книги/BecomeAnXcoder.Russian.pdf","sha256":"c94341c8cf086bf6207f444585466fa6449576009da76c0f296e6497cadbd90b","type":"file","md5":"219d5b6e0b5a90ffa95b79db1d3c8aa7","revision":1470077346326403}],"limit":1,"offset":0}'
+        headers:
+            Access-Control-Allow-Credentials:
+                - "true"
+            Access-Control-Allow-Headers:
+                - Accept-Language, Accept, X-Uid, X-HTTP-Method, X-Requested-With, Content-Type, Authorization
+            Access-Control-Allow-Methods:
+                - GET, OPTIONS
+            Access-Control-Allow-Origin:
+                - '*'
+            Cache-Control:
+                - no-cache
+            Connection:
+                - keep-alive
+            Content-Type:
+                - application/json; charset=utf-8
+            Date:
+                - Fri, 28 Oct 2022 11:34:47 GMT
+            Server:
+                - nginx
+            Vary:
+                - Accept-Encoding
+            Yandex-Cloud-Request-Id:
+                - rest-2c9638ba70dbdd4fd628cf690249f0d8-api12h
+        status: 200 OK
+        code: 200
+        duration: 11.142297112s

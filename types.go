@@ -1,18 +1,19 @@
 package disk
 
-// GET /v1/disk
+// Disk Данные о свободном и занятом пространстве на Диске
 type Disk struct {
-	UnlimitedAutouploadEnabled bool           `json:"unlimited_autoupload_enabled,omitempty"` // boolean, optional:
-	MaxFileSize                int            `json:"max_file_size,omitempty"`                // integer, optional:
-	TotalSpace                 int            `json:"total_space,omitempty"`                  // integer, optional:
-	TrashSize                  int            `json:"trash_size,omitempty"`                   // integer, optional:
-	IsPaid                     bool           `json:"is_paid,omitempty"`                      // boolean, optional:
-	UsedSpace                  int            `json:"used_space,omitempty"`                   // integer, optional:
-	SystemFolders              *SystemFolders `json:"system_folders,omitempty"`               // (SystemFolders, optional)
-	User                       *User          `json:"user,omitempty"`                         // (User, optional)
-	Revision                   int            `json:"revision,omitempty"`                     // (integer, optional):
+	UnlimitedAutouploadEnabled bool           `json:"unlimited_autoupload_enabled,omitempty"`
+	MaxFileSize                int            `json:"max_file_size,omitempty"`
+	TotalSpace                 int            `json:"total_space,omitempty"`
+	TrashSize                  int            `json:"trash_size,omitempty"`
+	IsPaid                     bool           `json:"is_paid,omitempty"`
+	UsedSpace                  int            `json:"used_space,omitempty"`
+	SystemFolders              *SystemFolders `json:"system_folders,omitempty"`
+	User                       *User          `json:"user,omitempty"`
+	Revision                   int            `json:"revision,omitempty"`
 }
 
+// SystemFolders ...
 type SystemFolders struct {
 	Odnoklassniki string `json:"odnoklassniki,omitempty"`
 	Google        string `json:"google,omitempty"`
@@ -27,112 +28,131 @@ type SystemFolders struct {
 	Photostream   string `json:"photostream,omitempty"`
 }
 
+// User ...
 type User struct {
-	Country     string `json:"country,omitempty"`      // string, optional: <Страна>,
-	Login       string `json:"login,omitempty"`        // string, optional: <Логин>,
-	DisplayName string `json:"display_name,omitempty"` // string, optional: <Отображаемое имя>,
-	Uid         string `json:"uid,omitempty"`          // string, optional: <Идентификатор пользователя>
+	Country     string `json:"country,omitempty"`
+	Login       string `json:"login,omitempty"`
+	DisplayName string `json:"display_name,omitempty"`
+	UID         string `json:"uid,omitempty"`
 }
 
+// Resource ...
 type Resource struct {
-	AntivirusStatus  string        `json:"antivirus_status,omitempty"` // (object, optional): <Статус проверки антивирусом>,
-	ResourceID       string        `json:"resource_id,omitempty"`      // (string, optional): <Идентификатор ресурса>,
-	Share            *ShareInfo    `json:"share,omitempty"`            // (ShareInfo, optional),
-	File             string        `json:"file,omitempty"`             // (string, optional): <URL для скачивания файла>,
-	Size             int           `json:"size,omitempty"`             // (integer, optional): <Размер файла>,
-	PhotosliceTime   string        `json:"photoslice_time,omitempty"`  // (string, optional): <Дата создания фото или видео файла>,
-	Embedded         *ResourceList `json:"_embedded,omitempty"`        // (ResourceList, optional),
-	Exif             *Exif         `json:"exif,omitempty"`             // (Exif, optional),
-	CustomProperties string        `json:"custom_propertie,omitempty"` // (object, optional): <Пользовательские атрибуты ресурса>,
-	MediaType        string        `json:"media_type,omitempty"`       // (string, optional): <Определённый Диском тип файла>,
-	Preview          string        `json:"preview,omitempty"`          // (string, optional): <URL превью файла>,
-	Type             string        `json:"type"`                       // (string): <Тип>,
-	MimeType         string        `json:"mime_type,omitempty"`        // (string, optional): <MIME-тип файла>,
-	Revision         int           `json:"revision,omitempty"`         // (integer, optional): <Ревизия Диска в которой этот ресурс был изменён последний раз>,
-	PublicURL        string        `json:"public_url,omitempty"`       // (string, optional): <Публичный URL>,
-	Path             string        `json:"path"`                       // (string): <Путь к ресурсу>,
-	Md5              string        `json:"md5,omitempty"`              // (string, optional): <MD5-хэш>,
-	PublicKey        string        `json:"public_key,omitempty"`       // (string, optional): <Ключ опубликованного ресурса>,
-	Sha256           string        `json:"sha256,omitempty"`           // (string, optional): <SHA256-хэш>,
-	Name             string        `json:"name"`                       // (string): <Имя>,
-	Created          string        `json:"created"`                    // (string): <Дата создания>,
-	Modified         string        `json:"modified"`                   // (string): <Дата изменения>,
-	CommentIDs       *CommentIds   `json:"comment_ids,omitempty"`      // (CommentIds, optional)
+	AntivirusStatus  string            `json:"antivirus_status,omitempty"`
+	ResourceID       string            `json:"resource_id,omitempty"`
+	Share            *ShareInfo        `json:"share,omitempty"`
+	File             string            `json:"file,omitempty"`
+	Size             int               `json:"size,omitempty"`
+	PhotosliceTime   string            `json:"photoslice_time,omitempty"`
+	Embedded         *ResourceList     `json:"_embedded,omitempty"`
+	Exif             *Exif             `json:"exif,omitempty"`
+	CustomProperties map[string]string `json:"custom_properties,omitempty"`
+	MediaType        string            `json:"media_type,omitempty"`
+	Preview          string            `json:"preview,omitempty"`
+	Type             string            `json:"type"`
+	MimeType         string            `json:"mime_type,omitempty"`
+	Revision         int               `json:"revision,omitempty"`
+	PublicURL        string            `json:"public_url,omitempty"`
+	Path             string            `json:"path"`
+	Md5              string            `json:"md5,omitempty"`
+	PublicKey        string            `json:"public_key,omitempty"`
+	Sha256           string            `json:"sha256,omitempty"`
+	Name             string            `json:"name"`
+	Created          string            `json:"created"`
+	Modified         string            `json:"modified"`
+	CommentIDs       *CommentIds       `json:"comment_ids,omitempty"`
 }
 
+// PublicResource ...
 type PublicResource struct {
 	Resource
 	Owner      *UserPublicInformation `json:"owner,omitempty"`
 	ViewsCount int                    `json:"views_count,omitempty"`
 }
 
+// ShareInfo ...
 type ShareInfo struct {
 	IsRoot  bool   `json:"is_root,omitempty"`
 	IsOwned bool   `json:"is_owned,omitempty"`
 	Rights  string `json:"rights"`
 }
 
+// ResourceList ... Список ресурсов, содержащихся в папке. Содержит объекты Resource и свойства списка.
 type ResourceList struct {
-	Sort   string      `json:"sort,omitempty"`   //  (string, optional): <Поле, по которому отсортирован список>,
-	Items  []*Resource `json:"items"`            //  (Array[Resource]): <Элементы списка>,
-	Limit  int         `json:"limit,omitempty"`  //  (integer, optional): <Количество элементов на странице>,
-	Offset int         `json:"offset,omitempty"` //  (integer, optional): <Смещение от начала списка>,
-	Path   string      `json:"path"`             //  (string): <Путь к ресурсу, для которого построен список>,
-	Total  int         `json:"total,omitempty"`  //  (integer, optional): <Общее количество элементов в списке>}
+	Sort   string      `json:"sort,omitempty"`
+	Items  []*Resource `json:"items"`
+	Limit  int         `json:"limit,omitempty"`
+	Offset int         `json:"offset,omitempty"`
+	Path   string      `json:"path"`
+	Total  int         `json:"total,omitempty"`
 }
 
+// Exif ...
 type Exif struct {
 	DateTime string `json:"date_time,omitempty"`
 }
 
+// CommentIds ...
 type CommentIds struct {
 	PrivateResource string `json:"private_resource,omitempty"`
 	PublicResource  string `json:"public_resource,omitempty"`
 }
 
+// Link ...
 type Link struct {
 	Href      string `json:"href"`
 	Method    string `json:"method"`
 	Templated bool   `json:"templated,omitempty"`
 }
 
+// ResourceUploadLink ...
 type ResourceUploadLink struct {
-	OperationID string `json:"operation_id"`        // (string): <Идентификатор операции загрузки файла>,
-	Href        string `json:"href"`                // (string): <URL>,
-	Method      string `json:"method"`              // (string): <HTTP-метод>,
-	Templated   bool   `json:"templated,omitempty"` // (boolean, optional): <Признак шаблонизированного URL>
+	OperationID string `json:"operation_id"`
+	Href        string `json:"href"`
+	Method      string `json:"method"`
+	Templated   bool   `json:"templated,omitempty"`
 }
 
+// PublicResourcesList ...
 type PublicResourcesList struct {
-	Items  []*Resource `json:"items"`  // (Array[Resource]): <Элементы списка>,
-	Type   string      `json:"type"`   // (string, optional): <Значение фильтра по типу ресурсов>,
-	Limit  int         `json:"limit"`  // (integer, optional): <Количество элементов на странице>,
-	Offset int         `json:"offset"` // (integer, optional): <Смещение от начала списка>
+	Items  []*Resource `json:"items"`
+	Type   string      `json:"type"`
+	Limit  int         `json:"limit"`
+	Offset int         `json:"offset"`
 }
 
+// LastUploadedResourceList ...
 type LastUploadedResourceList struct {
-	Items []*Resource `json:"items"`           //(Array[Resource]): <Элементы списка>,
-	Limit int         `json:"limit,omitempty"` // (integer, optional): <Количество элементов на странице>
+	Items []*Resource `json:"items"`
+	Limit int         `json:"limit,omitempty"`
 }
 
+// FilesResourceList ...
 type FilesResourceList struct {
-	Items  []*Resource `json:"items"`            // (Array[Resource]): <Элементы списка>,
-	Limit  int         `json:"limit,omitempty"`  //(integer, optional): <Количество элементов на странице>,
-	Offset int         `json:"offset,omitempty"` // (integer, optional): <Смещение от начала списка>
+	Items  []*Resource `json:"items"`
+	Limit  int         `json:"limit,omitempty"`
+	Offset int         `json:"offset,omitempty"`
 }
 
+// UserPublicInformation ...
 type UserPublicInformation struct {
-	Login       string `json:"login,omitempty"`        // (string, optional): <Логин.>,
-	DisplayName string `json:"display_name,omitempty"` // (string, optional): <Отображаемое имя пользователя.>,
-	Uid         string `json:"uid,omitempty"`          // (string, optional): <Идентификатор пользователя.>
+	Login       string `json:"login,omitempty"`
+	DisplayName string `json:"display_name,omitempty"`
+	UID         string `json:"uid,omitempty"`
 }
 
-type OperationStatus struct {
+// Operation ...
+type Operation struct {
 	Status string `json:"status"`
 }
 
+// ErrorResponse ...
 type ErrorResponse struct {
 	Message     string `json:"message"`
 	Description string `json:"description"`
-	Error       string `json:"error"`
+	StatusCode  int    `json:"status_code"`
+	Error       error  `json:"error"` // TODO: []errors
 }
+
+// TrashResource ...
+type TrashResource Resource

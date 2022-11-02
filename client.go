@@ -5,70 +5,111 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"time"
 )
 
 // todo: add context cancellation
 
+// TODO: remove
 const API_URL = "https://cloud-api.yandex.net/v1/disk/"
 
-type Method string
+type HTTPHeaders map[string]string
+type QueryParams map[string]string
 
-const (
-	GET    Method = "GET"
-	POST   Method = "POST"
-	PUT    Method = "PUT"
-	PATCH  Method = "PATCH"
-	DELETE Method = "DELETE"
-)
+type Metadata map[string]map[string]string
 
 type Client struct {
-	AccessToken string
+	accessToken string
 	HTTPClient  *http.Client
-	Logger      *log.Logger
+	logger      *log.Logger
+
+	apiURL string
+	reqURL string // for easy testing
 }
 
-// New(token ...string) fetch token from OS env var if has not direct defined
-func New(token ...string) *Client {
+func New(token string) *Client {
 	if len(token) == 0 {
-		envToken := os.Getenv("YANDEX_DISK_ACCESS_TOKEN")
-		if envToken == "" {
-			return nil
-		}
-		token = append(token, envToken)
+		return nil
 	}
 
 	return &Client{
-		AccessToken: token[0],
-		HTTPClient: &http.Client{
-			Timeout: 10 * time.Second,
-		},
+		accessToken: token,
+		HTTPClient:  &http.Client{Timeout: 30 * time.Second},
+		logger:      &log.Logger{},
+		apiURL:      API_URL,
+		reqURL:      "",
 	}
 }
 
-func (c *Client) doRequest(ctx context.Context, method Method, resource string, body io.Reader) (*http.Response, error) {
-
+func (c *Client) doRequest(ctx context.Context, method string, resource string, body io.Reader, headers *HTTPHeaders, params *QueryParams) (*http.Response, error) {
 	var resp *http.Response
 	var err error
 	var data io.Reader
 
+	// TODO
 	// ctx, cancel := context.WithCancel(ctx)
 
 	data = body
 
-	if method == GET || method == DELETE {
+	if method == "GET" || method == "DELETE" {
 		data = nil
 	}
 
-	req, err := http.NewRequestWithContext(ctx, string(method), API_URL+resource, data)
+	req, err := http.NewRequestWithContext(ctx, method, resource, data)
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", "OAuth "+c.AccessToken)
+	req.Header.Add("Authorization", "OAuth "+c.accessToken)
+
+	if headers != nil {
+		for key, value := range *headers {
+			req.Header.Add(key, value)
+		}
+	}
+
+	if params != nil {
+		q := req.URL.Query()
+		for key, value := range *params {
+			q.Add(key, value)
+		}
+		req.URL.RawQuery = q.Encode()
+	}
+
+	c.reqURL = req.URL.String()
 
 	if resp, err = c.HTTPClient.Do(req); err != nil {
-		c.Logger.Fatal("error response", err)
+		// c.logger.Fatal("error response", err)
 		return nil, err
 	}
 
 	return resp, err
+}
+
+func (c *Client) ReqURL() string {
+	return c.reqURL
+}
+
+func (c *Client) ApiURL() string {
+	return c.apiURL
+}
+
+func (c *Client) get(ctx context.Context, resource string, params *QueryParams) (*http.Response, error) {
+	return c.doRequest(ctx, http.MethodGet, resource, nil, nil, params)
+}
+
+func (c *Client) post(ctx context.Context, resource string, body io.Reader, headers *HTTPHeaders, params *QueryParams) (*http.Response, error) {
+	return c.doRequest(ctx, http.MethodPost, resource, body, headers, params)
+}
+
+func (c *Client) patch(ctx context.Context, resource string, body io.Reader, headers *HTTPHeaders, params *QueryParams) (*http.Response, error) {
+	return c.doRequest(ctx, http.MethodPatch, resource, body, headers, params)
+}
+
+func (c *Client) put(ctx context.Context, resource string, body io.Reader, headers *HTTPHeaders, params *QueryParams) (*http.Response, error) {
+	return c.doRequest(ctx, http.MethodPut, resource, body, headers, params)
+}
+
+func (c *Client) delete(ctx context.Context, resource string, headers *HTTPHeaders, params *QueryParams) (*http.Response, error) {
+	return c.doRequest(ctx, http.MethodDelete, resource, nil, headers, params)
 }

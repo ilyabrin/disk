@@ -1,0 +1,57 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: cloud-api.yandex.net
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers:
+            Content-Type:
+                - application/json
+        url: https://cloud-api.yandex.net/v1/disk/resources?path=test_dir
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding:
+            - chunked
+        trailer: {}
+        content_length: -1
+        uncompressed: true
+        body: '{"_embedded":{"sort":"","items":[],"limit":20,"offset":0,"path":"disk:/test_dir","total":0},"name":"test_dir","exif":{},"resource_id":"12345678:074c35137cf7016cdaf1fed6987970a8116af9df15139b17891023f1bb39439b","custom_properties":{"foo":"bar","key":"value"},"created":"2022-10-28T10:11:39+00:00","modified":"2022-10-28T10:54:24+00:00","path":"disk:/test_dir","comment_ids":{"private_resource":"12345678:074c35137cf7016cdaf1fed6987970a8116af9df15139b17891023f1bb39439b","public_resource":"12345678:074c35137cf7016cdaf1fed6987970a8116af9df15139b17891023f1bb39439b"},"type":"dir","revision":1666954464951766}'
+        headers:
+            Access-Control-Allow-Credentials:
+                - "true"
+            Access-Control-Allow-Headers:
+                - Accept-Language, Accept, X-Uid, X-HTTP-Method, X-Requested-With, Content-Type, Authorization
+            Access-Control-Allow-Methods:
+                - PUT, PATCH, DELETE, GET, OPTIONS
+            Access-Control-Allow-Origin:
+                - '*'
+            Cache-Control:
+                - no-cache
+            Connection:
+                - keep-alive
+            Content-Type:
+                - application/json; charset=utf-8
+            Date:
+                - Fri, 28 Oct 2022 10:59:48 GMT
+            Server:
+                - nginx
+            Vary:
+                - Accept-Encoding
+            Yandex-Cloud-Request-Id:
+                - rest-20907bb72b2203e82f079caa1983d7c4-api31e
+        status: 200 OK
+        code: 200
+        duration: 287.825512ms

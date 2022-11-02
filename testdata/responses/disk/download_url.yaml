@@ -1,0 +1,57 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: cloud-api.yandex.net
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers:
+            Content-Type:
+                - application/json
+        url: https://cloud-api.yandex.net/v1/disk/resources/download?path=test_dir
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding:
+            - chunked
+        trailer: {}
+        content_length: -1
+        uncompressed: true
+        body: '{"href":"https://downloader.disk.yandex.ru/zip/1c2c01a9448707968c43c7f5ad023c3be87bdc6b94b467771532afad5de6448e/635bb617/L2Rpc2svdGVzdF9kaXI=?uid=12345678&filename=test_dir.zip&disposition=attachment&hash=&limit=0&owner_uid=12345678&tknv=v2","method":"GET","templated":false}'
+        headers:
+            Access-Control-Allow-Credentials:
+                - "true"
+            Access-Control-Allow-Headers:
+                - Accept-Language, Accept, X-Uid, X-HTTP-Method, X-Requested-With, Content-Type, Authorization
+            Access-Control-Allow-Methods:
+                - GET, OPTIONS
+            Access-Control-Allow-Origin:
+                - '*'
+            Cache-Control:
+                - no-cache
+            Connection:
+                - keep-alive
+            Content-Type:
+                - application/json; charset=utf-8
+            Date:
+                - Fri, 28 Oct 2022 10:57:35 GMT
+            Server:
+                - nginx
+            Vary:
+                - Accept-Encoding
+            Yandex-Cloud-Request-Id:
+                - rest-fd52ec66629caf897d751486992478db-api33f
+        status: 200 OK
+        code: 200
+        duration: 310.149255ms

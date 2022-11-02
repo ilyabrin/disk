@@ -1,0 +1,55 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: cloud-api.yandex.net
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers: {}
+        url: https://cloud-api.yandex.net/v1/disk/public/resources?public_key=https://disk.yandex.ru/d/tCgV7GyS3QAYvg
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding:
+            - chunked
+        trailer: {}
+        content_length: -1
+        uncompressed: true
+        body: '{"public_key":"OU2gC1U4WN1LriiGgJm7dcZElfkHEQrkdsSABAh6hs6BJHg9L4sZKVPsqWloY0SCq/J6bpmRyOJonT3VoXnDag==","public_url":"https://yadi.sk/d/tCgV7GyS3QAYvg","_embedded":{"sort":"","public_key":"OU2gC1U4WN1LriiGgJm7dcZElfkHEQrkdsSABAh6hs6BJHg9L4sZKVPsqWloY0SCq/J6bpmRyOJonT3VoXnDag==","items":[],"limit":20,"offset":0,"path":"/","total":0},"name":"test_dir","exif":{},"resource_id":"12345678:6b069b9678df78bcf4baa43b9cf1472425dbbd2d82f90a6798c9f83ee7b940ad","revision":1667132495728865,"created":"2022-10-28T10:57:33+00:00","modified":"2022-10-28T10:57:33+00:00","owner":{"login":"username","display_name":"Test","uid":"12345678"},"path":"/","comment_ids":{"private_resource":"12345678:6b069b9678df78bcf4baa43b9cf1472425dbbd2d82f90a6798c9f83ee7b940ad","public_resource":"12345678:6b069b9678df78bcf4baa43b9cf1472425dbbd2d82f90a6798c9f83ee7b940ad"},"type":"dir","views_count":0}'
+        headers:
+            Access-Control-Allow-Credentials:
+                - "true"
+            Access-Control-Allow-Headers:
+                - Accept-Language, Accept, X-Uid, X-HTTP-Method, X-Requested-With, Content-Type, Authorization
+            Access-Control-Allow-Methods:
+                - GET, OPTIONS
+            Access-Control-Allow-Origin:
+                - '*'
+            Cache-Control:
+                - no-cache
+            Connection:
+                - keep-alive
+            Content-Type:
+                - application/json; charset=utf-8
+            Date:
+                - Sun, 30 Oct 2022 12:23:28 GMT
+            Server:
+                - nginx
+            Vary:
+                - Accept-Encoding
+            Yandex-Cloud-Request-Id:
+                - rest-de137ba5f43fcc9a90ee235b190edb77-api29v
+        status: 200 OK
+        code: 200
+        duration: 374.083757ms

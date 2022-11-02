@@ -3,91 +3,55 @@ package disk
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"net/http"
 )
 
-func (c *Client) GetMetadataForPublicResource(ctx context.Context, public_key string) (*PublicResource, *ErrorResponse) {
+func (c *Client) GetMetadataForPublicResource(ctx context.Context, public_key string, params *QueryParams) (*PublicResource, *ErrorResponse) {
 	var resource *PublicResource
-	var errorResponse *ErrorResponse
-	var err error
-	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, GET, "public/resources?public_key="+public_key, nil)
-	if haveError(err) {
-		log.Fatal("Request failed")
+	resp, err := c.get(ctx, c.apiURL+"public/resources?public_key="+public_key, params)
+	if haveError(err) || resp.StatusCode != http.StatusOK {
+		return nil, handleResponseCode(resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		decoded = json.NewDecoder(resp.Body)
-		err := decoded.Decode(&errorResponse)
-		if haveError(err) {
-			log.Fatal(err)
-		}
-		return nil, errorResponse
-	}
-
-	decoded = json.NewDecoder(resp.Body)
-	if err := decoded.Decode(&resource); err != nil {
-		log.Fatal(err)
+	err = json.NewDecoder(resp.Body).Decode(&resource)
+	if err != nil {
+		return nil, jsonDecodeError(err)
 	}
 
 	return resource, nil
 }
 
-func (c *Client) GetDownloadURLForPublicResource(ctx context.Context, public_key string) (*Link, *ErrorResponse) {
+func (c *Client) GetDownloadURLForPublicResource(ctx context.Context, public_key string, params *QueryParams) (*Link, *ErrorResponse) {
 	var link *Link
-	var errorResponse *ErrorResponse
-	var err error
-	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, GET, "public/resources/download?public_key="+public_key, nil)
-	if haveError(err) {
-		log.Fatal("Request failed")
+	resp, err := c.get(ctx, c.apiURL+"public/resources/download?public_key="+public_key, params)
+	if haveError(err) || resp.StatusCode != 200 {
+		return nil, handleResponseCode(resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		decoded = json.NewDecoder(resp.Body)
-		err := decoded.Decode(&errorResponse)
-		if haveError(err) {
-			log.Fatal(err)
-		}
-		return nil, errorResponse
-	}
-
-	decoded = json.NewDecoder(resp.Body)
-	if err := decoded.Decode(&link); err != nil {
-		log.Fatal(err)
+	err = json.NewDecoder(resp.Body).Decode(&link)
+	if err != nil {
+		return nil, jsonDecodeError(err)
 	}
 
 	return link, nil
 }
 
-func (c *Client) SavePublicResource(ctx context.Context, public_key string) (*Link, *ErrorResponse) {
+func (c *Client) SavePublicResource(ctx context.Context, public_key string, params *QueryParams) (*Link, *ErrorResponse) {
 	var link *Link
-	var errorResponse *ErrorResponse
-	var err error
-	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, POST, "public/resources/save-to-disk?public_key="+public_key, nil)
-	if haveError(err) {
-		log.Fatal("Request failed")
+	resp, err := c.post(ctx, c.apiURL+"public/resources/save-to-disk?public_key="+public_key, nil, nil, params)
+	if haveError(err) || !InArray(resp.StatusCode, []int{200, 201, 202}) {
+		return nil, handleResponseCode(resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
-	// Если сохранение происходит асинхронно,
-	// то вернёт ответ с кодом 202 и ссылкой на асинхронную операцию.
-	// Иначе вернёт ответ с кодом 201 и ссылкой на созданный ресурс.
-	if !inArray(resp.StatusCode, []int{200, 201, 202}) {
-		decoded = json.NewDecoder(resp.Body)
-		err := decoded.Decode(&errorResponse)
-		if haveError(err) {
-			log.Fatal(err)
-		}
-		return nil, errorResponse
-	}
-
-	decoded = json.NewDecoder(resp.Body)
-	if err := decoded.Decode(&link); err != nil {
-		log.Fatal(err)
+	err = json.NewDecoder(resp.Body).Decode(&link)
+	if err != nil {
+		return nil, jsonDecodeError(err)
 	}
 
 	return link, nil
