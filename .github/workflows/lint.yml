@@ -4,27 +4,26 @@ name: Lint
 on: [push, pull_request]
 
 jobs:
-  builds:
+  build:
     runs-on: ubuntu-latest
-  
-  steps:
-    - name: set up go 1.19
-      uses: actions/setup-go@v3
-      with:          
-        go-version: 1.19
+    steps:
+      - name: set up go 1.19
+        uses: actions/setup-go@v3
+        with:          
+          go-version: 1.19
 
-    - name: Checkout
-      uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
 
-    - name: install golangci-lint and goveralls
-      run: |
-        curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $GITHUB_WORKSPACE v1.50.0
-        go install github.com/mattn/goveralls@latest
+      - name: install golangci-lint and goveralls
+        run: |
+          curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $GITHUB_WORKSPACE v1.50.0
+          go install github.com/mattn/goveralls@latest
 
-    - name: run linters
-      run: $GITHUB_WORKSPACE/golangci-lint run --out-format=github-actions
+      - name: run linters
+        run: $GITHUB_WORKSPACE/golangci-lint run --out-format=github-actions
 
-    - name: submit coverage
-      run: $(go env GOPATH)/bin/goveralls -service="github" -coverprofile=$GITHUB_WORKSPACE/profile.cov
-      env:
-        COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: submit coverage
+        run: $(go env GOPATH)/bin/goveralls -service="github" -coverprofile=$GITHUB_WORKSPACE/profile.cov
+        env:
+          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
