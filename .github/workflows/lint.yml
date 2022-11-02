@@ -4,7 +4,7 @@ name: Lint
 on: [push, pull_request]
 
 jobs:
-  build:
+  builds:
     runs-on: ubuntu-latest
   
   steps:
