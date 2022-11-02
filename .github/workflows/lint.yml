@@ -3,24 +3,25 @@ name: Lint
   
 on: [push, pull_request]
 
-permissions:
-  contents: read
-
 jobs:
   lint:
-    strategy:
-      matrix:
-        go-version: ["1.18.x", "1.19.x"]
-        platform: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.platform }}
-    steps:
-    - name: Install Go
+    - name: set up go 1.19
       uses: actions/setup-go@v3
-      with:
-        go-version: ${{ matrix.go-version }}
-    - name: Checkout code
+      with:          
+        go-version: 1.19
+
+    - name: Checkout
       uses: actions/checkout@v3
-    - name: Run linters
-      uses: golangci/golangci-lint-action@v3
-      with:
-        version: v1.43
+
+    - name: install golangci-lint and goveralls
+      run: |
+        curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $GITHUB_WORKSPACE v1.50.0
+        go install github.com/mattn/goveralls@latest
+
+    - name: run linters
+      run: $GITHUB_WORKSPACE/golangci-lint run --out-format=github-actions
+
+    - name: submit coverage
+      run: $(go env GOPATH)/bin/goveralls -service="github" -coverprofile=$GITHUB_WORKSPACE/profile.cov
+      env:
+        COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
