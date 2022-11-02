@@ -40,7 +40,7 @@ func handleResponseCode(code int) *ErrorResponse {
 }
 
 // JSON encode/decode error
-func returnDecodeError(err error) *ErrorResponse {
+func jsonDecodeError(err error) *ErrorResponse {
 	return &ErrorResponse{
 		Message:     "JSON Decode Error",
 		Description: "error occurred while API response decode",

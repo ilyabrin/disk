@@ -6,8 +6,6 @@ import (
 	"testing"
 )
 
-const TEST_TRASH_FILE_PATH = "trash:/___golang_API_dir_2_ddf8722d0aec88bfeb94a45a155511dbe151b764"
-
 func TestDeleteFromTrash(t *testing.T) {
 
 	useCassette("/trash/delete")
@@ -26,7 +24,7 @@ func TestDeleteFromTrash(t *testing.T) {
 
 func TestRestoreFromTrash(t *testing.T) {
 
-	useCassette("/trash/restore")
+	useCassette("trash/restore")
 
 	resp, _, errorResponse := client.RestoreFromTrash(context.Background(), TEST_TRASH_FILE_PATH, nil)
 
@@ -43,7 +41,7 @@ func TestRestoreFromTrash(t *testing.T) {
 
 func TestListTrashResources(t *testing.T) {
 
-	useCassette("/trash/list")
+	useCassette("trash/list")
 
 	resp, errorResponse := client.ListTrashResources(context.Background(), TEST_TRASH_FILE_PATH, nil)
 

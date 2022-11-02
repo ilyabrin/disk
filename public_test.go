@@ -6,8 +6,6 @@ import (
 	"testing"
 )
 
-const TEST_PUBLIC_RESOURCE = "https://disk.yandex.ru/d/tCgV7GyS3QAYvg"
-
 func TestGetMetadataForPublicResource(t *testing.T) {
 
 	useCassette("/public/get_meta")

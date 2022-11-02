@@ -16,7 +16,7 @@ func (c *Client) DiskInfo(ctx context.Context, params *queryParams) (*Disk, *Err
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&disk); err != nil {
-		return nil, returnDecodeError(err)
+		return nil, jsonDecodeError(err)
 	}
 
 	return disk, nil

@@ -5,29 +5,22 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"log"
 	"os"
 )
 
 // todo: add *ErrorResponse to return
 
-func (c *Client) DeleteResource(ctx context.Context, path string, permanent bool, params *queryParams) error {
-
-	if len(path) < 1 {
-		return errors.New("DeleteResource error")
-	}
+func (c *Client) DeleteResource(ctx context.Context, path string, permanent bool, params *queryParams) *ErrorResponse {
 
 	url := "resources?path=" + path + "&permanent=false"
-
 	if permanent {
 		url = "resources?path=" + path + "&permanent=true"
 	}
 
-	// TODO: refactor
-	_, err := c.doRequest(ctx, "DELETE", c.api_url+url, nil, nil, params)
+	resp, err := c.delete(ctx, c.api_url+url, nil, params)
 	if haveError(err) {
-		return err
+		return handleResponseCode(resp.StatusCode)
 	}
 
 	return nil
@@ -35,34 +28,17 @@ func (c *Client) DeleteResource(ctx context.Context, path string, permanent bool
 
 func (c *Client) GetMetadata(ctx context.Context, path string, params *queryParams) (*Resource, *ErrorResponse) {
 
-	if len(path) < 1 {
-		return nil, nil
-	}
-
 	var resource *Resource
-	var errorResponse *ErrorResponse
-	var err error
-	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, "GET", c.api_url+"resources?path="+path, nil, nil, params)
-	if haveError(err) {
-		log.Fatal("Request failed")
+	resp, err := c.get(ctx, c.api_url+"resources?path="+path, nil, params)
+	if haveError(err) || resp.StatusCode != 200 {
+		return nil, handleResponseCode(resp.StatusCode)
 	}
 
-	if resp.StatusCode != 200 {
-		decoded = json.NewDecoder(resp.Body)
-		err := decoded.Decode(&errorResponse)
-		if err != nil {
-			log.Fatal(err)
-		}
-		return nil, errorResponse
+	if err := json.NewDecoder(resp.Body).Decode(&resource); err != nil {
+		return nil, jsonDecodeError(err)
 	}
 
-	decoded = json.NewDecoder(resp.Body)
-	if err := decoded.Decode(&resource); err != nil {
-		log.Fatal(err)
-		return nil, nil
-	}
 	return resource, nil
 }
 
@@ -77,74 +53,48 @@ todo: add examples to README
 		},
 	}
 */
-// TODO: add type for metadata instead of map of maps
-func (c *Client) UpdateMetadata(ctx context.Context, path string, custom_properties map[string]map[string]string) (*Resource, *ErrorResponse) {
-	if len(path) < 1 {
-		return nil, nil
-	}
+func (c *Client) UpdateMetadata(ctx context.Context, path string, custom_properties *metadata) (*Resource, *ErrorResponse) {
 
 	var resource *Resource
-	var errorResponse *ErrorResponse
-	var err error
-	var decoded *json.Decoder
-
 	var body []byte
 
-	body, err = json.Marshal(custom_properties)
-
+	body, err := json.Marshal(custom_properties)
 	if haveError(err) {
-		log.Fatal("payload error")
+		return nil, jsonDecodeError(err)
 	}
 
-	resp, err := c.doRequest(ctx, "PATCH", c.api_url+"resources?path="+path, bytes.NewBuffer([]byte(body)), nil, nil)
-	if haveError(err) {
-		log.Fatal("Request failed")
+	resp, err := c.patch(ctx, c.api_url+"resources?path="+path, bytes.NewBuffer([]byte(body)), nil, nil)
+	if haveError(err) || resp.StatusCode != 200 {
+		return nil, handleResponseCode(resp.StatusCode)
 	}
 
-	if resp.StatusCode != 200 {
-		decoded = json.NewDecoder(resp.Body)
-		err := decoded.Decode(&errorResponse)
-		if err != nil {
-			log.Fatal(err)
-		}
-		return nil, errorResponse
+	if err := json.NewDecoder(resp.Body).Decode(&resource); err != nil {
+		return nil, jsonDecodeError(err)
 	}
 
-	decoded = json.NewDecoder(resp.Body)
-	if err := decoded.Decode(&resource); err != nil {
-		log.Fatal(err)
-		return nil, nil
-	}
 	return resource, nil
 }
 
 // CreateDir creates a new dorectory with 'path'(string) name
 // todo: can't create nested dirs like newDir/subDir/anotherDir
 func (c *Client) CreateDir(ctx context.Context, path string, params *queryParams) (*Link, *ErrorResponse) {
-	if len(path) < 1 {
-		return nil, nil
-	}
 
 	var link *Link
-	var errorResponse *ErrorResponse
-	var err error
-	var decoded *json.Decoder
 
-	resp, err := c.doRequest(ctx, "PUT", c.api_url+"resources?path="+path, nil, nil, params)
-	if haveError(err) {
-		log.Fatal("Request failed")
-		return nil, nil
+	resp, err := c.put(ctx, c.api_url+"resources?path="+path, nil, nil, params)
+	if haveError(err) || resp.StatusCode != 201 {
+		return nil, handleResponseCode(resp.StatusCode)
 	}
 
-	if resp.StatusCode != 201 {
-		decoded = json.NewDecoder(resp.Body)
-		err := decoded.Decode(&errorResponse)
-		if err != nil {
-			log.Fatal(err)
-			return nil, nil
-		}
-		return nil, errorResponse
-	}
+	// if  {
+	// 	decoded = json.NewDecoder(resp.Body)
+	// 	err := decoded.Decode(&errorResponse)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 		return nil, nil
+	// 	}
+	// 	return nil, errorResponse
+	// }
 
 	err = json.NewDecoder(resp.Body).Decode(&link)
 	if err != nil {

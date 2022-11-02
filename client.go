@@ -16,6 +16,8 @@ const API_URL = "https://cloud-api.yandex.net/v1/disk/"
 type httpHeaders map[string]string
 type queryParams map[string]string
 
+type metadata map[string]map[string]string
+
 type Client struct {
 	accessToken string
 	httpClient  *http.Client
@@ -103,5 +105,5 @@ func (c *Client) put(ctx context.Context, resource string, body io.Reader, heade
 }
 
 func (c *Client) delete(ctx context.Context, resource string, headers *httpHeaders, params *queryParams) (*http.Response, error) {
-	return c.doRequest(ctx, http.MethodPut, resource, nil, headers, params)
+	return c.doRequest(ctx, http.MethodDelete, resource, nil, headers, params)
 }
