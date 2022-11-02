@@ -1,14 +1,16 @@
-package disk
+package disk_test
 
 import (
 	"context"
 	"reflect"
 	"testing"
+
+	"github.com/ilyabrin/disk"
 )
 
 func TestGetMetadataForPublicResource(t *testing.T) {
 
-	useCassette("/public/get_meta")
+	UseCassette("/public/get_meta")
 
 	resp, errorResponse := client.GetMetadataForPublicResource(context.Background(), TEST_PUBLIC_RESOURCE, nil)
 
@@ -16,7 +18,7 @@ func TestGetMetadataForPublicResource(t *testing.T) {
 		t.Fatal("errorResponse should be nil")
 	}
 
-	publicResource := new(PublicResource)
+	publicResource := new(disk.PublicResource)
 
 	if reflect.TypeOf(resp).Kind() != reflect.TypeOf(publicResource).Kind() {
 		t.Fatalf("error: expect %v, got %v", publicResource, resp)
@@ -25,7 +27,7 @@ func TestGetMetadataForPublicResource(t *testing.T) {
 
 func TestGetDownloadURLForPublicResource(t *testing.T) {
 
-	useCassette("/public/download_url")
+	UseCassette("/public/download_url")
 
 	resp, errorResponse := client.GetDownloadURLForPublicResource(context.Background(), TEST_PUBLIC_RESOURCE, nil)
 
@@ -33,7 +35,7 @@ func TestGetDownloadURLForPublicResource(t *testing.T) {
 		t.Fatal("errorResponse should be nil")
 	}
 
-	link := new(Link)
+	link := new(disk.Link)
 
 	if reflect.TypeOf(resp).Kind() != reflect.TypeOf(link).Kind() {
 		t.Fatalf("error: expect %v, got %v", link, resp)
@@ -42,7 +44,7 @@ func TestGetDownloadURLForPublicResource(t *testing.T) {
 
 func TestSavePublicResource(t *testing.T) {
 
-	useCassette("/public/save")
+	UseCassette("/public/save")
 
 	resp, errorResponse := client.SavePublicResource(context.Background(), TEST_PUBLIC_RESOURCE, nil)
 
@@ -50,7 +52,7 @@ func TestSavePublicResource(t *testing.T) {
 		t.Fatal("errorResponse should be nil")
 	}
 
-	link := new(Link)
+	link := new(disk.Link)
 
 	if reflect.TypeOf(resp).Kind() != reflect.TypeOf(link).Kind() {
 		t.Fatalf("error: expect %v, got %v", link, resp)

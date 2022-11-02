@@ -1,14 +1,16 @@
-package disk
+package disk_test
 
 import (
 	"context"
 	"reflect"
 	"testing"
+
+	"github.com/ilyabrin/disk"
 )
 
 func TestDiskInfo(t *testing.T) {
 
-	useCassette("disk/info")
+	UseCassette("disk/info")
 
 	resp, errorResponse := client.DiskInfo(context.Background(), nil)
 
@@ -16,13 +18,13 @@ func TestDiskInfo(t *testing.T) {
 		t.Fatal("errorResponse should be nil")
 	}
 
-	disk := new(Disk)
+	disk := new(disk.Disk)
 
 	if reflect.TypeOf(resp).Kind() != reflect.TypeOf(disk).Kind() {
 		t.Fatalf("error: expect %v, got %v", disk, resp)
 	}
 
-	if client.req_url != client.api_url {
-		t.Fatalf("error: expect %v, got %v", client.req_url, client.api_url)
+	if client.ReqURL() != client.ApiURL() {
+		t.Fatalf("error: expect %v, got %v", client.ReqURL(), client.ApiURL())
 	}
 }

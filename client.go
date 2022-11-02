@@ -13,37 +13,35 @@ import (
 // TODO: remove
 const API_URL = "https://cloud-api.yandex.net/v1/disk/"
 
-type httpHeaders map[string]string
-type queryParams map[string]string
+type HTTPHeaders map[string]string
+type QueryParams map[string]string
 
-type metadata map[string]map[string]string
+type Metadata map[string]map[string]string
 
 type Client struct {
 	accessToken string
-	httpClient  *http.Client
+	HTTPClient  *http.Client
 	logger      *log.Logger
 
-	api_url string
-	req_url string // for easy testing
+	apiURL string
+	reqURL string // for easy testing
 }
 
 func New(token string) *Client {
-
 	if len(token) == 0 {
 		return nil
 	}
 
 	return &Client{
 		accessToken: token,
-		httpClient:  &http.Client{Timeout: 30 * time.Second},
+		HTTPClient:  &http.Client{Timeout: 30 * time.Second},
 		logger:      &log.Logger{},
-		api_url:     API_URL,
-		req_url:     "",
+		apiURL:      API_URL,
+		reqURL:      "",
 	}
 }
 
-func (c *Client) doRequest(ctx context.Context, method string, resource string, body io.Reader, headers *httpHeaders, params *queryParams) (*http.Response, error) {
-
+func (c *Client) doRequest(ctx context.Context, method string, resource string, body io.Reader, headers *HTTPHeaders, params *QueryParams) (*http.Response, error) {
 	var resp *http.Response
 	var err error
 	var data io.Reader
@@ -57,7 +55,7 @@ func (c *Client) doRequest(ctx context.Context, method string, resource string, 
 		data = nil
 	}
 
-	req, err := http.NewRequestWithContext(ctx, string(method), resource, data)
+	req, err := http.NewRequestWithContext(ctx, method, resource, data)
 	if err != nil {
 		return nil, err
 	}
@@ -78,9 +76,9 @@ func (c *Client) doRequest(ctx context.Context, method string, resource string, 
 		req.URL.RawQuery = q.Encode()
 	}
 
-	c.req_url = req.URL.String()
+	c.reqURL = req.URL.String()
 
-	if resp, err = c.httpClient.Do(req); err != nil {
+	if resp, err = c.HTTPClient.Do(req); err != nil {
 		// c.logger.Fatal("error response", err)
 		return nil, err
 	}
@@ -88,22 +86,30 @@ func (c *Client) doRequest(ctx context.Context, method string, resource string, 
 	return resp, err
 }
 
-func (c *Client) get(ctx context.Context, resource string, headers *httpHeaders, params *queryParams) (*http.Response, error) {
-	return c.doRequest(ctx, http.MethodGet, resource, nil, headers, params)
+func (c *Client) ReqURL() string {
+	return c.reqURL
 }
 
-func (c *Client) post(ctx context.Context, resource string, body io.Reader, headers *httpHeaders, params *queryParams) (*http.Response, error) {
-	return c.doRequest(ctx, http.MethodPost, resource, nil, headers, params)
+func (c *Client) ApiURL() string {
+	return c.apiURL
 }
 
-func (c *Client) patch(ctx context.Context, resource string, body io.Reader, headers *httpHeaders, params *queryParams) (*http.Response, error) {
-	return c.doRequest(ctx, http.MethodPatch, resource, nil, headers, params)
+func (c *Client) get(ctx context.Context, resource string, params *QueryParams) (*http.Response, error) {
+	return c.doRequest(ctx, http.MethodGet, resource, nil, nil, params)
 }
 
-func (c *Client) put(ctx context.Context, resource string, body io.Reader, headers *httpHeaders, params *queryParams) (*http.Response, error) {
-	return c.doRequest(ctx, http.MethodPut, resource, nil, headers, params)
+func (c *Client) post(ctx context.Context, resource string, body io.Reader, headers *HTTPHeaders, params *QueryParams) (*http.Response, error) {
+	return c.doRequest(ctx, http.MethodPost, resource, body, headers, params)
 }
 
-func (c *Client) delete(ctx context.Context, resource string, headers *httpHeaders, params *queryParams) (*http.Response, error) {
+func (c *Client) patch(ctx context.Context, resource string, body io.Reader, headers *HTTPHeaders, params *QueryParams) (*http.Response, error) {
+	return c.doRequest(ctx, http.MethodPatch, resource, body, headers, params)
+}
+
+func (c *Client) put(ctx context.Context, resource string, body io.Reader, headers *HTTPHeaders, params *QueryParams) (*http.Response, error) {
+	return c.doRequest(ctx, http.MethodPut, resource, body, headers, params)
+}
+
+func (c *Client) delete(ctx context.Context, resource string, headers *HTTPHeaders, params *QueryParams) (*http.Response, error) {
 	return c.doRequest(ctx, http.MethodDelete, resource, nil, headers, params)
 }

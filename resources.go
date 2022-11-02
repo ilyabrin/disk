@@ -5,34 +5,36 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"net/http"
 	"os"
 )
 
-func (c *Client) DeleteResource(ctx context.Context, path string, permanent bool, params *queryParams) *ErrorResponse {
-
+func (c *Client) DeleteResource(ctx context.Context, path string, permanent bool, params *QueryParams) *ErrorResponse {
 	url := "resources?path=" + path + "&permanent=false"
 	if permanent {
 		url = "resources?path=" + path + "&permanent=true"
 	}
 
-	resp, err := c.delete(ctx, c.api_url+url, nil, params)
+	resp, err := c.delete(ctx, c.apiURL+url, nil, params)
 	if haveError(err) {
 		return handleResponseCode(resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
 	return nil
 }
 
-func (c *Client) GetMetadata(ctx context.Context, path string, params *queryParams) (*Resource, *ErrorResponse) {
-
+func (c *Client) GetMetadata(ctx context.Context, path string, params *QueryParams) (*Resource, *ErrorResponse) {
 	var resource *Resource
 
-	resp, err := c.get(ctx, c.api_url+"resources?path="+path, nil, params)
-	if haveError(err) || resp.StatusCode != 200 {
+	resp, err := c.get(ctx, c.apiURL+"resources?path="+path, params)
+	if haveError(err) || resp.StatusCode != http.StatusOK {
 		return nil, handleResponseCode(resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&resource); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&resource)
+	if err != nil {
 		return nil, jsonDecodeError(err)
 	}
 
@@ -42,7 +44,7 @@ func (c *Client) GetMetadata(ctx context.Context, path string, params *queryPara
 /*
 todo: add examples to README
 
-	newMeta := &metadata{
+	newMeta := &disk.Metadata{
 		"custom_properties": {
 			"key": "value",
 			"foo": "bar",
@@ -50,8 +52,7 @@ todo: add examples to README
 		},
 	}
 */
-func (c *Client) UpdateMetadata(ctx context.Context, path string, custom_properties *metadata) (*Resource, *ErrorResponse) {
-
+func (c *Client) UpdateMetadata(ctx context.Context, path string, custom_properties *Metadata) (*Resource, *ErrorResponse) {
 	var resource *Resource
 	var body []byte
 
@@ -60,12 +61,14 @@ func (c *Client) UpdateMetadata(ctx context.Context, path string, custom_propert
 		return nil, jsonDecodeError(err)
 	}
 
-	resp, err := c.patch(ctx, c.api_url+"resources?path="+path, bytes.NewBuffer([]byte(body)), nil, nil)
+	resp, err := c.patch(ctx, c.apiURL+"resources?path="+path, bytes.NewBuffer(body), nil, nil)
 	if haveError(err) || resp.StatusCode != 200 {
 		return nil, handleResponseCode(resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&resource); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&resource)
+	if err != nil {
 		return nil, jsonDecodeError(err)
 	}
 
@@ -74,65 +77,68 @@ func (c *Client) UpdateMetadata(ctx context.Context, path string, custom_propert
 
 // CreateDir creates a new dorectory with 'path'(string) name
 // todo: can't create nested dirs like newDir/subDir/anotherDir
-func (c *Client) CreateDir(ctx context.Context, path string, params *queryParams) (*Link, *ErrorResponse) {
-
+func (c *Client) CreateDir(ctx context.Context, path string, params *QueryParams) (*Link, *ErrorResponse) {
 	var link *Link
 
-	resp, err := c.put(ctx, c.api_url+"resources?path="+path, nil, nil, params)
-
-	if haveError(err) || resp.StatusCode != 201 {
+	resp, err := c.put(ctx, c.apiURL+"resources?path="+path, nil, nil, params)
+	if haveError(err) || resp.StatusCode != http.StatusCreated {
 		return nil, handleResponseCode(resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&link); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&link)
+	if err != nil {
 		return nil, jsonDecodeError(err)
 	}
 
 	return link, nil
 }
 
-func (c *Client) CopyResource(ctx context.Context, from, to string, params *queryParams) (*Link, *ErrorResponse) {
-
+func (c *Client) CopyResource(ctx context.Context, from, to string, params *QueryParams) (*Link, *ErrorResponse) {
 	var link *Link
 
-	resp, err := c.post(ctx, c.api_url+"resources/copy?from="+from+"&path="+to, nil, nil, params)
-	if haveError(err) || !inArray(resp.StatusCode, []int{200, 201, 202}) {
+	resp, err := c.post(ctx, c.apiURL+"resources/copy?from="+from+"&path="+to, nil, nil, params)
+	if haveError(err) || !InArray(resp.StatusCode, []int{200, 201, 202}) {
 		return nil, handleResponseCode(resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&link); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&link)
+	if err != nil {
 		return nil, jsonDecodeError(err)
 	}
 
 	return link, nil
 }
 
-func (c *Client) GetDownloadURL(ctx context.Context, path string, params *queryParams) (*Link, *ErrorResponse) {
-
+func (c *Client) GetDownloadURL(ctx context.Context, path string, params *QueryParams) (*Link, *ErrorResponse) {
 	var link *Link
 
-	resp, err := c.get(ctx, c.api_url+"resources/download?path="+path, nil, params)
-	if haveError(err) || resp.StatusCode != 200 {
+	resp, err := c.get(ctx, c.apiURL+"resources/download?path="+path, params)
+	if haveError(err) || resp.StatusCode != http.StatusOK {
 		return nil, handleResponseCode(resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&link); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&link)
+	if err != nil {
 		return nil, jsonDecodeError(err)
 	}
 
 	return link, nil
 }
 
-func (c *Client) GetSortedFiles(ctx context.Context, params *queryParams) (*FilesResourceList, *ErrorResponse) {
-
+func (c *Client) GetSortedFiles(ctx context.Context, params *QueryParams) (*FilesResourceList, *ErrorResponse) {
 	var files *FilesResourceList
 
-	resp, err := c.get(ctx, c.api_url+"resources/files", nil, params)
+	resp, err := c.get(ctx, c.apiURL+"resources/files", params)
 	if haveError(err) || resp.StatusCode != 200 {
 		return nil, handleResponseCode(resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&files); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&files)
+	if err != nil {
 		return nil, jsonDecodeError(err)
 	}
 
@@ -140,80 +146,85 @@ func (c *Client) GetSortedFiles(ctx context.Context, params *queryParams) (*File
 }
 
 // get | sortBy = [name = default, uploadDate]
-func (c *Client) GetLastUploadedResources(ctx context.Context, params *queryParams) (*LastUploadedResourceList, *ErrorResponse) {
-
+func (c *Client) GetLastUploadedResources(ctx context.Context, params *QueryParams) (*LastUploadedResourceList, *ErrorResponse) {
 	var files *LastUploadedResourceList
 
-	resp, err := c.get(ctx, c.api_url+"resources/last-uploaded", nil, params)
+	resp, err := c.get(ctx, c.apiURL+"resources/last-uploaded", params)
 	if haveError(err) || resp.StatusCode != 200 {
 		return nil, handleResponseCode(resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&files); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&files)
+	if err != nil {
 		return nil, jsonDecodeError(err)
 	}
 
 	return files, nil
 }
 
-func (c *Client) MoveResource(ctx context.Context, from, to string, params *queryParams) (*Link, *ErrorResponse) {
-
+func (c *Client) MoveResource(ctx context.Context, from, to string, params *QueryParams) (*Link, *ErrorResponse) {
 	var link *Link
 
-	resp, err := c.post(ctx, c.api_url+"resources/move?from="+from+"&path="+to, nil, nil, params)
-	if haveError(err) || !inArray(resp.StatusCode, []int{201, 202}) {
-
+	resp, err := c.post(ctx, c.apiURL+"resources/move?from="+from+"&path="+to, nil, nil, params)
+	if haveError(err) || !InArray(resp.StatusCode, []int{201, 202}) {
+		return nil, handleResponseCode(resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&link); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&link)
+	if err != nil {
 		return nil, jsonDecodeError(err)
 	}
 
 	return link, nil
 }
 
-func (c *Client) GetPublicResources(ctx context.Context, params *queryParams) (*PublicResourcesList, *ErrorResponse) {
-
+func (c *Client) GetPublicResources(ctx context.Context, params *QueryParams) (*PublicResourcesList, *ErrorResponse) {
 	var list *PublicResourcesList
 
-	resp, err := c.get(ctx, c.api_url+"resources/public", nil, params)
+	resp, err := c.get(ctx, c.apiURL+"resources/public", params)
 	if haveError(err) || resp.StatusCode != 200 {
 		return nil, handleResponseCode(resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&list); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&list)
+	if err != nil {
 		return nil, jsonDecodeError(err)
 	}
 
 	return list, nil
 }
 
-func (c *Client) PublishResource(ctx context.Context, path string, params *queryParams) (*Link, *ErrorResponse) {
-
+func (c *Client) PublishResource(ctx context.Context, path string, params *QueryParams) (*Link, *ErrorResponse) {
 	var link *Link
 
-	resp, err := c.put(ctx, c.api_url+"resources/publish?path="+path, nil, nil, params)
-	if haveError(err) || resp.StatusCode != 200 {
+	resp, err := c.put(ctx, c.apiURL+"resources/publish?path="+path, nil, nil, params)
+	if haveError(err) || resp.StatusCode != http.StatusOK {
 		return nil, handleResponseCode(resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&link); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&link)
+	if err != nil {
 		return nil, jsonDecodeError(err)
 	}
 
 	return link, nil
 }
 
-func (c *Client) UnpublishResource(ctx context.Context, path string, params *queryParams) (*Link, *ErrorResponse) {
-
+func (c *Client) UnpublishResource(ctx context.Context, path string, params *QueryParams) (*Link, *ErrorResponse) {
 	var link *Link
 
-	resp, err := c.put(ctx, c.api_url+"resources/unpublish?path="+path, nil, nil, params)
-	if haveError(err) || resp.StatusCode != 200 {
+	resp, err := c.put(ctx, c.apiURL+"resources/unpublish?path="+path, nil, nil, params)
+	if haveError(err) || resp.StatusCode != http.StatusOK {
 		return nil, handleResponseCode(resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&link); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&link)
+	if err != nil {
 		return nil, jsonDecodeError(err)
 	}
 
@@ -221,38 +232,43 @@ func (c *Client) UnpublishResource(ctx context.Context, path string, params *que
 }
 
 func (c *Client) GetLinkForUpload(ctx context.Context, path string) (*Link, *ErrorResponse) {
-
 	var resource *Link
 
-	resp, err := c.get(ctx, c.api_url+"resources/upload?path="+path, nil, nil)
-	if haveError(err) || resp.StatusCode != 200 {
+	resp, err := c.get(ctx, c.apiURL+"resources/upload?path="+path, nil)
+	if haveError(err) || resp.StatusCode != http.StatusOK {
 		return nil, handleResponseCode(resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&resource); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&resource)
+	if err != nil {
 		return nil, jsonDecodeError(err)
 	}
 
 	return resource, nil
 }
 
-func (c *Client) UploadFile(ctx context.Context, file_path, url string, params *queryParams) *ErrorResponse {
-
+func (c *Client) UploadFile(ctx context.Context, file, url string, params *QueryParams) *ErrorResponse {
 	var errorResponse *ErrorResponse
 
-	f, err := os.Open(file_path)
+	f, err := os.Open(file)
 	if err != nil {
 		return jsonDecodeError(err)
 	}
 	body := bufio.NewReader(f)
 	defer f.Close()
 
-	resp, err := c.put(ctx, url, body, nil, nil)
+	headers := &HTTPHeaders{
+		"Content-Type": "multipart/form-data",
+	}
+	resp, err := c.put(ctx, url, body, headers, nil)
 	if haveError(err) {
-		if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
+		err = json.NewDecoder(resp.Body).Decode(&errorResponse)
+		if err != nil {
 			return jsonDecodeError(err)
 		}
 	}
+	defer resp.Body.Close()
 
 	return handleResponseCode(resp.StatusCode)
 }

@@ -1,8 +1,9 @@
-package disk
+package disk_test
 
 import (
 	"errors"
 
+	"github.com/ilyabrin/disk"
 	"gopkg.in/dnaeon/go-vcr.v3/cassette"
 	"gopkg.in/dnaeon/go-vcr.v3/recorder"
 )
@@ -17,22 +18,21 @@ const (
 	TEST_TRASH_FILE_PATH = "trash:/___golang_API_dir_2_ddf8722d0aec88bfeb94a45a155511dbe151b764"
 )
 
-var client *Client
+var client *disk.Client
 
 // Runs before any test
 func init() {
-	client = New(TEST_ACCESS_TOKEN)
+	client = disk.New(TEST_ACCESS_TOKEN)
 }
 
-func useCassette(path string) error {
+func UseCassette(path string) error {
 	r, err := recorder.New(TEST_DATA_DIR + path)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer r.Stop()
 
-	client.httpClient = r.GetDefaultClient()
-	defer r.Stop()
+	client.HTTPClient = r.GetDefaultClient()
 
 	hookDeleteToken := func(i *cassette.Interaction) error {
 		delete(i.Request.Headers, "Authorization")

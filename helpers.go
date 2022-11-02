@@ -14,7 +14,7 @@ func haveError(err error) bool {
 }
 
 // TODO: use generic-based code (for ints and strings)
-func inArray(n int, array []int) bool {
+func InArray(n int, array []int) bool {
 	for _, b := range array {
 		if b == n {
 			return true
@@ -23,9 +23,9 @@ func inArray(n int, array []int) bool {
 	return false
 }
 
-// API defined http codes
+// handleResponseCode - API defined http codes
 func handleResponseCode(code int) *ErrorResponse {
-	if !inArray(code, []int{
+	if !InArray(code, []int{
 		200, 201, 202, 301, 302, 400, 401, 404, 406, 409, 412, 413, 423, 429, 500, 503, 507,
 	}) {
 		return &ErrorResponse{
@@ -39,7 +39,7 @@ func handleResponseCode(code int) *ErrorResponse {
 	}
 }
 
-// JSON encode/decode error
+// jsonDecodeError - JSON encode/decode error
 func jsonDecodeError(err error) *ErrorResponse {
 	return &ErrorResponse{
 		Message:     "JSON Decode Error",

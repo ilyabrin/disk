@@ -1,14 +1,16 @@
-package disk
+package disk_test
 
 import (
 	"context"
 	"reflect"
 	"testing"
+
+	"github.com/ilyabrin/disk"
 )
 
 func TestDeleteFromTrash(t *testing.T) {
 
-	useCassette("/trash/delete")
+	UseCassette("/trash/delete")
 
 	resp, errorResponse := client.DeleteFromTrash(context.Background(), TEST_TRASH_FILE_PATH, nil)
 
@@ -24,7 +26,7 @@ func TestDeleteFromTrash(t *testing.T) {
 
 func TestRestoreFromTrash(t *testing.T) {
 
-	useCassette("trash/restore")
+	UseCassette("trash/restore")
 
 	resp, _, errorResponse := client.RestoreFromTrash(context.Background(), TEST_TRASH_FILE_PATH, nil)
 
@@ -32,7 +34,7 @@ func TestRestoreFromTrash(t *testing.T) {
 		t.Fatal("errorResponse should be nil")
 	}
 
-	link := new(Link)
+	link := new(disk.Link)
 
 	if reflect.TypeOf(link).Kind() != reflect.TypeOf(resp).Kind() {
 		t.Fatalf("error: expect %v, got %v", nil, resp)
@@ -41,7 +43,7 @@ func TestRestoreFromTrash(t *testing.T) {
 
 func TestListTrashResources(t *testing.T) {
 
-	useCassette("trash/list")
+	UseCassette("trash/list")
 
 	resp, errorResponse := client.ListTrashResources(context.Background(), TEST_TRASH_FILE_PATH, nil)
 
@@ -49,7 +51,7 @@ func TestListTrashResources(t *testing.T) {
 		t.Fatal("errorResponse should be nil")
 	}
 
-	trashResource := new(TrashResource)
+	trashResource := new(disk.TrashResource)
 
 	if reflect.TypeOf(trashResource).Kind() != reflect.TypeOf(resp).Kind() {
 		t.Fatalf("error: expect %v, got %v", trashResource, resp)

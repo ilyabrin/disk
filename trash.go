@@ -3,18 +3,21 @@ package disk
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 )
 
-func (c *Client) DeleteFromTrash(ctx context.Context, path string, params *queryParams) (*Link, *ErrorResponse) {
-
-	resp, err := c.delete(ctx, c.api_url+"trash/resources?path="+path, nil, params)
+func (c *Client) DeleteFromTrash(ctx context.Context, path string, params *QueryParams) (*Link, *ErrorResponse) {
+	resp, err := c.delete(ctx, c.apiURL+"trash/resources?path="+path, nil, params)
 	if haveError(err) {
 		return nil, handleResponseCode(resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
 	var link *Link
-	if resp.StatusCode == 200 {
-		if err := json.NewDecoder(resp.Body).Decode(&link); err != nil {
+
+	if resp.StatusCode == http.StatusOK {
+		err = json.NewDecoder(resp.Body).Decode(&link)
+		if err != nil {
 			return nil, jsonDecodeError(err)
 		}
 	}
@@ -22,32 +25,36 @@ func (c *Client) DeleteFromTrash(ctx context.Context, path string, params *query
 	return nil, nil
 }
 
-func (c *Client) RestoreFromTrash(ctx context.Context, path string, params *queryParams) (*Link, *Operation, *ErrorResponse) {
-
+// RestoreFromTrash -
+func (c *Client) RestoreFromTrash(ctx context.Context, path string, params *QueryParams) (*Link, *Operation, *ErrorResponse) {
 	var link *Link
 
-	resp, err := c.put(ctx, c.api_url+"trash/resources/restore?path="+path, nil, nil, params)
+	resp, err := c.put(ctx, c.apiURL+"trash/resources/restore?path="+path, nil, nil, params)
 	if haveError(err) {
 		return nil, nil, handleResponseCode(resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&link); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&link)
+	if haveError(err) {
 		return nil, nil, jsonDecodeError(err)
 	}
 
 	return link, nil, nil
 }
 
-func (c *Client) ListTrashResources(ctx context.Context, path string, params *queryParams) (*TrashResource, *ErrorResponse) {
-
+// ListTrashResources -
+func (c *Client) ListTrashResources(ctx context.Context, path string, params *QueryParams) (*TrashResource, *ErrorResponse) {
 	var resource *TrashResource
 
-	resp, err := c.get(ctx, c.api_url+"trash/resources?path="+path, nil, params)
+	resp, err := c.get(ctx, c.apiURL+"trash/resources?path="+path, params)
 	if haveError(err) || resp.StatusCode != 200 {
 		return nil, handleResponseCode(resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&resource); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&resource)
+	if haveError(err) {
 		return nil, jsonDecodeError(err)
 	}
 

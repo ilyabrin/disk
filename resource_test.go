@@ -1,14 +1,17 @@
-package disk
+package disk_test
 
 import (
 	"context"
+	"net/http"
 	"reflect"
 	"testing"
+
+	"github.com/ilyabrin/disk"
 )
 
 func TestCreateDir(t *testing.T) {
 
-	useCassette("disk/create_dir")
+	UseCassette("disk/create_dir")
 
 	ctx := context.Background()
 	resp, errorResponse := client.CreateDir(ctx, TEST_DIR_NAME, nil)
@@ -17,7 +20,7 @@ func TestCreateDir(t *testing.T) {
 		t.Fatal("errorResponse should be nil")
 	}
 
-	link := new(Link)
+	link := new(disk.Link)
 
 	if reflect.TypeOf(resp).Kind() != reflect.TypeOf(link).Kind() {
 		t.Fatalf("error: expect %v, got %v", link, resp)
@@ -26,10 +29,10 @@ func TestCreateDir(t *testing.T) {
 
 func TestUpdateMetadata(t *testing.T) {
 
-	useCassette("disk/update_meta")
+	UseCassette("disk/update_meta")
 
-	metadata := &metadata{
-		"custom_properties": {
+	metadata := &disk.Metadata{
+		"custom_properties": map[string]string{
 			"key": "value",
 			"foo": "bar",
 		},
@@ -41,7 +44,7 @@ func TestUpdateMetadata(t *testing.T) {
 		t.Fatal("errorResponse should be nil")
 	}
 
-	resource := new(Resource)
+	resource := new(disk.Resource)
 
 	if reflect.TypeOf(resp).Kind() != reflect.TypeOf(resource).Kind() {
 		t.Fatalf("error: expect %v, got %v", resource, resp)
@@ -50,11 +53,11 @@ func TestUpdateMetadata(t *testing.T) {
 
 func TestGetMetadata(t *testing.T) {
 
-	useCassette("disk/get_meta")
+	UseCassette("disk/get_meta")
 
 	resp, errorResponse := client.GetMetadata(context.Background(), TEST_DIR_NAME, nil)
 
-	resource := new(Resource)
+	resource := new(disk.Resource)
 
 	if errorResponse != nil {
 		t.Fatal("errorResponse should be nil")
@@ -72,13 +75,13 @@ func TestGetMetadata(t *testing.T) {
 
 func TestCopyResource(t *testing.T) {
 
-	useCassette("disk/copy")
+	UseCassette("disk/copy")
 
 	resp, errorResponse := client.CopyResource(context.Background(), TEST_DIR_NAME, TEST_DIR_NAME_COPY, nil)
 
 	// TODO: refactor
 	expect := "https://cloud-api.yandex.net/v1/disk/resources/copy?from=test_dir&path=test_dir_copy"
-	got := client.req_url
+	got := client.ReqURL()
 	if got != expect {
 		t.Fatalf("error: expect %v, got %v", expect, got)
 	}
@@ -87,7 +90,7 @@ func TestCopyResource(t *testing.T) {
 		t.Fatal("errorResponse should be nil")
 	}
 
-	link := new(Link)
+	link := new(disk.Link)
 
 	if reflect.TypeOf(resp).Kind() != reflect.TypeOf(link).Kind() {
 		t.Fatalf("error: expect %v, got %v", link, resp)
@@ -96,7 +99,7 @@ func TestCopyResource(t *testing.T) {
 
 func TestGetDownloadURL(t *testing.T) {
 
-	useCassette("disk/download_url")
+	UseCassette("disk/download_url")
 
 	resp, errorResponse := client.GetDownloadURL(context.Background(), TEST_DIR_NAME, nil)
 
@@ -104,7 +107,7 @@ func TestGetDownloadURL(t *testing.T) {
 		t.Fatal("errorResponse should be nil")
 	}
 
-	link := new(Link)
+	link := new(disk.Link)
 
 	if reflect.TypeOf(resp).Kind() != reflect.TypeOf(link).Kind() {
 		t.Fatalf("error: expect %v, got %v", link, resp)
@@ -113,9 +116,9 @@ func TestGetDownloadURL(t *testing.T) {
 
 func TestGetSortedFiles(t *testing.T) {
 
-	useCassette("disk/get_sorted_files")
+	UseCassette("disk/get_sorted_files")
 
-	resp, errorResponse := client.GetSortedFiles(context.Background(), &queryParams{
+	resp, errorResponse := client.GetSortedFiles(context.Background(), &disk.QueryParams{
 		"limit": "1",
 	})
 
@@ -123,7 +126,7 @@ func TestGetSortedFiles(t *testing.T) {
 		t.Fatal("errorResponse should be nil")
 	}
 
-	files := new(FilesResourceList)
+	files := new(disk.FilesResourceList)
 
 	if reflect.TypeOf(resp).Kind() != reflect.TypeOf(files).Kind() {
 		t.Fatalf("error: expect %v, got %v", files, resp)
@@ -132,9 +135,9 @@ func TestGetSortedFiles(t *testing.T) {
 
 func TestGetLastUploadedResources(t *testing.T) {
 
-	useCassette("disk/last_uploaded")
+	UseCassette("disk/last_uploaded")
 
-	resp, errorResponse := client.GetLastUploadedResources(context.Background(), &queryParams{
+	resp, errorResponse := client.GetLastUploadedResources(context.Background(), &disk.QueryParams{
 		"limit": "1",
 	})
 
@@ -142,7 +145,7 @@ func TestGetLastUploadedResources(t *testing.T) {
 		t.Fatal("errorResponse should be nil")
 	}
 
-	files := new(LastUploadedResourceList)
+	files := new(disk.LastUploadedResourceList)
 
 	if reflect.TypeOf(resp).Kind() != reflect.TypeOf(files).Kind() {
 		t.Fatalf("error: expect %v, got %v", files, resp)
@@ -151,7 +154,7 @@ func TestGetLastUploadedResources(t *testing.T) {
 
 func TestMoveResource(t *testing.T) {
 
-	useCassette("disk/move")
+	UseCassette("disk/move")
 
 	resp, errorResponse := client.MoveResource(context.Background(), TEST_DIR_NAME_COPY, "test_dir_moved", nil)
 
@@ -159,7 +162,7 @@ func TestMoveResource(t *testing.T) {
 		t.Fatal("errorResponse should be nil")
 	}
 
-	link := new(Link)
+	link := new(disk.Link)
 
 	if reflect.TypeOf(resp).Kind() != reflect.TypeOf(link).Kind() {
 		t.Fatalf("error: expect %v, got %v", link, resp)
@@ -168,9 +171,9 @@ func TestMoveResource(t *testing.T) {
 
 func TestGetPublicResources(t *testing.T) {
 
-	useCassette("disk/get_public_res")
+	UseCassette("disk/get_public_res")
 
-	resp, errorResponse := client.GetPublicResources(context.Background(), &queryParams{
+	resp, errorResponse := client.GetPublicResources(context.Background(), &disk.QueryParams{
 		"limit": "1",
 	})
 
@@ -178,7 +181,7 @@ func TestGetPublicResources(t *testing.T) {
 		t.Fatal("errorResponse should be nil")
 	}
 
-	link := new(PublicResourcesList)
+	link := new(disk.PublicResourcesList)
 
 	if reflect.TypeOf(resp).Kind() != reflect.TypeOf(link).Kind() {
 		t.Fatalf("error: expect %v, got %v", link, resp)
@@ -187,7 +190,7 @@ func TestGetPublicResources(t *testing.T) {
 
 func TestPublishResource(t *testing.T) {
 
-	useCassette("disk/publish")
+	UseCassette("disk/publish")
 
 	resp, errorResponse := client.PublishResource(context.Background(), "test_dir_moved", nil)
 
@@ -195,7 +198,7 @@ func TestPublishResource(t *testing.T) {
 		t.Fatal("errorResponse should be nil")
 	}
 
-	link := new(Link)
+	link := new(disk.Link)
 
 	if reflect.TypeOf(resp).Kind() != reflect.TypeOf(link).Kind() {
 		t.Fatalf("error: expect %v, got %v", link, resp)
@@ -204,7 +207,7 @@ func TestPublishResource(t *testing.T) {
 
 func TestUnpublishResource(t *testing.T) {
 
-	useCassette("disk/unpublish")
+	UseCassette("disk/unpublish")
 	ctx := context.Background()
 	resp, errorResponse := client.UnpublishResource(ctx, "test_dir_moved", nil)
 
@@ -212,7 +215,7 @@ func TestUnpublishResource(t *testing.T) {
 		t.Fatal("errorResponse should be nil")
 	}
 
-	link := new(Link)
+	link := new(disk.Link)
 	if reflect.TypeOf(resp).Kind() != reflect.TypeOf(link).Kind() {
 		t.Fatalf("error: expect %v, got %v", link, resp)
 	}
@@ -220,7 +223,7 @@ func TestUnpublishResource(t *testing.T) {
 
 func TestGetLinkForUpload(t *testing.T) {
 
-	useCassette("disk/get_upload_link")
+	UseCassette("disk/get_upload_link")
 
 	resp, errorResponse := client.GetLinkForUpload(context.Background(), "upload_path")
 
@@ -228,7 +231,7 @@ func TestGetLinkForUpload(t *testing.T) {
 		t.Fatal("errorResponse should be nil")
 	}
 
-	link := new(Link)
+	link := new(disk.Link)
 
 	if reflect.TypeOf(resp).Kind() != reflect.TypeOf(link).Kind() {
 		t.Fatalf("error: expect %v, got %v", link, resp)
@@ -239,11 +242,11 @@ func TestUploadFile(t *testing.T) {
 
 	upload_link := "https://uploader7v.disk.yandex.net:443/upload-target/20221029T200308.792.utd.e8t7amr9zkrpoofffacoiggoz-k7v.6331006"
 
-	useCassette("disk/upload_file")
+	UseCassette("disk/upload_file")
 
 	errorResponse := client.UploadFile(context.Background(), "LICENSE", upload_link, nil)
 
-	if errorResponse.StatusCode != 201 {
+	if errorResponse.StatusCode != http.StatusCreated {
 		t.Fatalf("error: expect %v, got %v", 201, errorResponse.StatusCode)
 	}
 
@@ -251,7 +254,7 @@ func TestUploadFile(t *testing.T) {
 
 func TestDeleteResource(t *testing.T) {
 
-	useCassette("disk/delete_resource")
+	UseCassette("disk/delete_resource")
 
 	resp := client.DeleteResource(context.Background(), TEST_DIR_NAME, false, nil)
 

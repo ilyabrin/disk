@@ -6,16 +6,17 @@ import (
 )
 
 // TODO: add APIResponse
-func (c *Client) DiskInfo(ctx context.Context, params *queryParams) (*Disk, *ErrorResponse) {
-
+func (c *Client) DiskInfo(ctx context.Context, params *QueryParams) (*Disk, *ErrorResponse) {
 	var disk *Disk
 
-	resp, err := c.get(ctx, c.api_url, nil, params)
+	resp, err := c.get(ctx, c.apiURL, params)
 	if haveError(err) {
 		return nil, handleResponseCode(resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&disk); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&disk)
+	if haveError(err) {
 		return nil, jsonDecodeError(err)
 	}
 
