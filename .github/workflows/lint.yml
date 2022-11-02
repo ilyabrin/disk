@@ -4,7 +4,10 @@ name: Lint
 on: [push, pull_request]
 
 jobs:
-  lint:
+  build:
+    runs-on: ubuntu-latest
+  
+  steps:
     - name: set up go 1.19
       uses: actions/setup-go@v3
       with:          
