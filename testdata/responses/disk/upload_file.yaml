@@ -1,0 +1,72 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: uploader7v.disk.yandex.net:443
+        remote_addr: ""
+        request_uri: ""
+        body: |
+            MIT License
+
+            Copyright (c) 2020 Ilya Brin
+
+            Permission is hereby granted, free of charge, to any person obtaining a copy
+            of this software and associated documentation files (the "Software"), to deal
+            in the Software without restriction, including without limitation the rights
+            to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+            copies of the Software, and to permit persons to whom the Software is
+            furnished to do so, subject to the following conditions:
+
+            The above copyright notice and this permission notice shall be included in all
+            copies or substantial portions of the Software.
+
+            THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+            IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+            FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+            AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+            LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+            OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+            SOFTWARE.
+        form: {}
+        headers: {}
+        url: https://uploader7v.disk.yandex.net:443/upload-target/20221029T200308.792.utd.e8t7amr9zkrpoofffacoiggoz-k7v.6331006
+        method: PUT
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding:
+            - chunked
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: ""
+        headers:
+            Access-Control-Allow-Headers:
+                - Content-Type, Content-Length, Content-Range, X-HTTP-Method, X-Requested-With, X-Disk-Uploader-Wait-Complete-Upload
+            Access-Control-Allow-Methods:
+                - POST, PUT, OPTIONS
+            Access-Control-Allow-Origin:
+                - '*'
+            Access-Control-Expose-Headers:
+                - Content-Length, X-Ya-Expect-Content-Length, Location
+            Connection:
+                - keep-alive
+            Date:
+                - Sat, 29 Oct 2022 17:07:36 GMT
+            Keep-Alive:
+                - timeout=120
+            Location:
+                - /disk/test_golang_api
+            Server:
+                - nginx/1.14.2
+        status: 201 Created
+        code: 201
+        duration: 80.019268ms

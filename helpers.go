@@ -1,17 +1,9 @@
 package disk
 
 import (
-	"encoding/json"
 	"log"
+	"net/http"
 )
-
-func prettyPrint(data interface{}) []byte {
-	result, err := json.MarshalIndent(data, "", " ")
-	if haveError(err) {
-		log.Fatal(err)
-	}
-	return result
-}
 
 func haveError(err error) bool {
 	if err != nil {
@@ -21,11 +13,38 @@ func haveError(err error) bool {
 	return false
 }
 
-func inArray(n int, array []int) bool {
+// TODO: use generic-based code (for ints and strings)
+func InArray(n int, array []int) bool {
 	for _, b := range array {
 		if b == n {
 			return true
 		}
 	}
 	return false
+}
+
+// handleResponseCode - API defined http codes
+func handleResponseCode(code int) *ErrorResponse {
+	if !InArray(code, []int{
+		200, 201, 202, 301, 302, 400, 401, 404, 406, 409, 412, 413, 423, 429, 500, 503, 507,
+	}) {
+		return &ErrorResponse{
+			Message:    "Unknown error",
+			StatusCode: -1,
+		}
+	}
+	return &ErrorResponse{
+		Message:    http.StatusText(code),
+		StatusCode: code,
+	}
+}
+
+// jsonDecodeError - JSON encode/decode error
+func jsonDecodeError(err error) *ErrorResponse {
+	return &ErrorResponse{
+		Message:     "JSON Decode Error",
+		Description: "error occurred while API response decode",
+		StatusCode:  -1,
+		Error:       err,
+	}
 }

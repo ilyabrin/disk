@@ -3,19 +3,21 @@ package disk
 import (
 	"context"
 	"encoding/json"
-	"log"
 )
 
-func (c *Client) DiskInfo(ctx context.Context) (*Disk, error) {
+// TODO: add APIResponse
+func (c *Client) DiskInfo(ctx context.Context, params *QueryParams) (*Disk, *ErrorResponse) {
 	var disk *Disk
-	resp, _ := c.doRequest(ctx, GET, "", nil)
 
-	decoded := json.NewDecoder(resp.Body)
-	// decoded.DisallowUnknownFields()
+	resp, err := c.get(ctx, c.apiURL, params)
+	if haveError(err) {
+		return nil, handleResponseCode(resp.StatusCode)
+	}
+	defer resp.Body.Close()
 
-	if err := decoded.Decode(&disk); err != nil {
-		log.Fatal(err)
-		return nil, err
+	err = json.NewDecoder(resp.Body).Decode(&disk)
+	if haveError(err) {
+		return nil, jsonDecodeError(err)
 	}
 
 	return disk, nil

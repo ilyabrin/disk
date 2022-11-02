@@ -1,57 +1,30 @@
-package disk
+package disk_test
 
 import (
 	"context"
-	"crypto/tls"
-	"io/ioutil"
-	"net"
-	"net/http"
-	"net/http/httptest"
+	"reflect"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/ilyabrin/disk"
 )
 
-const TEST_DATA_DIR = "testdata/responses/"
+func TestDiskInfo(t *testing.T) {
 
-func testingHTTPClient(handler http.Handler) (*http.Client, func()) {
-	s := httptest.NewTLSServer(handler)
+	UseCassette("disk/info")
 
-	cli := &http.Client{
-		Transport: &http.Transport{
-			DialContext: func(_ context.Context, network, _ string) (net.Conn, error) {
-				return net.Dial(network, s.Listener.Addr().String())
-			},
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
+	resp, errorResponse := client.DiskInfo(context.Background(), nil)
+
+	if errorResponse != nil {
+		t.Fatal("errorResponse should be nil")
 	}
 
-	return cli, s.Close
-}
+	disk := new(disk.Disk)
 
-func loadTestResponse(actionName string) []byte {
-	response, _ := ioutil.ReadFile(TEST_DATA_DIR + actionName + ".json")
-	return response
-}
+	if reflect.TypeOf(resp).Kind() != reflect.TypeOf(disk).Kind() {
+		t.Fatalf("error: expect %v, got %v", disk, resp)
+	}
 
-func TestClientGetDiskInfo(t *testing.T) {
-
-	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.NotEmpty(t, r.Header.Get("Authorization"))
-		assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
-		w.Write(loadTestResponse("GET_disk"))
-	})
-
-	httpClient, teardown := testingHTTPClient(h)
-	defer teardown()
-
-	client := New("token")
-	client.HTTPClient = httpClient
-
-	disk, err := client.DiskInfo(context.Background())
-
-	assert.Nil(t, err)
-	assert.Equal(t, true, disk.IsPaid)
+	if client.ReqURL() != client.ApiURL() {
+		t.Fatalf("error: expect %v, got %v", client.ReqURL(), client.ApiURL())
+	}
 }

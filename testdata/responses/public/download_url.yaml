@@ -1,0 +1,55 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: cloud-api.yandex.net
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers: {}
+        url: https://cloud-api.yandex.net/v1/disk/public/resources/download?public_key=https://disk.yandex.ru/d/tCgV7GyS3QAYvg
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding:
+            - chunked
+        trailer: {}
+        content_length: -1
+        uncompressed: true
+        body: '{"href":"https://downloader.disk.yandex.ru/zip/0bbb2a64c8ec39edea3c7aa46d44112b64a4878c116459c4ed64e2bed8920cc5/635e6db3/T1UyZ0MxVTRXTjFMcmlpR2dKbTdkY1pFbGZrSEVRcmtkc1NBQkFoNmhzNkJKSGc5TDRzWktWUHNxV2xvWTBTQ3EvSjZicG1SeU9Kb25UM1ZvWG5EYWc9PTo=?uid=0&filename=test_dir.zip&disposition=attachment&hash=OU2gC1U4WN1LriiGgJm7dcZElfkHEQrkdsSABAh6hs6BJHg9L4sZKVPsqWloY0SCq/J6bpmRyOJonT3VoXnDag%3D%3D%3A&limit=0&owner_uid=12345678&tknv=v2","method":"GET","templated":false}'
+        headers:
+            Access-Control-Allow-Credentials:
+                - "true"
+            Access-Control-Allow-Headers:
+                - Accept-Language, Accept, X-Uid, X-HTTP-Method, X-Requested-With, Content-Type, Authorization
+            Access-Control-Allow-Methods:
+                - GET, OPTIONS
+            Access-Control-Allow-Origin:
+                - '*'
+            Cache-Control:
+                - no-cache
+            Connection:
+                - keep-alive
+            Content-Type:
+                - application/json; charset=utf-8
+            Date:
+                - Sun, 30 Oct 2022 12:25:31 GMT
+            Server:
+                - nginx
+            Vary:
+                - Accept-Encoding
+            Yandex-Cloud-Request-Id:
+                - rest-5ac4adac2696e9c45536153938fe4a7b-api30v
+        status: 200 OK
+        code: 200
+        duration: 464.038675ms
