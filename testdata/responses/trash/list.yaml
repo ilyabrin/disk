@@ -14,8 +14,10 @@ interactions:
         request_uri: ""
         body: ""
         form: {}
-        headers: {}
-        url: https://cloud-api.yandex.net/v1/disk/trash/resources?path=trash:/___golang_API_dir_2_ddf8722d0aec88bfeb94a45a155511dbe151b764
+        headers:
+            Content-Type:
+                - application/json
+        url: https://cloud-api.yandex.net/v1/disk/trash/resources?path=/
         method: GET
       response:
         proto: HTTP/1.1
@@ -26,7 +28,7 @@ interactions:
         trailer: {}
         content_length: -1
         uncompressed: true
-        body: '{"_embedded":{"sort":"","items":[],"limit":20,"offset":0,"path":"trash:/___golang_API_dir_2_ddf8722d0aec88bfeb94a45a155511dbe151b764","total":0},"name":"___golang_API_dir_2","exif":{},"created":"2022-10-27T17:01:47+00:00","deleted":"2022-10-28T10:10:49+00:00","origin_path":"disk:/___golang_API_dir_2","modified":"2022-10-28T10:10:49+00:00","resource_id":"12345678:865d9a21909063d45542fa155cfda457cfe0643cc42a138e32ecb12c56cad6ed","path":"trash:/___golang_API_dir_2_ddf8722d0aec88bfeb94a45a155511dbe151b764","comment_ids":{"private_resource":"12345678:865d9a21909063d45542fa155cfda457cfe0643cc42a138e32ecb12c56cad6ed","public_resource":"12345678:865d9a21909063d45542fa155cfda457cfe0643cc42a138e32ecb12c56cad6ed"},"type":"dir","revision":1666951849235064}'
+        body: '{"_embedded":{"sort":"","items":[{"public_key":"OU2gC1U4WN1LriiGgJm7dcZElfkHEQrkdsSABAh6hs6BJHg9L4sZKVPsqWloY0SCq/J6bpmRyOJonT3VoXnDag==","public_url":"https://yadi.sk/d/tCgV7GyS3QAYvg","name":"test_dir","exif":{},"resource_id":"47099495:6b069b9678df78bcf4baa43b9cf1472425dbbd2d82f90a6798c9f83ee7b940ad","deleted":"2022-10-30T12:27:00+00:00","custom_properties":{"foo":"bar","key":"value"},"origin_path":"disk:/test_dir","modified":"2022-10-30T12:27:00+00:00","created":"2022-10-28T10:57:33+00:00","path":"trash:/test_dir_24606ef3ef71114231bb388b9692877f2b79147c","comment_ids":{"private_resource":"47099495:6b069b9678df78bcf4baa43b9cf1472425dbbd2d82f90a6798c9f83ee7b940ad","public_resource":"47099495:6b069b9678df78bcf4baa43b9cf1472425dbbd2d82f90a6798c9f83ee7b940ad"},"type":"dir","revision":1667132820239660}],"limit":20,"offset":0,"path":"trash:/","total":1},"name":"trash","exif":{},"resource_id":"47099495:4db3a67d63d69257cf5c0c17c616e57706594e5ac747b2a478fd32ac9acc6284","origin_path":null,"modified":"2012-04-04T20:00:00+00:00","created":"2012-04-04T20:00:00+00:00","path":"trash:/","comment_ids":{},"type":"dir","revision":1333738864085459}'
         headers:
             Access-Control-Allow-Credentials:
                 - "true"
@@ -43,13 +45,13 @@ interactions:
             Content-Type:
                 - application/json; charset=utf-8
             Date:
-                - Sun, 30 Oct 2022 13:46:56 GMT
+                - Sat, 05 Nov 2022 15:04:29 GMT
             Server:
                 - nginx
             Vary:
                 - Accept-Encoding
             Yandex-Cloud-Request-Id:
-                - rest-b100b7b16f9a55c5fd06037a04375989-api05f
+                - rest-d59a3d8e11145a9f8f1c8e981090c765-api23e
         status: 200 OK
         code: 200
-        duration: 122.363052ms
+        duration: 161.098055ms

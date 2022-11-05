@@ -1,0 +1,56 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: cloud-api.yandex.net
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers:
+            Content-Type:
+                - application/json
+        url: https://cloud-api.yandex.net/v1/disk/operations/8c6f3a7c126a0f966476c141514951d0472e45819157cff9e88185f132d1e6b8
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: 19
+        uncompressed: false
+        body: '{"status":"failed"}'
+        headers:
+            Access-Control-Allow-Credentials:
+                - "true"
+            Access-Control-Allow-Headers:
+                - Accept-Language, Accept, X-Uid, X-HTTP-Method, X-Requested-With, Content-Type, Authorization
+            Access-Control-Allow-Methods:
+                - GET, OPTIONS
+            Access-Control-Allow-Origin:
+                - '*'
+            Cache-Control:
+                - no-cache
+            Connection:
+                - keep-alive
+            Content-Length:
+                - "19"
+            Content-Type:
+                - application/json; charset=utf-8
+            Date:
+                - Sat, 05 Nov 2022 16:53:30 GMT
+            Server:
+                - nginx
+            Yandex-Cloud-Request-Id:
+                - rest-00a28777a0a8a47cd33619956ebb2c36-api17h
+        status: 200 OK
+        code: 200
+        duration: 206.279829ms
