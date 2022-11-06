@@ -6,10 +6,12 @@ import (
 	"net/http"
 )
 
-func (c *Client) GetMetadataForPublicResource(ctx context.Context, public_key string, params *QueryParams) (*PublicResource, *ErrorResponse) {
+type PublicService service
+
+func (s *PublicService) Meta(ctx context.Context, public_key string, params *QueryParams) (*PublicResource, *ErrorResponse) {
 	var resource *PublicResource
 
-	resp, err := c.get(ctx, c.apiURL+"public/resources?public_key="+public_key, params)
+	resp, err := s.client.get(ctx, s.client.apiURL+"public/resources?public_key="+public_key, params)
 	if haveError(err) || resp.StatusCode != http.StatusOK {
 		return nil, handleResponseCode(resp.StatusCode)
 	}
@@ -23,11 +25,11 @@ func (c *Client) GetMetadataForPublicResource(ctx context.Context, public_key st
 	return resource, nil
 }
 
-func (c *Client) GetDownloadURLForPublicResource(ctx context.Context, public_key string, params *QueryParams) (*Link, *ErrorResponse) {
+func (s *PublicService) DownloadURL(ctx context.Context, public_key string, params *QueryParams) (*Link, *ErrorResponse) {
 	var link *Link
 
-	resp, err := c.get(ctx, c.apiURL+"public/resources/download?public_key="+public_key, params)
-	if haveError(err) || resp.StatusCode != 200 {
+	resp, err := s.client.get(ctx, s.client.apiURL+"public/resources/download?public_key="+public_key, params)
+	if haveError(err) || resp.StatusCode != http.StatusOK {
 		return nil, handleResponseCode(resp.StatusCode)
 	}
 	defer resp.Body.Close()
@@ -40,11 +42,15 @@ func (c *Client) GetDownloadURLForPublicResource(ctx context.Context, public_key
 	return link, nil
 }
 
-func (c *Client) SavePublicResource(ctx context.Context, public_key string, params *QueryParams) (*Link, *ErrorResponse) {
+func (s *PublicService) Save(ctx context.Context, public_key string, params *QueryParams) (*Link, *ErrorResponse) {
 	var link *Link
 
-	resp, err := c.post(ctx, c.apiURL+"public/resources/save-to-disk?public_key="+public_key, nil, nil, params)
-	if haveError(err) || !InArray(resp.StatusCode, []int{200, 201, 202}) {
+	resp, err := s.client.post(ctx, s.client.apiURL+"public/resources/save-to-disk?public_key="+public_key, nil, nil, params)
+	if haveError(err) || !InArray(resp.StatusCode, []int{
+		http.StatusOK,
+		http.StatusCreated,
+		http.StatusAccepted,
+	}) {
 		return nil, handleResponseCode(resp.StatusCode)
 	}
 	defer resp.Body.Close()
