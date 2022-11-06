@@ -1,22 +1,16 @@
 package disk
 
 import (
-	"log"
 	"net/http"
 )
 
 func haveError(err error) bool {
-	if err != nil {
-		log.Fatal(err)
-		return true
-	}
-	return false
+	return err != nil
 }
 
-// TODO: use generic-based code (for ints and strings)
-func InArray(n int, array []int) bool {
-	for _, b := range array {
-		if b == n {
+func InArray[T comparable](el T, a []T) bool {
+	for _, b := range a {
+		if b == el {
 			return true
 		}
 	}
@@ -26,7 +20,23 @@ func InArray(n int, array []int) bool {
 // handleResponseCode - API defined http codes
 func handleResponseCode(code int) *ErrorResponse {
 	if !InArray(code, []int{
-		200, 201, 202, 301, 302, 400, 401, 404, 406, 409, 412, 413, 423, 429, 500, 503, 507,
+		http.StatusOK,
+		http.StatusCreated,
+		http.StatusAccepted,
+		http.StatusMovedPermanently,
+		http.StatusFound,
+		http.StatusBadRequest,
+		http.StatusUnauthorized,
+		http.StatusNotFound,
+		http.StatusNotAcceptable,
+		http.StatusConflict,
+		http.StatusPreconditionFailed,
+		http.StatusRequestEntityTooLarge,
+		http.StatusLocked,
+		http.StatusTooManyRequests,
+		http.StatusInternalServerError,
+		http.StatusServiceUnavailable,
+		http.StatusInsufficientStorage,
 	}) {
 		return &ErrorResponse{
 			Message:    "Unknown error",

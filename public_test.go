@@ -2,59 +2,46 @@ package disk_test
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	"github.com/ilyabrin/disk"
 )
 
-func TestGetMetadataForPublicResource(t *testing.T) {
+func TestPublicMeta(t *testing.T) {
 
-	UseCassette("/public/get_meta")
+	vcr := useCassette("public/get_meta")
+	defer vcr.Stop()
 
-	resp, errorResponse := client.GetMetadataForPublicResource(context.Background(), TEST_PUBLIC_RESOURCE, nil)
-
+	resp, errorResponse := client.Public.Meta(context.Background(), TEST_PUBLIC_RESOURCE, nil)
 	if errorResponse != nil {
 		t.Fatal("errorResponse should be nil")
 	}
 
-	publicResource := new(disk.PublicResource)
-
-	if reflect.TypeOf(resp).Kind() != reflect.TypeOf(publicResource).Kind() {
-		t.Fatalf("error: expect %v, got %v", publicResource, resp)
-	}
+	checkTypes(resp, &disk.PublicResource{}, t)
 }
 
-func TestGetDownloadURLForPublicResource(t *testing.T) {
+func TestPublicDownloadURL(t *testing.T) {
 
-	UseCassette("/public/download_url")
+	vcr := useCassette("public/download_url")
+	defer vcr.Stop()
 
-	resp, errorResponse := client.GetDownloadURLForPublicResource(context.Background(), TEST_PUBLIC_RESOURCE, nil)
-
+	resp, errorResponse := client.Public.DownloadURL(context.Background(), TEST_PUBLIC_RESOURCE, nil)
 	if errorResponse != nil {
 		t.Fatal("errorResponse should be nil")
 	}
 
-	link := new(disk.Link)
-
-	if reflect.TypeOf(resp).Kind() != reflect.TypeOf(link).Kind() {
-		t.Fatalf("error: expect %v, got %v", link, resp)
-	}
+	checkTypes(resp, &disk.Link{}, t)
 }
 
-func TestSavePublicResource(t *testing.T) {
+func TestPublicSave(t *testing.T) {
 
-	UseCassette("/public/save")
+	vcr := useCassette("public/save")
+	defer vcr.Stop()
 
-	resp, errorResponse := client.SavePublicResource(context.Background(), TEST_PUBLIC_RESOURCE, nil)
-
+	resp, errorResponse := client.Public.Save(context.Background(), TEST_PUBLIC_RESOURCE, nil)
 	if errorResponse != nil {
 		t.Fatal("errorResponse should be nil")
 	}
 
-	link := new(disk.Link)
-
-	if reflect.TypeOf(resp).Kind() != reflect.TypeOf(link).Kind() {
-		t.Fatalf("error: expect %v, got %v", link, resp)
-	}
+	checkTypes(resp, &disk.Link{}, t)
 }
