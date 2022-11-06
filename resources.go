@@ -5,8 +5,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 type ResourceService service
@@ -272,4 +274,21 @@ func (s *ResourceService) Upload(ctx context.Context, file, url string, params *
 	return handleResponseCode(resp.StatusCode)
 }
 
-// TODO: UploadFromURL
+func (s *ResourceService) UploadFromURL(ctx context.Context, path, url string, params *QueryParams) (*Link, *ErrorResponse) {
+	var link *Link
+
+	ext := filepath.Ext(url) // TODO: fix for files without extension (e.g. www.example.com/filename)
+	reqURL := fmt.Sprintf("resources/upload?path=%s%s&url=%s", path, ext, url)
+	resp, err := s.client.post(ctx, s.client.apiURL+reqURL, nil, nil, params)
+	if haveError(err) || resp.StatusCode != http.StatusOK {
+		return nil, handleResponseCode(resp.StatusCode)
+	}
+	defer resp.Body.Close()
+
+	err = json.NewDecoder(resp.Body).Decode(&link)
+	if err != nil {
+		return nil, jsonDecodeError(err)
+	}
+
+	return link, nil
+}

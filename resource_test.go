@@ -202,3 +202,21 @@ func TestDeleteResource(t *testing.T) {
 		t.Fatalf("error: expect %v, got %v", nil, resp)
 	}
 }
+
+func TestUploadFileFromURL(t *testing.T) {
+
+	vcr := useCassette("resources/upload_from_url")
+	defer vcr.Stop()
+
+	url := "https://pkg.go.dev/static/shared/logo/go-blue.svg"
+
+	resp, errorResponse := client.Resources.UploadFromURL(context.Background(), "filename", url, nil)
+	if !disk.InArray(errorResponse.StatusCode, []int{
+		http.StatusOK,
+		http.StatusAccepted,
+	}) {
+		t.Fatalf("error: expect 200 or 202 status code, got %v", errorResponse.StatusCode)
+	}
+
+	checkTypes(resp, &disk.Link{}, t)
+}

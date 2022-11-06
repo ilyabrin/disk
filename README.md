@@ -111,6 +111,9 @@ client.Resources.GetUploadLink(ctx, "path_to_file")
 
 // Upload new file to Disk
 client.Resources.Upload(ctx, "local_file_path", "link_from_GetUploadLink", nil)
+
+// Upload file from Internet
+client.Resources.UploadFromURL(ctx, "filename_you_want", "url_to_file", nil)
 ```
 
 ### Public
