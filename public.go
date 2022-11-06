@@ -45,7 +45,7 @@ func (s *PublicService) DownloadURL(ctx context.Context, public_key string, para
 func (s *PublicService) Save(ctx context.Context, public_key string, params *QueryParams) (*Link, *ErrorResponse) {
 	var link *Link
 
-	resp, err := s.client.post(ctx, s.client.apiURL+"public/resources/save-to-disk?public_key="+public_key, nil, nil, params)
+	resp, err := s.client.post(ctx, s.client.apiURL+"public/resources/save-to-disk?public_key="+public_key, params)
 	if haveError(err) || !InArray(resp.StatusCode, []int{
 		http.StatusOK,
 		http.StatusCreated,

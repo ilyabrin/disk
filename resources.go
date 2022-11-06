@@ -90,7 +90,7 @@ func (s *ResourceService) CreateDir(ctx context.Context, path string, params *Qu
 func (s *ResourceService) Copy(ctx context.Context, from, to string, params *QueryParams) (*Link, *ErrorResponse) {
 	var link *Link
 
-	resp, err := s.client.post(ctx, s.client.apiURL+"resources/copy?from="+from+"&path="+to, nil, nil, params)
+	resp, err := s.client.post(ctx, s.client.apiURL+"resources/copy?from="+from+"&path="+to, params)
 	if haveError(err) || !InArray(resp.StatusCode, []int{
 		http.StatusOK,
 		http.StatusCreated,
@@ -164,7 +164,7 @@ func (s *ResourceService) ListLastUploaded(ctx context.Context, params *QueryPar
 func (s *ResourceService) Move(ctx context.Context, from, to string, params *QueryParams) (*Link, *ErrorResponse) {
 	var link *Link
 
-	resp, err := s.client.post(ctx, s.client.apiURL+"resources/move?from="+from+"&path="+to, nil, nil, params)
+	resp, err := s.client.post(ctx, s.client.apiURL+"resources/move?from="+from+"&path="+to, params)
 	if haveError(err) || !InArray(resp.StatusCode, []int{
 		http.StatusCreated,
 		http.StatusAccepted,
@@ -279,7 +279,7 @@ func (s *ResourceService) UploadFromURL(ctx context.Context, path, url string, p
 
 	ext := filepath.Ext(url) // TODO: fix for files without extension (e.g. www.example.com/filename)
 	reqURL := fmt.Sprintf("resources/upload?path=%s%s&url=%s", path, ext, url)
-	resp, err := s.client.post(ctx, s.client.apiURL+reqURL, nil, nil, params)
+	resp, err := s.client.post(ctx, s.client.apiURL+reqURL, params)
 	if haveError(err) || resp.StatusCode != http.StatusOK {
 		return nil, handleResponseCode(resp.StatusCode)
 	}

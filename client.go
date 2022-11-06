@@ -111,8 +111,8 @@ func (c *Client) get(ctx context.Context, resource string, params *QueryParams) 
 	return c.do(ctx, http.MethodGet, resource, nil, nil, params)
 }
 
-func (c *Client) post(ctx context.Context, resource string, body io.Reader, headers *HTTPHeaders, params *QueryParams) (*http.Response, error) {
-	return c.do(ctx, http.MethodPost, resource, body, headers, params)
+func (c *Client) post(ctx context.Context, resource string, params *QueryParams) (*http.Response, error) {
+	return c.do(ctx, http.MethodPost, resource, nil, nil, params)
 }
 
 func (c *Client) patch(ctx context.Context, resource string, body io.Reader, headers *HTTPHeaders, params *QueryParams) (*http.Response, error) {
