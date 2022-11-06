@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 )
 
-// TODO: add APIResponse
-func (c *Client) DiskInfo(ctx context.Context, params *QueryParams) (*Disk, *ErrorResponse) {
-	var disk *Disk
+type DiskService service
 
-	resp, err := c.get(ctx, c.apiURL, params)
-	if haveError(err) {
+func (s *DiskService) Info(ctx context.Context, params *QueryParams) (*Disk, *ErrorResponse) {
+	var disk *Disk
+	resp, err := s.client.get(ctx, s.client.apiURL, params)
+	if err != nil {
 		return nil, handleResponseCode(resp.StatusCode)
 	}
 	defer resp.Body.Close()

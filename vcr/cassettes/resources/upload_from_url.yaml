@@ -1,0 +1,56 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: cloud-api.yandex.net
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers:
+            Content-Type:
+                - application/json
+        url: https://cloud-api.yandex.net/v1/disk/resources/upload?path=filename.svg&url=https://pkg.go.dev/static/shared/logo/go-blue.svg
+        method: POST
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: 156
+        uncompressed: false
+        body: '{"href":"https://cloud-api.yandex.net/v1/disk/operations/49dd70bb637940deab4052bab52ce5e7e8807376ffb8c3606c042b419be10172","method":"GET","templated":false}'
+        headers:
+            Access-Control-Allow-Credentials:
+                - "true"
+            Access-Control-Allow-Headers:
+                - Accept-Language, Accept, X-Uid, X-HTTP-Method, X-Requested-With, Content-Type, Authorization
+            Access-Control-Allow-Methods:
+                - PUT, POST, GET, OPTIONS
+            Access-Control-Allow-Origin:
+                - '*'
+            Cache-Control:
+                - no-cache
+            Connection:
+                - keep-alive
+            Content-Length:
+                - "156"
+            Content-Type:
+                - application/json; charset=utf-8
+            Date:
+                - Sun, 06 Nov 2022 11:26:17 GMT
+            Server:
+                - nginx
+            Yandex-Cloud-Request-Id:
+                - rest-782783ce1616fba48bcac8ecfc7f7494-api21v
+        status: 202 ACCEPTED
+        code: 202
+        duration: 617.26058ms

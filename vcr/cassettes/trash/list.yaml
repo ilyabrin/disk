@@ -1,0 +1,57 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: cloud-api.yandex.net
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers:
+            Content-Type:
+                - application/json
+        url: https://cloud-api.yandex.net/v1/disk/trash/resources?path=/
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding:
+            - chunked
+        trailer: {}
+        content_length: -1
+        uncompressed: true
+        body: '{"_embedded":{"sort":"","items":[{"public_key":"OU2gC1U4WN1LriiGgJm7dcZElfkHEQrkdsSABAh6hs6BJHg9L4sZKVPsqWloY0SCq/J6bpmRyOJonT3VoXnDag==","public_url":"https://yadi.sk/d/tCgV7GyS3QAYvg","name":"test_dir","exif":{},"resource_id":"47099495:6b069b9678df78bcf4baa43b9cf1472425dbbd2d82f90a6798c9f83ee7b940ad","deleted":"2022-10-30T12:27:00+00:00","custom_properties":{"foo":"bar","key":"value"},"origin_path":"disk:/test_dir","modified":"2022-10-30T12:27:00+00:00","created":"2022-10-28T10:57:33+00:00","path":"trash:/test_dir_24606ef3ef71114231bb388b9692877f2b79147c","comment_ids":{"private_resource":"47099495:6b069b9678df78bcf4baa43b9cf1472425dbbd2d82f90a6798c9f83ee7b940ad","public_resource":"47099495:6b069b9678df78bcf4baa43b9cf1472425dbbd2d82f90a6798c9f83ee7b940ad"},"type":"dir","revision":1667132820239660}],"limit":20,"offset":0,"path":"trash:/","total":1},"name":"trash","exif":{},"resource_id":"47099495:4db3a67d63d69257cf5c0c17c616e57706594e5ac747b2a478fd32ac9acc6284","origin_path":null,"modified":"2012-04-04T20:00:00+00:00","created":"2012-04-04T20:00:00+00:00","path":"trash:/","comment_ids":{},"type":"dir","revision":1333738864085459}'
+        headers:
+            Access-Control-Allow-Credentials:
+                - "true"
+            Access-Control-Allow-Headers:
+                - Accept-Language, Accept, X-Uid, X-HTTP-Method, X-Requested-With, Content-Type, Authorization
+            Access-Control-Allow-Methods:
+                - GET, DELETE, OPTIONS
+            Access-Control-Allow-Origin:
+                - '*'
+            Cache-Control:
+                - no-cache
+            Connection:
+                - keep-alive
+            Content-Type:
+                - application/json; charset=utf-8
+            Date:
+                - Sat, 05 Nov 2022 15:04:29 GMT
+            Server:
+                - nginx
+            Vary:
+                - Accept-Encoding
+            Yandex-Cloud-Request-Id:
+                - rest-d59a3d8e11145a9f8f1c8e981090c765-api23e
+        status: 200 OK
+        code: 200
+        duration: 161.098055ms
