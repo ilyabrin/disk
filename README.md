@@ -61,23 +61,15 @@ client.Resources.Delete(ctx, "path_to_file", false, nil)
 // Get meta information
 client.Resources.Meta(ctx, "path_to_file", nil)
 
-// Update information
+// Update meta information
+newMeta := &disk.Metadata{
+  "custom_properties": {
+    "key": "value",
+    "foo": "bar",
+    "platform": "linux",
+  },
+}
 client.Resources.UpdateMeta(ctx, "path_to_file", newMeta)
-
-<details>
-  <summary>Example</summary>
-    ```go
-    newMeta := &disk.Metadata{
-      "custom_properties": {
-       "key": "value",
-       "foo": "bar",
-       "platform": "linux",
-      },
-    }
-
-    client.Resources.UpdateMeta(ctx, "path_to_file", newMeta)
-    ```
-</details>
 
 // Create directory
 client.Resources.CreateDir(ctx, "path_to_file", nil)
