@@ -2,14 +2,15 @@ package disk
 
 // Disk Данные о свободном и занятом пространстве на Диске
 type Disk struct {
-	UnlimitedAutouploadEnabled bool           `json:"unlimited_autoupload_enabled,omitempty"`
 	MaxFileSize                int            `json:"max_file_size,omitempty"`
+	PaidMaxFileSize            int            `json:"paid_max_file_size,omitempty"`
 	TotalSpace                 int            `json:"total_space,omitempty"`
 	TrashSize                  int            `json:"trash_size,omitempty"`
 	IsPaid                     bool           `json:"is_paid,omitempty"`
 	UsedSpace                  int            `json:"used_space,omitempty"`
 	SystemFolders              *SystemFolders `json:"system_folders,omitempty"`
 	User                       *User          `json:"user,omitempty"`
+	UnlimitedAutouploadEnabled bool           `json:"unlimited_autoupload_enabled,omitempty"`
 	Revision                   int            `json:"revision,omitempty"`
 }
 
@@ -19,11 +20,15 @@ type SystemFolders struct {
 	Google        string `json:"google,omitempty"`
 	Instagram     string `json:"instagram,omitempty"`
 	Vkontakte     string `json:"vkontakte,omitempty"`
+	Attach        string `json:"attach,omitempty"`
 	Mailru        string `json:"mailru,omitempty"`
 	Downloads     string `json:"downloads,omitempty"`
 	Applications  string `json:"applications,omitempty"`
 	Facebook      string `json:"facebook,omitempty"`
 	Social        string `json:"social,omitempty"`
+	Messenger     string `json:"messenger,omitempty"`
+	Calendar      string `json:"calendar,omitempty"`
+	Scans         string `json:"scans,omitempty"`
 	Screenshots   string `json:"screenshots,omitempty"`
 	Photostream   string `json:"photostream,omitempty"`
 }
@@ -35,6 +40,10 @@ type User struct {
 	DisplayName string `json:"display_name,omitempty"`
 	UID         string `json:"uid,omitempty"`
 }
+
+// Metadata is a type for a CustomProperties filed
+// TODO: rename to CustomProperty ?
+type Metadata map[string]map[string]string
 
 // Resource ...
 type Resource struct {
@@ -58,8 +67,8 @@ type Resource struct {
 	PublicKey        string            `json:"public_key,omitempty"`
 	Sha256           string            `json:"sha256,omitempty"`
 	Name             string            `json:"name"`
-	Created          string            `json:"created"`
-	Modified         string            `json:"modified"`
+	Created          string            `json:"created"`  // TODO: time format
+	Modified         string            `json:"modified"` // TODO: time format
 	CommentIDs       *CommentIds       `json:"comment_ids,omitempty"`
 }
 
@@ -89,7 +98,9 @@ type ResourceList struct {
 
 // Exif ...
 type Exif struct {
-	DateTime string `json:"date_time,omitempty"`
+	DateTime  string  `json:"date_time,omitempty"`
+	Longitude float64 `json:"gps_longitude,omitempty"`
+	Latitude  float64 `json:"gps_latitude,omitempty"`
 }
 
 // CommentIds ...
@@ -144,14 +155,6 @@ type UserPublicInformation struct {
 // Operation ...
 type Operation struct {
 	Status string `json:"status"`
-}
-
-// ErrorResponse ...
-type ErrorResponse struct {
-	Message     string `json:"message"`
-	Description string `json:"description"`
-	StatusCode  int    `json:"status_code"`
-	Error       error  `json:"error"` // TODO: []errors
 }
 
 // TrashResource ...
