@@ -15,9 +15,16 @@ const API_URL = "https://cloud-api.yandex.net/v1/disk/"
 type HTTPHeaders map[string]string
 type QueryParams map[string]string
 
-type Metadata map[string]map[string]string
-
 type service struct{ client *Client }
+
+// ErrorResponse ...
+type ErrorResponse struct {
+	Message     string `json:"message"`
+	Description string `json:"description"`
+	StatusCode  int    `json:"status_code"`
+	Error       error  `json:"error"` // TODO: []errors
+}
+
 type Client struct {
 	accessToken string
 	HTTPClient  *http.Client
@@ -111,7 +118,7 @@ func (c *Client) get(ctx context.Context, resource string, params *QueryParams) 
 	return c.do(ctx, http.MethodGet, resource, nil, nil, params)
 }
 
-func (c *Client) post(ctx context.Context, resource string, params *QueryParams) (*http.Response, error) {
+func (c *Client) post(ctx context.Context, resource string, body io.Reader, params *QueryParams) (*http.Response, error) {
 	return c.do(ctx, http.MethodPost, resource, nil, nil, params)
 }
 
