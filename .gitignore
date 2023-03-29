@@ -18,3 +18,4 @@
 .dev.config.yml
 
 example.go
+.DS_Store
