@@ -20,7 +20,7 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Run tests
       run: go test -v -covermode=count
   
@@ -33,7 +33,7 @@ jobs:
       with:
         go-version: 1.18.x
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Calc coverage
       run: |
         go test -v -covermode=count -coverprofile=coverage.out
