@@ -25,8 +25,8 @@ func (c *Client) DeleteResource(ctx context.Context, path string, permanently bo
 	}
 
 	resp, err := c.doRequest(ctx, DELETE, url, nil)
-	if haveError(err) {
-		log.Fatal(err)
+	if err != nil {
+		handleError(err)
 		return err
 	}
 
@@ -46,9 +46,7 @@ func (c *Client) GetMetadata(ctx context.Context, path string) (*Resource, *Erro
 	var decoded *json.Decoder
 
 	resp, err := c.doRequest(ctx, GET, "resources?path="+path, nil)
-	if haveError(err) {
-		log.Fatal("Request failed")
-	}
+	handleError(err)
 
 	if resp.StatusCode != 200 {
 		decoded = json.NewDecoder(resp.Body)
@@ -67,14 +65,16 @@ func (c *Client) GetMetadata(ctx context.Context, path string) (*Resource, *Erro
 	return resource, nil
 }
 
-/* todo: add examples to README
-newMeta := map[string]map[string]string{
-	"custom_properties": {
-		"key_01": "value_01",
-		"key_02": "value_02",
-		"key_07": "value_07",
-	},
-}
+/*
+todo: add examples to README
+
+	newMeta := map[string]map[string]string{
+		"custom_properties": {
+			"key_01": "value_01",
+			"key_02": "value_02",
+			"key_07": "value_07",
+		},
+	}
 */
 func (c *Client) UpdateMetadata(ctx context.Context, path string, custom_properties map[string]map[string]string) (*Resource, *ErrorResponse) {
 	if len(path) < 1 {
@@ -90,14 +90,10 @@ func (c *Client) UpdateMetadata(ctx context.Context, path string, custom_propert
 
 	body, err = json.Marshal(custom_properties)
 
-	if haveError(err) {
-		log.Fatal("payload error")
-	}
+	handleError(err)
 
 	resp, err := c.doRequest(ctx, PATCH, "resources?path="+path, bytes.NewBuffer([]byte(body)))
-	if haveError(err) {
-		log.Fatal("Request failed")
-	}
+	handleError(err)
 
 	if resp.StatusCode != 200 {
 		decoded = json.NewDecoder(resp.Body)
@@ -116,7 +112,7 @@ func (c *Client) UpdateMetadata(ctx context.Context, path string, custom_propert
 	return resource, nil
 }
 
-// CreateDir creates a new dorectory with 'path'(string) name
+// CreateDir creates a new directory with the specified 'path' name.
 // todo: can't create nested dirs like newDir/subDir/anotherDir
 func (c *Client) CreateDir(ctx context.Context, path string) (*Link, *ErrorResponse) {
 	if len(path) < 1 {
@@ -129,8 +125,8 @@ func (c *Client) CreateDir(ctx context.Context, path string) (*Link, *ErrorRespo
 	var decoded *json.Decoder
 
 	resp, err := c.doRequest(ctx, PUT, "resources?path="+path, nil)
-	if haveError(err) {
-		log.Fatal("Request failed")
+	if err != nil {
+		handleError(err)
 		return nil, nil
 	}
 
@@ -163,9 +159,7 @@ func (c *Client) CopyResource(ctx context.Context, from, path string) (*Link, *E
 	var decoded *json.Decoder
 
 	resp, err := c.doRequest(ctx, POST, "resources/copy?from="+from+"&path="+path, nil)
-	if haveError(err) {
-		log.Fatal("Request failed")
-	}
+	handleError(err)
 
 	if !inArray(resp.StatusCode, []int{200, 201, 202}) {
 		decoded = json.NewDecoder(resp.Body)
@@ -195,16 +189,12 @@ func (c *Client) GetDownloadURL(ctx context.Context, path string) (*Link, *Error
 	var decoded *json.Decoder
 
 	resp, err := c.doRequest(ctx, GET, "resources/download?path="+path, nil)
-	if haveError(err) {
-		log.Fatal("Request failed")
-	}
+	handleError(err)
 
 	if resp.StatusCode != 200 {
 		decoded = json.NewDecoder(resp.Body)
 		err := decoded.Decode(&errorResponse)
-		if haveError(err) {
-			log.Fatal(err)
-		}
+		handleError(err)
 		return nil, errorResponse
 	}
 
@@ -224,16 +214,14 @@ func (c *Client) GetSortedFiles(ctx context.Context) (*FilesResourceList, *Error
 	var decoded *json.Decoder
 
 	resp, err := c.doRequest(ctx, GET, "resources/files", nil)
-	if haveError(err) {
-		log.Fatal("Request failed")
+	if err != nil {
+		handleError(err)
 	}
 
 	if resp.StatusCode != 200 {
 		decoded = json.NewDecoder(resp.Body)
 		err := decoded.Decode(&errorResponse)
-		if haveError(err) {
-			log.Fatal(err)
-		}
+		handleError(err)
 		return nil, errorResponse
 	}
 
@@ -254,15 +242,15 @@ func (c *Client) GetLastUploadedResources(ctx context.Context) (*LastUploadedRes
 	var decoded *json.Decoder
 
 	resp, err := c.doRequest(ctx, GET, "resources/last-uploaded", nil)
-	if haveError(err) {
-		log.Fatal("Request failed")
+	if err != nil {
+		handleError(err)
 	}
 
 	if resp.StatusCode != 200 {
 		decoded = json.NewDecoder(resp.Body)
 		err := decoded.Decode(&errorResponse)
-		if haveError(err) {
-			log.Fatal(err)
+		if err != nil {
+			handleError(err)
 		}
 		return nil, errorResponse
 	}
@@ -284,15 +272,15 @@ func (c *Client) MoveResource(ctx context.Context, from, path string) (*Link, *E
 	var decoded *json.Decoder
 
 	resp, err := c.doRequest(ctx, POST, "resources/move?from="+from+"&path="+path, nil)
-	if haveError(err) {
-		log.Fatal("Request failed")
+	if err != nil {
+		handleError(err)
 	}
 
 	if !inArray(resp.StatusCode, []int{201, 202}) {
 		decoded = json.NewDecoder(resp.Body)
 		err := decoded.Decode(&errorResponse)
-		if haveError(err) {
-			log.Fatal(err)
+		if err != nil {
+			handleError(err)
 		}
 		return nil, errorResponse
 	}
@@ -312,15 +300,15 @@ func (c *Client) GetPublicResources(ctx context.Context) (*PublicResourcesList, 
 	var decoded *json.Decoder
 
 	resp, err := c.doRequest(ctx, GET, "resources/public", nil)
-	if haveError(err) {
-		log.Fatal("Request failed")
+	if err != nil {
+		handleError(err)
 	}
 
 	if resp.StatusCode != 200 {
 		decoded = json.NewDecoder(resp.Body)
 		err := decoded.Decode(&errorResponse)
-		if haveError(err) {
-			log.Fatal(err)
+		if err != nil {
+			handleError(err)
 		}
 		return nil, errorResponse
 	}
@@ -340,15 +328,15 @@ func (c *Client) PublishResource(ctx context.Context, path string) (*Link, *Erro
 	var decoded *json.Decoder
 
 	resp, err := c.doRequest(ctx, PUT, "resources/publish?path="+path, nil)
-	if haveError(err) {
-		log.Fatal("Request failed")
+	if err != nil {
+		handleError(err)
 	}
 
 	if resp.StatusCode != 200 {
 		decoded = json.NewDecoder(resp.Body)
 		err := decoded.Decode(&errorResponse)
-		if haveError(err) {
-			log.Fatal(err)
+		if err != nil {
+			handleError(err)
 		}
 		return nil, errorResponse
 	}
@@ -368,15 +356,15 @@ func (c *Client) UnpublishResource(ctx context.Context, path string) (*Link, *Er
 	var decoded *json.Decoder
 
 	resp, err := c.doRequest(ctx, PUT, "resources/unpublish?path="+path, nil)
-	if haveError(err) {
-		log.Fatal("Request failed")
+	if err != nil {
+		handleError(err)
 	}
 
 	if resp.StatusCode != 200 {
 		decoded = json.NewDecoder(resp.Body)
 		err := decoded.Decode(&errorResponse)
-		if haveError(err) {
-			log.Fatal(err)
+		if err != nil {
+			handleError(err)
 		}
 		return nil, errorResponse
 	}
@@ -396,15 +384,15 @@ func (c *Client) GetLinkForUpload(ctx context.Context, path string) (*ResourceUp
 	var decoded *json.Decoder
 
 	resp, err := c.doRequest(ctx, GET, "resources/upload?path="+path, nil)
-	if haveError(err) {
-		log.Fatal("Request failed")
+	if err != nil {
+		handleError(err)
 	}
 
 	if resp.StatusCode != 200 {
 		decoded = json.NewDecoder(resp.Body)
 		err := decoded.Decode(&errorResponse)
-		if haveError(err) {
-			log.Fatal(err)
+		if err != nil {
+			handleError(err)
 		}
 		return nil, errorResponse
 	}
@@ -425,15 +413,15 @@ func (c *Client) UploadFile(ctx context.Context, path, url string) (*Link, *Erro
 	var decoded *json.Decoder
 
 	resp, err := c.doRequest(ctx, POST, "resources/upload?path="+path+"&url="+url, nil)
-	if haveError(err) {
-		log.Fatal("Request failed")
+	if err != nil {
+		handleError(err)
 	}
 
 	if !inArray(resp.StatusCode, []int{200, 202}) {
 		decoded = json.NewDecoder(resp.Body)
 		err := decoded.Decode(&errorResponse)
-		if haveError(err) {
-			log.Fatal(err)
+		if err != nil {
+			handleError(err)
 		}
 		return nil, errorResponse
 	}
