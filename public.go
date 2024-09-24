@@ -13,16 +13,13 @@ func (c *Client) GetMetadataForPublicResource(ctx context.Context, public_key st
 	var decoded *json.Decoder
 
 	resp, err := c.doRequest(ctx, GET, "public/resources?public_key="+public_key, nil)
-	if haveError(err) {
-		log.Fatal("Request failed")
-	}
+	handleError(err)
 
 	if resp.StatusCode != 200 {
 		decoded = json.NewDecoder(resp.Body)
 		err := decoded.Decode(&errorResponse)
-		if haveError(err) {
-			log.Fatal(err)
-		}
+		handleError(err)
+
 		return nil, errorResponse
 	}
 
@@ -41,16 +38,12 @@ func (c *Client) GetDownloadURLForPublicResource(ctx context.Context, public_key
 	var decoded *json.Decoder
 
 	resp, err := c.doRequest(ctx, GET, "public/resources/download?public_key="+public_key, nil)
-	if haveError(err) {
-		log.Fatal("Request failed")
-	}
+	handleError(err)
 
 	if resp.StatusCode != 200 {
 		decoded = json.NewDecoder(resp.Body)
 		err := decoded.Decode(&errorResponse)
-		if haveError(err) {
-			log.Fatal(err)
-		}
+		handleError(err)
 		return nil, errorResponse
 	}
 
@@ -69,9 +62,7 @@ func (c *Client) SavePublicResource(ctx context.Context, public_key string) (*Li
 	var decoded *json.Decoder
 
 	resp, err := c.doRequest(ctx, POST, "public/resources/save-to-disk?public_key="+public_key, nil)
-	if haveError(err) {
-		log.Fatal("Request failed")
-	}
+	handleError(err)
 
 	// Если сохранение происходит асинхронно,
 	// то вернёт ответ с кодом 202 и ссылкой на асинхронную операцию.
@@ -79,9 +70,7 @@ func (c *Client) SavePublicResource(ctx context.Context, public_key string) (*Li
 	if !inArray(resp.StatusCode, []int{200, 201, 202}) {
 		decoded = json.NewDecoder(resp.Body)
 		err := decoded.Decode(&errorResponse)
-		if haveError(err) {
-			log.Fatal(err)
-		}
+		handleError(err)
 		return nil, errorResponse
 	}
 

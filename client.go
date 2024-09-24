@@ -13,14 +13,14 @@ import (
 
 const API_URL = "https://cloud-api.yandex.net/v1/disk/"
 
-type Method string
+type HttpMethod string
 
 const (
-	GET    Method = "GET"
-	POST   Method = "POST"
-	PUT    Method = "PUT"
-	PATCH  Method = "PATCH"
-	DELETE Method = "DELETE"
+	GET    HttpMethod = "GET"
+	POST   HttpMethod = "POST"
+	PUT    HttpMethod = "PUT"
+	PATCH  HttpMethod = "PATCH"
+	DELETE HttpMethod = "DELETE"
 )
 
 type Client struct {
@@ -47,21 +47,28 @@ func New(token ...string) *Client {
 	}
 }
 
-func (c *Client) doRequest(ctx context.Context, method Method, resource string, body io.Reader) (*http.Response, error) {
+func (c *Client) doRequest(ctx context.Context, method HttpMethod, resource string, data io.Reader) (*http.Response, error) {
 
 	var resp *http.Response
 	var err error
-	var data io.Reader
+	var body io.Reader
 
-	// ctx, cancel := context.WithCancel(ctx)
+	body = data
 
-	data = body
+	// todo: make time parameterized, not const
+	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(10*time.Second))
+	defer cancel()
 
 	if method == GET || method == DELETE {
-		data = nil
+		body = nil
 	}
 
-	req, err := http.NewRequestWithContext(ctx, string(method), API_URL+resource, data)
+	req, err := http.NewRequestWithContext(ctx, string(method), API_URL+resource, body)
+	if err != nil {
+		c.Logger.Fatal("error request", err)
+		return nil, err
+	}
+
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "OAuth "+c.AccessToken)
 

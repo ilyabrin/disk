@@ -3,10 +3,10 @@ package disk
 import (
 	"context"
 	"crypto/tls"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,7 +32,7 @@ func testingHTTPClient(handler http.Handler) (*http.Client, func()) {
 }
 
 func loadTestResponse(actionName string) []byte {
-	response, _ := ioutil.ReadFile(TEST_DATA_DIR + actionName + ".json")
+	response, _ := os.ReadFile(TEST_DATA_DIR + actionName + ".json")
 	return response
 }
 

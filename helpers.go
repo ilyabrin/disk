@@ -1,31 +1,25 @@
 package disk
 
-import (
-	"encoding/json"
-	"log"
-)
+import "log"
 
-func prettyPrint(data interface{}) []byte {
-	result, err := json.MarshalIndent(data, "", " ")
-	if haveError(err) {
-		log.Fatal(err)
-	}
-	return result
-}
-
-func haveError(err error) bool {
+// handleError is a helper function to handle errors
+// and exit the program if an error occurs
+func handleError(err error) {
 	if err != nil {
-		log.Fatal(err)
-		return true
+		log.Fatal("Error:", err)
 	}
-	return false
 }
 
 func inArray(n int, array []int) bool {
-	for _, b := range array {
-		if b == n {
-			return true
-		}
+	if len(array) == 0 {
+		return false
 	}
-	return false
+
+	set := make(map[int]struct{}, len(array))
+	for _, b := range array {
+		set[b] = struct{}{}
+	}
+
+	_, exists := set[n]
+	return exists
 }
