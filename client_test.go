@@ -1,10 +1,41 @@
 package disk
 
 import (
+	"context"
+	"crypto/tls"
+	"net"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
 )
+
+func mockedHttpClient(h http.HandlerFunc) *Client {
+	httpClient, _ := testingHTTPClient(h)
+
+	client := *New("token")
+	client.HTTPClient = httpClient
+
+	return &client
+}
+
+func testingHTTPClient(handler http.Handler) (*http.Client, func()) {
+	s := httptest.NewTLSServer(handler)
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			DialContext: func(_ context.Context, network, _ string) (net.Conn, error) {
+				return net.Dial(network, s.Listener.Addr().String())
+			},
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+
+	return client, s.Close
+}
 
 func TestNew(t *testing.T) {
 	// Helper function to reset environment variable
