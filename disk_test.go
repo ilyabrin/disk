@@ -2,31 +2,11 @@ package disk
 
 import (
 	"context"
-	"crypto/tls"
-	"net"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
-func testingHTTPClient(handler http.Handler) (*http.Client, func()) {
-	s := httptest.NewTLSServer(handler)
-
-	client := &http.Client{
-		Transport: &http.Transport{
-			DialContext: func(_ context.Context, network, _ string) (net.Conn, error) {
-				return net.Dial(network, s.Listener.Addr().String())
-			},
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
-	}
-
-	return client, s.Close
-}
 
 func TestClientGetDiskInfo(t *testing.T) {
 
@@ -64,11 +44,7 @@ func TestClientGetDiskInfo(t *testing.T) {
 		}`))
 	})
 
-	httpClient, teardown := testingHTTPClient(h)
-	defer teardown()
-
-	client := New("token")
-	client.HTTPClient = httpClient
+	client := mockedHttpClient(h)
 
 	disk, err := client.DiskInfo(context.Background())
 
