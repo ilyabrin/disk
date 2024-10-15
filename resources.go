@@ -7,30 +7,39 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/url"
+	"strconv"
 )
+
+func (c *Client) buildDeleteResourceURL(path string, permanently bool) string {
+	query := url.Values{}
+	query.Set("path", path)
+	query.Set("permanent", strconv.FormatBool(permanently))
+	return fmt.Sprintf("resources?%s", query.Encode())
+}
 
 // todo: add *ErrorResponse to return
 func (c *Client) DeleteResource(ctx context.Context, path string, permanently bool) error {
-	if len(path) < 1 {
-		return errors.New("delete error")
+	if path == "" {
+		return errors.New("delete error: path cannot be empty")
 	}
 
-	var url string
-
-	// todo: make it better
-	if permanently {
-		url = "resources?path=" + path + "&permanent=true"
-	} else {
-		url = "resources?path=" + path + "&permanent=false"
-	}
+	url := c.buildDeleteResourceURL(path, permanently)
 
 	resp, err := c.doRequest(ctx, DELETE, url, nil)
 	if err != nil {
-		handleError(err)
-		return err
+		return fmt.Errorf("delete request failed: %w", err)
 	}
+	defer resp.Body.Close()
 
-	fmt.Println(resp.Body)
+	if resp.StatusCode != 200 {
+		var errorResponse ErrorResponse
+		decoded := json.NewDecoder(resp.Body)
+		if err := decoded.Decode(&errorResponse); err != nil {
+			return fmt.Errorf("delete request failed: %w", err)
+		}
+		return fmt.Errorf("delete request failed: %s", errorResponse.Error)
+	}
 
 	return nil
 }
