@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"net/http"
 )
 
 func (c *Client) GetMetadataForPublicResource(ctx context.Context, public_key string) (*PublicResource, *ErrorResponse) {
@@ -22,12 +23,10 @@ func (c *Client) GetMetadataForPublicResource(ctx context.Context, public_key st
 
 		return nil, errorResponse
 	}
-
 	decoded = json.NewDecoder(resp.Body)
 	if err := decoded.Decode(&resource); err != nil {
 		log.Fatal(err)
 	}
-
 	return resource, nil
 }
 
@@ -40,7 +39,7 @@ func (c *Client) GetDownloadURLForPublicResource(ctx context.Context, public_key
 	resp, err := c.doRequest(ctx, GET, "public/resources/download?public_key="+public_key, nil)
 	handleError(err)
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		decoded = json.NewDecoder(resp.Body)
 		err := decoded.Decode(&errorResponse)
 		handleError(err)
@@ -67,7 +66,11 @@ func (c *Client) SavePublicResource(ctx context.Context, public_key string) (*Li
 	// Если сохранение происходит асинхронно,
 	// то вернёт ответ с кодом 202 и ссылкой на асинхронную операцию.
 	// Иначе вернёт ответ с кодом 201 и ссылкой на созданный ресурс.
-	if !inArray(resp.StatusCode, []int{200, 201, 202}) {
+	if !inArray(resp.StatusCode, []int{
+		http.StatusOK,
+		http.StatusCreated,
+		http.StatusAccepted,
+	}) {
 		decoded = json.NewDecoder(resp.Body)
 		err := decoded.Decode(&errorResponse)
 		handleError(err)
