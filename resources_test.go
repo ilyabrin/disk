@@ -119,7 +119,81 @@ todo: add examples to README
 		},
 	}
 */
-func TestUpdateMetadata(t *testing.T) {}
+func TestUpdateMetadata(t *testing.T) {
+
+	client := mockedHttpClient(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.NotEmpty(t, r.Header.Get("Authorization"))
+			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
+
+			w.Write([]byte(
+				`{
+					"antivirus_status": "clean",
+					"resource_id": "string",
+					"share": {
+						"is_root": true,
+						"is_owned": true,
+						"rights": "string"
+					},
+					"file": "string",
+					"size": 0,
+					"photoslice_time": "2024-10-17T18:15:12.282Z",
+					"_embedded": {
+						"sort": "string",
+						"items": [{}],
+						"limit": 0,
+						"offset": 0,
+						"path": "string",
+						"total": 0
+					},
+					"exif": {
+						"date_time": "2024-10-17T18:15:12.282Z",
+						"gps_longitude": {},
+						"gps_latitude": {}
+					},
+					"custom_properties": {
+						"key_01": "value_01",
+						"key_02": "value_02",
+						"key_07": "value_07"
+					},
+					"media_type": "string",
+					"preview": "string",
+					"type": "string",
+					"mime_type": "string",
+					"revision": 0,
+					"public_url": "string",
+					"path": "string",
+					"md5": "string",
+					"public_key": "string",
+					"sha256": "string",
+					"name": "string",
+					"created": "2024-10-17T18:15:12.282Z",
+					"sizes": [{
+						"url": "string",
+						"name": "string"
+					}],
+					"modified": "2024-10-17T18:15:12.283Z",
+					"comment_ids": {
+						"private_resource": "string",
+						"public_resource": "string"
+					}
+				}`))
+		}))
+
+	// TODO: move to CustomProperty type
+	newMeta := map[string]map[string]string{"custom_properties": {
+		"key_01": "value_01",
+		"key_02": "value_02",
+		"key_07": "value_07",
+	}}
+	resource, err := client.UpdateMetadata(context.Background(), "testdir2", newMeta)
+
+	assert.Nil(t, err)
+	assert.IsType(t, &Resource{}, resource)
+	// TODO: change type from 'string' to 'map[string]map[string]string{}'
+	// assert.IsType(t, []CustomProperty, resource.CustomProperties)
+
+}
 
 // CreateDir creates a new directory with the specified 'path' name.
 // todo: can't create nested dirs like newDir/subDir/anotherDir
@@ -276,17 +350,235 @@ func TestGetSortedFiles(t *testing.T) {
 }
 
 // get | sortBy = [name = default, uploadDate]
-func TestGetLastUploadedResources(t *testing.T) {}
+func TestGetLastUploadedResources(t *testing.T) {
+	client := mockedHttpClient(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.NotEmpty(t, r.Header.Get("Authorization"))
+			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
 
-func TestMoveResource(t *testing.T) {}
+			w.Write([]byte(
+				`{
+				"items": [
+					{
+					"antivirus_status": "clean",
+					"resource_id": "string",
+					"share": {
+						"is_root": true,
+						"is_owned": true,
+						"rights": "string"
+					},
+					"file": "string",
+					"size": 0,
+					"photoslice_time": "2024-10-07T10:10:00.000Z",
+					"_embedded": {
+						"sort": "string",
+						"items": [
+						{}
+						],
+						"limit": 0,
+						"offset": 0,
+						"path": "string",
+						"total": 0
+					},
+					"exif": {
+						"date_time": "2024-10-07T10:10:00.000Z",
+						"gps_longitude": {},
+						"gps_latitude": {}
+					},
+					"custom_properties": {},
+					"media_type": "string",
+					"preview": "string",
+					"type": "string",
+					"mime_type": "string",
+					"revision": 0,
+					"public_url": "string",
+					"path": "string",
+					"md5": "string",
+					"public_key": "string",
+					"sha256": "string",
+					"name": "string",
+					"created": "2024-10-07T10:10:00.000Z",
+					"sizes": [
+						{
+						"url": "string",
+						"name": "string"
+						}
+					],
+					"modified": "2024-10-07T10:10:00.000Z",
+					"comment_ids": {
+						"private_resource": "string",
+						"public_resource": "string"
+					}
+					}
+				],
+				"limit": 0
+				}`))
+		}))
 
-func TestGetPublicResources(t *testing.T) {}
+	disk, err := client.GetLastUploadedResources(context.Background())
 
-func TestPublishResource(t *testing.T) {}
+	assert.IsType(t, &ErrorResponse{}, err)
+	assert.IsType(t, &LastUploadedResourceList{}, disk)
+}
 
-func TestUnpublishResource(t *testing.T) {}
+func TestMoveResource(t *testing.T) {
 
-func TestGetLinkForUpload(t *testing.T) {}
+	client := mockedHttpClient(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.NotEmpty(t, r.Header.Get("Authorization"))
+			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
+
+			w.Write([]byte(
+				`{
+  					"href": "string",
+  					"method": "string",
+  					"templated": true
+				}`))
+		}))
+
+	disk, err := client.MoveResource(context.Background(), "testdir/testfile", "testdir2")
+
+	assert.IsType(t, &ErrorResponse{}, err)
+	assert.IsType(t, &Link{}, disk)
+}
+
+func TestGetPublicResources(t *testing.T) {
+
+	client := mockedHttpClient(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.NotEmpty(t, r.Header.Get("Authorization"))
+			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
+
+			w.Write([]byte(
+				`{
+  					"items": [
+  					  {
+  					    "antivirus_status": "clean",
+  					    "resource_id": "string",
+  					    "share": {
+  					      "is_root": true,
+  					      "is_owned": true,
+  					      "rights": "string"
+  					    },
+  					    "file": "string",
+  					    "size": 0,
+  					    "photoslice_time": "2024-10-07T21:15:04.117Z",
+  					    "_embedded": {
+  					      "sort": "string",
+  					      "items": [
+  					        {}
+  					      ],
+  					      "limit": 0,
+  					      "offset": 0,
+  					      "path": "string",
+  					      "total": 0
+  					    },
+  					    "exif": {
+  					      "date_time": "2024-10-07T21:15:04.117Z",
+  					      "gps_longitude": {},
+  					      "gps_latitude": {}
+  					    },
+  					    "custom_properties": {},
+  					    "media_type": "string",
+  					    "preview": "string",
+  					    "type": "string",
+  					    "mime_type": "string",
+  					    "revision": 0,
+  					    "public_url": "string",
+  					    "path": "string",
+  					    "md5": "string",
+  					    "public_key": "string",
+  					    "sha256": "string",
+  					    "name": "string",
+  					    "created": "2024-10-07T21:15:04.117Z",
+  					    "sizes": [
+  					      {
+  					        "url": "string",
+  					        "name": "string"
+  					      }
+  					    ],
+  					    "modified": "2024-10-07T21:15:04.117Z",
+  					    "comment_ids": {
+  					      "private_resource": "string",
+  					      "public_resource": "string"
+  					    }
+  					  }
+  					],
+  					"type": "string",
+  					"limit": 0,
+  					"offset": 0
+				}`))
+		}))
+
+	disk, err := client.GetPublicResources(context.Background())
+
+	assert.IsType(t, &ErrorResponse{}, err)
+	assert.IsType(t, &PublicResourcesList{}, disk)
+}
+
+func TestPublishResource(t *testing.T) {
+
+	client := mockedHttpClient(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.NotEmpty(t, r.Header.Get("Authorization"))
+			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
+
+			w.Write([]byte(
+				`{
+  					"href": "string",
+  					"method": "string",
+  					"templated": true
+				}`))
+		}))
+
+	disk, err := client.PublishResource(context.Background(), "testdir")
+
+	assert.IsType(t, &ErrorResponse{}, err)
+	assert.IsType(t, &Link{}, disk)
+}
+
+func TestUnpublishResource(t *testing.T) {
+
+	client := mockedHttpClient(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.NotEmpty(t, r.Header.Get("Authorization"))
+			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
+
+			w.Write([]byte(
+				`{
+  					"href": "string",
+  					"method": "string",
+  					"templated": true
+				}`))
+		}))
+
+	disk, err := client.UnpublishResource(context.Background(), "testdir")
+
+	assert.IsType(t, &ErrorResponse{}, err)
+	assert.IsType(t, &Link{}, disk)
+}
+
+func TestGetLinkForUpload(t *testing.T) {
+
+	client := mockedHttpClient(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.NotEmpty(t, r.Header.Get("Authorization"))
+			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
+
+			w.Write([]byte(
+				`{
+					"operation_id": "string",
+					"href": "string",
+					"method": "string",
+					"templated": true
+	  			}`))
+		}))
+
+	disk, err := client.GetLinkForUpload(context.Background(), "testdir")
+
+	assert.IsType(t, &ErrorResponse{}, err)
+	assert.IsType(t, &ResourceUploadLink{}, disk)
+}
 
 // todo: empty responses - fix it
 func TestUploadFile(t *testing.T) {}
