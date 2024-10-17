@@ -206,14 +206,16 @@ func TestCreateDir(t *testing.T) {
 
 			w.Write([]byte(`
         	{
-          		"href": "https://cloud-api.yandex.net/v1/disk/resources?path=disk%3A%2Ftestdir",          			"method": "GET",
-      			"templated": false
-    		}`))
+  				"href": "string",
+  				"method": "string",
+  				"templated": true
+			}`))
 		}))
 
-	disk, _ := client.CreateDir(context.Background(), "testdir")
+	link, err := client.CreateDir(context.Background(), "testdir")
 
-	assert.Equal(t, "GET", disk.Method)
+	assert.IsType(t, &Link{}, link)
+	assert.IsType(t, &ErrorResponse{}, err)
 
 }
 
