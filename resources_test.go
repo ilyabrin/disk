@@ -103,9 +103,9 @@ func TestGetMetadata(t *testing.T) {
 				}`))
 		}))
 
-	disk, _ := client.GetMetadata(context.Background(), "testdir")
+	resource, _ := client.GetMetadata(context.Background(), "testdir")
 
-	assert.IsType(t, &Resource{}, disk)
+	assert.IsType(t, &Resource{}, resource)
 }
 
 /*
@@ -234,9 +234,10 @@ func TestCopyResource(t *testing.T) {
 				}`))
 		}))
 
-	disk, _ := client.CopyResource(context.Background(), "testdir", "testdir2")
+	link, _ := client.CopyResource(context.Background(), "testdir", "testdir2")
 
-	assert.Equal(t, "GET", disk.Method)
+	assert.IsType(t, &Link{}, link)
+	assert.Equal(t, "GET", link.Method)
 }
 
 func TestGetDownloadURL(t *testing.T) {
@@ -254,11 +255,11 @@ func TestGetDownloadURL(t *testing.T) {
 				}`))
 		}))
 
-	disk, err := client.GetDownloadURL(context.Background(), "testdir")
+	link, err := client.GetDownloadURL(context.Background(), "testdir")
 
 	assert.IsType(t, &ErrorResponse{}, err)
-	assert.IsType(t, &Link{}, disk)
-	assert.Equal(t, "GET", disk.Method)
+	assert.IsType(t, &Link{}, link)
+	assert.Equal(t, "GET", link.Method)
 }
 
 func TestGetSortedFiles(t *testing.T) {
@@ -417,10 +418,10 @@ func TestGetLastUploadedResources(t *testing.T) {
 				}`))
 		}))
 
-	disk, err := client.GetLastUploadedResources(context.Background())
+	resources, err := client.GetLastUploadedResources(context.Background())
 
 	assert.IsType(t, &ErrorResponse{}, err)
-	assert.IsType(t, &LastUploadedResourceList{}, disk)
+	assert.IsType(t, &LastUploadedResourceList{}, resources)
 }
 
 func TestMoveResource(t *testing.T) {
@@ -438,10 +439,10 @@ func TestMoveResource(t *testing.T) {
 				}`))
 		}))
 
-	disk, err := client.MoveResource(context.Background(), "testdir/testfile", "testdir2")
+	link, err := client.MoveResource(context.Background(), "testdir/testfile", "testdir2")
 
 	assert.IsType(t, &ErrorResponse{}, err)
-	assert.IsType(t, &Link{}, disk)
+	assert.IsType(t, &Link{}, link)
 }
 
 func TestGetPublicResources(t *testing.T) {
@@ -512,10 +513,10 @@ func TestGetPublicResources(t *testing.T) {
 				}`))
 		}))
 
-	disk, err := client.GetPublicResources(context.Background())
+	resources, err := client.GetPublicResources(context.Background())
 
 	assert.IsType(t, &ErrorResponse{}, err)
-	assert.IsType(t, &PublicResourcesList{}, disk)
+	assert.IsType(t, &PublicResourcesList{}, resources)
 }
 
 func TestPublishResource(t *testing.T) {
@@ -533,10 +534,10 @@ func TestPublishResource(t *testing.T) {
 				}`))
 		}))
 
-	disk, err := client.PublishResource(context.Background(), "testdir")
+	link, err := client.PublishResource(context.Background(), "testdir")
 
 	assert.IsType(t, &ErrorResponse{}, err)
-	assert.IsType(t, &Link{}, disk)
+	assert.IsType(t, &Link{}, link)
 }
 
 func TestUnpublishResource(t *testing.T) {
@@ -554,10 +555,10 @@ func TestUnpublishResource(t *testing.T) {
 				}`))
 		}))
 
-	disk, err := client.UnpublishResource(context.Background(), "testdir")
+	link, err := client.UnpublishResource(context.Background(), "testdir")
 
 	assert.IsType(t, &ErrorResponse{}, err)
-	assert.IsType(t, &Link{}, disk)
+	assert.IsType(t, &Link{}, link)
 }
 
 func TestGetLinkForUpload(t *testing.T) {
@@ -576,10 +577,10 @@ func TestGetLinkForUpload(t *testing.T) {
 	  			}`))
 		}))
 
-	disk, err := client.GetLinkForUpload(context.Background(), "testdir")
+	link, err := client.GetLinkForUpload(context.Background(), "testdir")
 
 	assert.IsType(t, &ErrorResponse{}, err)
-	assert.IsType(t, &ResourceUploadLink{}, disk)
+	assert.IsType(t, &ResourceUploadLink{}, link)
 }
 
 // todo: empty responses - fix it
