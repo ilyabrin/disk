@@ -8,7 +8,7 @@ Yandex.Disk API client (WIP)
 [![Build Status](https://travis-ci.org/ilyabrin/disk.svg?branch=release)](https://travis-ci.org/ilyabrin/disk)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/ilyabrin/disk)
 [![Coverage Status](https://coveralls.io/repos/github/ilyabrin/disk/badge.svg?branch=release)](https://coveralls.io/github/ilyabrin/disk?branch=release)
-[![Coverage Status](https://coveralls.io/repos/github/ilyabrin/disk/badge.svg?branch=release)](https://coveralls.io/github/ilyabrin/disk?branch=release)
+
 <!-- ![GitHub All Releases](https://img.shields.io/github/downloads/ilyabrin/disk/total) -->
 <!-- ![GitHub last commit](https://img.shields.io/github/last-commit/ilyabrin/disk) -->
 <!-- ![GitHub pull requests](https://img.shields.io/github/issues-pr-raw/ilyabrin/disk) -->
