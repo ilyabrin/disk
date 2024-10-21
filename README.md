@@ -31,9 +31,10 @@ Working example (errors checks omitted):
 
 ```go
 func main() {
-    ctx := context.Background()
 
-    client := disk.New()
+    client := disk.New() // New("or paste your access token here")
+
+    ctx := context.Background()
 
     disk, err := client.DiskInfo(ctx)
     if err != nil {

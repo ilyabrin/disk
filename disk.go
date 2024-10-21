@@ -11,7 +11,6 @@ func (c *Client) DiskInfo(ctx context.Context) (*Disk, error) {
 	resp, _ := c.doRequest(ctx, GET, "", nil)
 
 	decoded := json.NewDecoder(resp.Body)
-	// decoded.DisallowUnknownFields()
 
 	if err := decoded.Decode(&disk); err != nil {
 		log.Fatal(err)
