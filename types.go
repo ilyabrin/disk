@@ -127,7 +127,7 @@ type UserPublicInformation struct {
 	Uid         string `json:"uid,omitempty"`          // (string, optional): <Идентификатор пользователя.>
 }
 
-type OperationStatus struct {
+type Operation struct {
 	Status string `json:"status"`
 }
 
