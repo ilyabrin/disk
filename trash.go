@@ -1,16 +1,11 @@
 package disk
 
-import (
-	"context"
-	"encoding/json"
-	"net/http"
-)
+// TODO
 
-type TrashService service
-
-func (s *TrashService) Delete(ctx context.Context, path string, params *QueryParams) (*Link, *ErrorResponse) {
-	resp, err := s.client.delete(ctx, s.client.apiURL+"trash/resources?path="+path, nil, params)
-	if haveError(err) {
+/*
+func (c *Client) Delete(ctx context.Context, path string, params *QueryParams) (*Link, *ErrorResponse) {
+	resp, err := c.delete(ctx, s.client.apiURL+"trash/resources?path="+path, nil, params)
+	if err != nil {
 		return nil, handleResponseCode(resp.StatusCode)
 	}
 	defer resp.Body.Close()
@@ -62,3 +57,4 @@ func (s *TrashService) List(ctx context.Context, path string, params *QueryParam
 
 	return resource, nil
 }
+*/
