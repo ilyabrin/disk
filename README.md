@@ -5,7 +5,7 @@ Yandex.Disk API client (WIP)
 [REST API Диска](https://yandex.ru/dev/disk/rest/)
 
 <!-- ![GitHub](https://img.shields.io/github/license/ilyabrin/disk) -->
-[![Build Status](https://travis-ci.org/ilyabrin/disk.svg?branch=release)](https://travis-ci.org/ilyabrin/disk)
+[![Run Tests](https://github.com/ilyabrin/disk/actions/workflows/test.yml/badge.svg)](https://github.com/ilyabrin/disk/actions/workflows/test.yml)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/ilyabrin/disk)
 [![Coverage Status](https://coveralls.io/repos/github/ilyabrin/disk/badge.svg?branch=release)](https://coveralls.io/github/ilyabrin/disk?branch=release)
 
