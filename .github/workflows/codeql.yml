@@ -25,7 +25,7 @@ jobs:
         languages: go
 
     - name: build
-      uses: docker://golang:1.19-buster
+      uses: docker://golang:1.23-buster
       with:
         entrypoint: /bin/sh
         args: -c "go build ."
