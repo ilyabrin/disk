@@ -1,4 +1,3 @@
-
 version: 2
 
 updates:
@@ -6,8 +5,28 @@ updates:
     directory: /
     schedule:
       interval: daily
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    labels: ["dependencies", "gomod"]
+    reviewers: ["ilyabrin"]
 
   - package-ecosystem: docker
     directory: /
     schedule:
       interval: daily
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    labels: ["dependencies", "docker"]
+    reviewers: ["ilyabrin"]
+
+  - package-ecosystem: github-actions
+    directory: .github/workflows
+    schedule:
+      interval: daily
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    labels: ["github-actions"]
+    reviewers: ["ilyabrin"]
