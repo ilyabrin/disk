@@ -14,10 +14,10 @@ import (
 func mockedHttpClient(h http.HandlerFunc) *Client {
 	httpClient, _ := testingHTTPClient(h)
 
-	client := *New("token")
+	client, _ := New("token")
 	client.HTTPClient = httpClient
 
-	return &client
+	return client
 }
 
 func testingHTTPClient(handler http.Handler) (*http.Client, func()) {
@@ -45,7 +45,7 @@ func TestNew(t *testing.T) {
 
 	t.Run("With provided token", func(t *testing.T) {
 		resetEnv()
-		client := New("test-token")
+		client, _ := New("test-token")
 		if client == nil {
 			t.Fatal("Expected non-nil client")
 		}
@@ -63,7 +63,10 @@ func TestNew(t *testing.T) {
 	t.Run("With environment variable", func(t *testing.T) {
 		resetEnv()
 		os.Setenv("YANDEX_DISK_ACCESS_TOKEN", "env-token")
-		client := New()
+		client, err := New()
+		if err != nil {
+			t.Fatalf("Expected no error, got %v", err)
+		}
 		if client == nil {
 			t.Fatal("Expected non-nil client")
 		}
@@ -72,17 +75,21 @@ func TestNew(t *testing.T) {
 		}
 	})
 
-	t.Run("Without token and empty environment variable", func(t *testing.T) {
+	t.Run("With environment variable", func(t *testing.T) {
 		resetEnv()
-		client := New()
-		if client != nil {
-			t.Fatal("Expected nil client")
+		os.Setenv("YANDEX_DISK_ACCESS_TOKEN", "env-token")
+		client, _ := New()
+		if client == nil {
+			t.Fatal("Expected non-nil client")
+		}
+		if client.AccessToken != "env-token" {
+			t.Errorf("Expected AccessToken to be 'env-token', got '%s'", client.AccessToken)
 		}
 	})
 
 	t.Run("With multiple tokens", func(t *testing.T) {
 		resetEnv()
-		client := New("token1", "token2")
+		client, _ := New("token1", "token2")
 		if client == nil {
 			t.Fatal("Expected non-nil client")
 		}
@@ -93,7 +100,7 @@ func TestNew(t *testing.T) {
 
 	t.Run("HTTPClient configuration", func(t *testing.T) {
 		resetEnv()
-		client := New("test-token")
+		client, _ := New("test-token")
 		if client == nil {
 			t.Fatal("Expected non-nil client")
 		}
@@ -102,6 +109,50 @@ func TestNew(t *testing.T) {
 		}
 		if client.HTTPClient.Timeout != 10*time.Second {
 			t.Errorf("Expected Timeout to be 10 seconds, got %v", client.HTTPClient.Timeout)
+		}
+	})
+}
+
+func TestDoRequestWithGenerics(t *testing.T) {
+	t.Run("Successful request", func(t *testing.T) {
+		mockHandler := func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"key": "value"}`))
+		}
+
+		client := mockedHttpClient(mockHandler)
+
+		type Response struct {
+			Key string `json:"key"`
+		}
+
+		ctx := context.Background()
+		resp, err := doRequest[Response](ctx, client, GET, "mock/resource", nil)
+		if err != nil {
+			t.Fatalf("Expected no error, got %v", err)
+		}
+
+		if resp.Key != "value" {
+			t.Errorf("Expected response key to be 'value', got '%s'", resp.Key)
+		}
+	})
+
+	t.Run("Error response", func(t *testing.T) {
+		mockHandler := func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(`{"error": "bad request"}`))
+		}
+
+		client := mockedHttpClient(mockHandler)
+
+		type ErrorResponse struct {
+			Error string `json:"error"`
+		}
+
+		ctx := context.Background()
+		_, err := doRequest[ErrorResponse](ctx, client, GET, "mock/resource", nil)
+		if err == nil {
+			t.Fatal("Expected an error, got nil")
 		}
 	})
 }

@@ -2,18 +2,12 @@ package disk
 
 import (
 	"context"
-	"encoding/json"
-	"log"
 )
 
 func (c *Client) DiskInfo(ctx context.Context) (*Disk, error) {
-	var disk *Disk
-	resp, _ := c.doRequest(ctx, GET, "", nil)
-
-	decoded := json.NewDecoder(resp.Body)
-
-	if err := decoded.Decode(&disk); err != nil {
-		log.Fatal(err)
+	// Use the generic doRequest function to simplify the code
+	disk, err := doRequest[*Disk](ctx, c, GET, "", nil)
+	if err != nil {
 		return nil, err
 	}
 

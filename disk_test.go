@@ -60,3 +60,26 @@ func TestClientGetDiskInfo(t *testing.T) {
 	assert.IsType(t, Disk{}.User, disk.User)
 	assert.IsType(t, Disk{}.SystemFolders, disk.SystemFolders)
 }
+
+func TestDiskInfo(t *testing.T) {
+	client := mockedHttpClient(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.NotEmpty(t, r.Header.Get("Authorization"))
+			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
+
+			w.Write([]byte(
+				`{
+					"total_space": 1000000000,
+					"used_space": 500000000,
+					"trash_size": 10000000
+				}`))
+		}))
+
+	disk, err := client.DiskInfo(context.Background())
+
+	assert.Nil(t, err)
+	assert.IsType(t, &Disk{}, disk)
+	assert.Equal(t, 1000000000, disk.TotalSpace)
+	assert.Equal(t, 500000000, disk.UsedSpace)
+	assert.Equal(t, 10000000, disk.TrashSize)
+}

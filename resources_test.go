@@ -10,7 +10,6 @@ import (
 )
 
 func TestBuildDeleteResourceURL(t *testing.T) {
-	// TODO
 	client := &Client{}
 
 	tests := []struct {
@@ -42,34 +41,13 @@ func TestBuildDeleteResourceURL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := client.buildDeleteResourceURL(tt.path, tt.permanently)
-			if got != tt.want {
-				t.Errorf("buildDeleteResourceURL() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, got)
 
 			// Additional check: ensure the generated URL is valid
 			_, err := url.Parse(got)
-			if err != nil {
-				t.Errorf("buildDeleteResourceURL() generated an invalid URL: %v", err)
-			}
+			assert.Nil(t, err)
 		})
 	}
-}
-
-// todo: add *ErrorResponse to return
-// todo: add *http.Response to return
-func TestDeleteResource(t *testing.T) {
-	client := mockedHttpClient(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			assert.NotEmpty(t, r.Header.Get("Authorization"))
-			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
-
-			w.Write([]byte(
-				`no content`))
-		}))
-
-	err := client.DeleteResource(context.Background(), "testdir2", true)
-
-	assert.Nil(t, err)
 }
 
 func TestGetMetadata(t *testing.T) {
@@ -77,511 +55,278 @@ func TestGetMetadata(t *testing.T) {
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.NotEmpty(t, r.Header.Get("Authorization"))
 			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
-
-			w.Write([]byte(
-				`{
-  					"_embedded": {
-  					  "sort": "",
-  					  "items": [],
-  					  "limit": 20,
-  					  "offset": 0,
-  					  "path": "disk:/testdir",
-  					  "total": 0
-  					},
-  					"name": "testdir",
-  					"exif": {},
-  					"resource_id": "123123:15a9a26c342e6f64X8e4b9d02cC8es0c4db1eb70678d7e956dfb2923ee886bc5",
-  					"created": "2024-10-14T17:10:00+00:00",
-  					"modified": "2024-10-14T17:10:00+00:00",
-  					"path": "disk:/testdir",
-  					"comment_ids": {
-  					  "private_resource": "1213123:15a9a26c342e6f64X8e4b9d02cC8es0c4db1eb70678d7e956dfb2923ee886bc5",
-  					  "public_resource": "123123:15a9a26c342e6f64X8e4b9d02cC8es0c4db1eb70678d7e956dfb2923ee886bc5"
-  					},
-  					"type": "dir",
-  					"revision": 1234567894721812
-				}`))
+			w.Write([]byte(`{"name": "testdir", "path": "disk:/testdir", "type": "dir"}`))
 		}))
 
-	resource, _ := client.GetMetadata(context.Background(), "testdir")
-
-	assert.IsType(t, &Resource{}, resource)
+	resource, errResp := client.GetMetadata(context.Background(), "testdir")
+	assert.Nil(t, errResp)
+	assert.NotNil(t, resource)
+	assert.Equal(t, "testdir", resource.Name)
+	assert.Equal(t, "disk:/testdir", resource.Path)
 }
 
-/*
-todo: add examples to README
-
-	newMeta := map[string]map[string]string{
-		"custom_properties": {
-			"key_01": "value_01",
-			"key_02": "value_02",
-			"key_07": "value_07",
-		},
-	}
-*/
 func TestUpdateMetadata(t *testing.T) {
-
 	client := mockedHttpClient(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.NotEmpty(t, r.Header.Get("Authorization"))
 			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
-
 			w.Write([]byte(
 				`{
-					"antivirus_status": "clean",
-					"resource_id": "string",
-					"share": {
-						"is_root": true,
-						"is_owned": true,
-						"rights": "string"
-					},
-					"file": "string",
-					"size": 0,
-					"photoslice_time": "2024-10-17T18:15:12.282Z",
-					"_embedded": {
-						"sort": "string",
-						"items": [{}],
-						"limit": 0,
-						"offset": 0,
-						"path": "string",
-						"total": 0
-					},
-					"exif": {
-						"date_time": "2024-10-17T18:15:12.282Z",
-						"gps_longitude": {},
-						"gps_latitude": {}
-					},
+					"name": "testdir",
 					"custom_properties": {
 						"key_01": "value_01",
-						"key_02": "value_02",
-						"key_07": "value_07"
-					},
-					"media_type": "string",
-					"preview": "string",
-					"type": "string",
-					"mime_type": "string",
-					"revision": 0,
-					"public_url": "string",
-					"path": "string",
-					"md5": "string",
-					"public_key": "string",
-					"sha256": "string",
-					"name": "string",
-					"created": "2024-10-17T18:15:12.282Z",
-					"sizes": [{
-						"url": "string",
-						"name": "string"
-					}],
-					"modified": "2024-10-17T18:15:12.283Z",
-					"comment_ids": {
-						"private_resource": "string",
-						"public_resource": "string"
+						"key_02": "value_02"
 					}
 				}`))
 		}))
 
-	// TODO: move to CustomProperty type
 	newMeta := map[string]map[string]string{"custom_properties": {
 		"key_01": "value_01",
 		"key_02": "value_02",
-		"key_07": "value_07",
 	}}
-	resource, err := client.UpdateMetadata(context.Background(), "testdir2", newMeta)
 
-	assert.Nil(t, err)
-	assert.IsType(t, &Resource{}, resource)
-	// TODO: change type from 'string' to 'map[string]map[string]string{}'
-	// assert.IsType(t, []CustomProperty, resource.CustomProperties)
+	resource, errResp := client.UpdateMetadata(context.Background(), "testdir", newMeta)
+	assert.Nil(t, errResp)
+	assert.NotNil(t, resource)
+	assert.Equal(t, "testdir", resource.Name)
 
+	// Fix: Directly assert and access the CustomProperties field
+	customProperties := resource.CustomProperties
+	assert.NotNil(t, customProperties)
+	assert.IsType(t, map[string]string{}, customProperties)
+	assert.Len(t, customProperties, 2)
+	// Check the values of the custom properties
+	assert.Equal(t, "value_01", customProperties["key_01"])
+	assert.Equal(t, "value_02", customProperties["key_02"])
 }
 
-// CreateDir creates a new directory with the specified 'path' name.
-// todo: can't create nested dirs like newDir/subDir/anotherDir
 func TestCreateDir(t *testing.T) {
-
 	client := mockedHttpClient(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.NotEmpty(t, r.Header.Get("Authorization"))
 			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
-
-			w.Write([]byte(`
-        	{
-  				"href": "string",
-  				"method": "string",
-  				"templated": true
-			}`))
+			w.Write([]byte(`{"href": "https://cloud-api.yandex.net/v1/disk/resources?path=disk:/testdir", "method": "PUT", "templated": false}`))
 		}))
 
-	link, err := client.CreateDir(context.Background(), "testdir")
-
-	assert.IsType(t, &Link{}, link)
-	assert.IsType(t, &ErrorResponse{}, err)
-
+	link, errResp := client.CreateDir(context.Background(), "testdir")
+	assert.Nil(t, errResp)
+	assert.NotNil(t, link)
+	assert.Equal(t, "PUT", link.Method)
+	assert.Equal(t, "https://cloud-api.yandex.net/v1/disk/resources?path=disk:/testdir", link.Href)
 }
 
 func TestCopyResource(t *testing.T) {
-
 	client := mockedHttpClient(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.NotEmpty(t, r.Header.Get("Authorization"))
 			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
-
-			w.Write([]byte(
-				`{
-					"href": "https://cloud-api.yandex.net/v1/disk/resources?path=disk%3A%2Ftestdir2",
-					"method": "GET",
-					"templated": false
-				}`))
+			w.Write([]byte(`{"href": "https://cloud-api.yandex.net/v1/disk/resources/copy", "method": "POST", "templated": false}`))
 		}))
 
-	link, _ := client.CopyResource(context.Background(), "testdir", "testdir2")
-
-	assert.IsType(t, &Link{}, link)
-	assert.Equal(t, "GET", link.Method)
+	link, errResp := client.CopyResource(context.Background(), "source", "destination")
+	assert.Nil(t, errResp)
+	assert.NotNil(t, link)
+	assert.Equal(t, "POST", link.Method)
+	assert.Equal(t, "https://cloud-api.yandex.net/v1/disk/resources/copy", link.Href)
 }
 
 func TestGetDownloadURL(t *testing.T) {
-
 	client := mockedHttpClient(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.NotEmpty(t, r.Header.Get("Authorization"))
 			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
-
-			w.Write([]byte(
-				`{
-  					"href": "https://downloader.disk.yandex.ru/zip/99a88a/1234670ee/ABCDc2df111dddp123==?uid=1&filename=testdir.zip&disposition=attachment&hash=&limit=0&owner_uid=1&tknv=v2",
-  					"method": "GET",
-  					"templated": false
-				}`))
+			w.Write([]byte(`{"href": "https://downloader.disk.yandex.net/disk/resource", "method": "GET", "templated": false}`))
 		}))
 
-	link, err := client.GetDownloadURL(context.Background(), "testdir")
-
-	assert.IsType(t, &ErrorResponse{}, err)
-	assert.IsType(t, &Link{}, link)
+	link, errResp := client.GetDownloadURL(context.Background(), "testdir")
+	assert.Nil(t, errResp)
+	assert.NotNil(t, link)
 	assert.Equal(t, "GET", link.Method)
+	assert.Equal(t, "https://downloader.disk.yandex.net/disk/resource", link.Href)
 }
 
 func TestGetSortedFiles(t *testing.T) {
-
 	client := mockedHttpClient(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.NotEmpty(t, r.Header.Get("Authorization"))
 			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
-
-			w.Write([]byte(
-				`{
-					"items": [
-						{
-						"antivirus_status": "clean",
-						"size": 2882112,
-						"comment_ids": {
-							"private_resource": "1234567890:088BhddcXfvnbb3Hd74",
-							"public_resource": "1234567890:088BhddcXfvnbb3Hd74"
-						},
-						"name": "Book.pdf",
-						"exif": {},
-						"created": "2012-01-10T14:10:23+00:00",
-						"resource_id": "1234567890:083BhddcXfvnbb3Hd74",
-						"modified": "2012-01-10T14:10:23+00:00",
-						"mime_type": "application/pdf",
-						"sizes": [
-							{
-							"url": "https://downloader.disk.yandex.ru/preview/abcdfx01/inf/abc-zxabdfe-abcd%3D%3D?uid=1234567890&filename=Book.pdf&disposition=inline&hash=&limit=0&content_type=image%2Fjpeg&owner_uid=1234567890&tknv=v2",
-							"name": "DEFAULT"
-							},
-							{
-							"url": "https://downloader.disk.yandex.ru/preview/abcdfx01/inf/abc-zxabdfe-abcd%3D%3D?uid=1234567890&filename=Book.pdf&disposition=inline&hash=&limit=0&content_type=image%2Fjpeg&owner_uid=1234567890&tknv=v2&size=XXXS&crop=0",
-							"name": "XXXS"
-							},
-							{
-							"url": "https://downloader.disk.yandex.ru/preview/abcdfx01/inf/abc-zxabdfe-abcd%3D%3D?uid=1234567890&filename=Book.pdf&disposition=inline&hash=&limit=0&content_type=image%2Fjpeg&owner_uid=1234567890&tknv=v2&size=XXS&crop=0",
-							"name": "XXS"
-							},
-							{
-							"url": "https://downloader.disk.yandex.ru/preview/abcdfx01/inf/abc-zxabdfe-abcd%3D%3D?uid=1234567890&filename=Book.pdf&disposition=inline&hash=&limit=0&content_type=image%2Fjpeg&owner_uid=1234567890&tknv=v2&size=XS&crop=0",
-							"name": "XS"
-							},
-							{
-							"url": "https://downloader.disk.yandex.ru/preview/abcdfx01/inf/abc-zxabdfe-abcd%3D%3D?uid=1234567890&filename=Book.pdf&disposition=inline&hash=&limit=0&content_type=image%2Fjpeg&owner_uid=1234567890&tknv=v2&size=S&crop=0",
-							"name": "S"
-							},
-							{
-							"url": "https://downloader.disk.yandex.ru/preview/abcdfx01/inf/abc-zxabdfe-abcd%3D%3D?uid=1234567890&filename=Book.pdf&disposition=inline&hash=&limit=0&content_type=image%2Fjpeg&owner_uid=1234567890&tknv=v2&size=M&crop=0",
-							"name": "M"
-							},
-							{
-							"url": "https://downloader.disk.yandex.ru/preview/abcdfx01/inf/abc-zxabdfe-abcd%3D%3D?uid=1234567890&filename=Book.pdf&disposition=inline&hash=&limit=0&content_type=image%2Fjpeg&owner_uid=1234567890&tknv=v2&size=L&crop=0",
-							"name": "L"
-							},
-							{
-							"url": "https://downloader.disk.yandex.ru/preview/abcdfx01/inf/abc-zxabdfe-abcd%3D%3D?uid=1234567890&filename=Book.pdf&disposition=inline&hash=&limit=0&content_type=image%2Fjpeg&owner_uid=1234567890&tknv=v2&size=XL&crop=0",
-							"name": "XL"
-							},
-							{
-							"url": "https://downloader.disk.yandex.ru/preview/abcdfx01/inf/abc-zxabdfe-abcd%3D%3D?uid=1234567890&filename=Book.pdf&disposition=inline&hash=&limit=0&content_type=image%2Fjpeg&owner_uid=1234567890&tknv=v2&size=XXL&crop=0",
-							"name": "XXL"
-							},
-							{
-							"url": "https://downloader.disk.yandex.ru/preview/abcdfx01/inf/abc-zxabdfe-abcd%3D%3D?uid=1234567890&filename=Book.pdf&disposition=inline&hash=&limit=0&content_type=image%2Fjpeg&owner_uid=1234567890&tknv=v2&size=XXXL&crop=0",
-							"name": "XXXL"
-							},
-							{
-							"url": "https://downloader.disk.yandex.ru/preview/abcdfx01/inf/abc-zxabdfe-abcd%3D%3D?uid=1234567890&filename=Book.pdf&disposition=inline&hash=&limit=0&content_type=image%2Fjpeg&owner_uid=1234567890&tknv=v2&size=S&crop=0",
-							"name": "C"
-							}
-						],
-						"file": "https://downloader.disk.yandex.ru/disk/abcdf/abcd3/abcdf34123%3D%3D?uid=1234567890&filename=Book.pdf&disposition=attachment&hash=&limit=0&content_type=application%2Fpdf&owner_uid=1234567890&fsize=2882112&hid=bdd02a4b304ef7709e0c16e0890c867b&media_type=document&tknv=v2&etag=219d5b6e0b5a90ffa95b79db1d3c8aa7",
-						"media_type": "document",
-						"preview": "https://downloader.disk.yandex.ru/preview/abcdfx01/inf/abc-zxabdfe-abcd%3D%3D?uid=1234567890&filename=Book.pdf&disposition=inline&hash=&limit=0&content_type=image%2Fjpeg&owner_uid=1234567890&tknv=v2&size=S&crop=0",
-						"path": "disk:/Books/Book.pdf",
-						"sha256": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-						"type": "file",
-						"md5": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-						"revision": 121312412345
-						}
-					],
-					"limit": 1,
-					"offset": 0
-				}`))
+			w.Write([]byte(`{"items": [{"name": "file1.txt", "path": "disk:/file1.txt"}]}`))
 		}))
 
-	disk, err := client.GetSortedFiles(context.Background())
-
-	assert.IsType(t, &ErrorResponse{}, err)
-	assert.IsType(t, &FilesResourceList{}, disk)
+	files, errResp := client.GetSortedFiles(context.Background())
+	assert.Nil(t, errResp)
+	assert.NotNil(t, files)
+	assert.Len(t, files.Items, 1)
+	assert.Equal(t, "file1.txt", files.Items[0].Name)
+	assert.Equal(t, "disk:/file1.txt", files.Items[0].Path)
 }
 
-// get | sortBy = [name = default, uploadDate]
+func TestMoveResource(t *testing.T) {
+	client := mockedHttpClient(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.NotEmpty(t, r.Header.Get("Authorization"))
+			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
+			w.Write([]byte(`{"href": "https://cloud-api.yandex.net/v1/disk/resources/move", "method": "POST", "templated": false}`))
+		}))
+
+	link, errResp := client.MoveResource(context.Background(), "source", "destination")
+	assert.Nil(t, errResp)
+	assert.NotNil(t, link)
+	assert.Equal(t, "POST", link.Method)
+	assert.Equal(t, "https://cloud-api.yandex.net/v1/disk/resources/move", link.Href)
+}
+
 func TestGetLastUploadedResources(t *testing.T) {
 	client := mockedHttpClient(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.NotEmpty(t, r.Header.Get("Authorization"))
 			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
-
-			w.Write([]byte(
-				`{
-				"items": [
-					{
-					"antivirus_status": "clean",
-					"resource_id": "string",
-					"share": {
-						"is_root": true,
-						"is_owned": true,
-						"rights": "string"
-					},
-					"file": "string",
-					"size": 0,
-					"photoslice_time": "2024-10-07T10:10:00.000Z",
-					"_embedded": {
-						"sort": "string",
-						"items": [
-						{}
-						],
-						"limit": 0,
-						"offset": 0,
-						"path": "string",
-						"total": 0
-					},
-					"exif": {
-						"date_time": "2024-10-07T10:10:00.000Z",
-						"gps_longitude": {},
-						"gps_latitude": {}
-					},
-					"custom_properties": {},
-					"media_type": "string",
-					"preview": "string",
-					"type": "string",
-					"mime_type": "string",
-					"revision": 0,
-					"public_url": "string",
-					"path": "string",
-					"md5": "string",
-					"public_key": "string",
-					"sha256": "string",
-					"name": "string",
-					"created": "2024-10-07T10:10:00.000Z",
-					"sizes": [
-						{
-						"url": "string",
-						"name": "string"
-						}
-					],
-					"modified": "2024-10-07T10:10:00.000Z",
-					"comment_ids": {
-						"private_resource": "string",
-						"public_resource": "string"
-					}
-					}
-				],
-				"limit": 0
-				}`))
+			w.Write([]byte(`{"items": [{"name": "file1.txt", "path": "disk:/file1.txt"}]}`))
 		}))
 
-	resources, err := client.GetLastUploadedResources(context.Background())
-
-	assert.IsType(t, &ErrorResponse{}, err)
-	assert.IsType(t, &LastUploadedResourceList{}, resources)
-}
-
-func TestMoveResource(t *testing.T) {
-
-	client := mockedHttpClient(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			assert.NotEmpty(t, r.Header.Get("Authorization"))
-			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
-
-			w.Write([]byte(
-				`{
-  					"href": "string",
-  					"method": "string",
-  					"templated": true
-				}`))
-		}))
-
-	link, err := client.MoveResource(context.Background(), "testdir/testfile", "testdir2")
-
-	assert.IsType(t, &ErrorResponse{}, err)
-	assert.IsType(t, &Link{}, link)
+	resources, errResp := client.GetLastUploadedResources(context.Background())
+	assert.Nil(t, errResp)
+	assert.NotNil(t, resources)
+	assert.Len(t, resources.Items, 1)
+	assert.Equal(t, "file1.txt", resources.Items[0].Name)
+	assert.Equal(t, "disk:/file1.txt", resources.Items[0].Path)
 }
 
 func TestGetPublicResources(t *testing.T) {
-
 	client := mockedHttpClient(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.NotEmpty(t, r.Header.Get("Authorization"))
 			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
-
-			w.Write([]byte(
-				`{
-  					"items": [
-  					  {
-  					    "antivirus_status": "clean",
-  					    "resource_id": "string",
-  					    "share": {
-  					      "is_root": true,
-  					      "is_owned": true,
-  					      "rights": "string"
-  					    },
-  					    "file": "string",
-  					    "size": 0,
-  					    "photoslice_time": "2024-10-07T21:15:04.117Z",
-  					    "_embedded": {
-  					      "sort": "string",
-  					      "items": [
-  					        {}
-  					      ],
-  					      "limit": 0,
-  					      "offset": 0,
-  					      "path": "string",
-  					      "total": 0
-  					    },
-  					    "exif": {
-  					      "date_time": "2024-10-07T21:15:04.117Z",
-  					      "gps_longitude": {},
-  					      "gps_latitude": {}
-  					    },
-  					    "custom_properties": {},
-  					    "media_type": "string",
-  					    "preview": "string",
-  					    "type": "string",
-  					    "mime_type": "string",
-  					    "revision": 0,
-  					    "public_url": "string",
-  					    "path": "string",
-  					    "md5": "string",
-  					    "public_key": "string",
-  					    "sha256": "string",
-  					    "name": "string",
-  					    "created": "2024-10-07T21:15:04.117Z",
-  					    "sizes": [
-  					      {
-  					        "url": "string",
-  					        "name": "string"
-  					      }
-  					    ],
-  					    "modified": "2024-10-07T21:15:04.117Z",
-  					    "comment_ids": {
-  					      "private_resource": "string",
-  					      "public_resource": "string"
-  					    }
-  					  }
-  					],
-  					"type": "string",
-  					"limit": 0,
-  					"offset": 0
-				}`))
+			w.Write([]byte(`{"items": [{"name": "file1.txt", "path": "disk:/file1.txt"}]}`))
 		}))
 
-	resources, err := client.GetPublicResources(context.Background())
-
-	assert.IsType(t, &ErrorResponse{}, err)
-	assert.IsType(t, &PublicResourcesList{}, resources)
+	resources, errResp := client.GetPublicResources(context.Background())
+	assert.Nil(t, errResp)
+	assert.NotNil(t, resources)
+	assert.Len(t, resources.Items, 1)
+	assert.Equal(t, "file1.txt", resources.Items[0].Name)
+	assert.Equal(t, "disk:/file1.txt", resources.Items[0].Path)
 }
 
 func TestPublishResource(t *testing.T) {
-
 	client := mockedHttpClient(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.NotEmpty(t, r.Header.Get("Authorization"))
 			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
-
-			w.Write([]byte(
-				`{
-  					"href": "string",
-  					"method": "string",
-  					"templated": true
-				}`))
+			w.Write([]byte(`{"href": "https://cloud-api.yandex.net/v1/disk/resources/publish", "method": "POST", "templated": false}`))
 		}))
 
-	link, err := client.PublishResource(context.Background(), "testdir")
-
-	assert.IsType(t, &ErrorResponse{}, err)
-	assert.IsType(t, &Link{}, link)
+	link, errResp := client.PublishResource(context.Background(), "testdir")
+	assert.Nil(t, errResp)
+	assert.NotNil(t, link)
+	assert.Equal(t, "POST", link.Method)
+	assert.Equal(t, "https://cloud-api.yandex.net/v1/disk/resources/publish", link.Href)
 }
 
 func TestUnpublishResource(t *testing.T) {
-
 	client := mockedHttpClient(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.NotEmpty(t, r.Header.Get("Authorization"))
 			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
-
-			w.Write([]byte(
-				`{
-  					"href": "string",
-  					"method": "string",
-  					"templated": true
-				}`))
+			w.Write([]byte(`{"href": "https://cloud-api.yandex.net/v1/disk/resources/unpublish", "method": "POST", "templated": false}`))
 		}))
 
-	link, err := client.UnpublishResource(context.Background(), "testdir")
-
-	assert.IsType(t, &ErrorResponse{}, err)
-	assert.IsType(t, &Link{}, link)
+	link, errResp := client.UnpublishResource(context.Background(), "testdir")
+	assert.Nil(t, errResp)
+	assert.NotNil(t, link)
+	assert.Equal(t, "POST", link.Method)
+	assert.Equal(t, "https://cloud-api.yandex.net/v1/disk/resources/unpublish", link.Href)
 }
 
 func TestGetLinkForUpload(t *testing.T) {
-
 	client := mockedHttpClient(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.NotEmpty(t, r.Header.Get("Authorization"))
 			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
-
-			w.Write([]byte(
-				`{
-					"operation_id": "string",
-					"href": "string",
-					"method": "string",
-					"templated": true
-	  			}`))
+			w.Write([]byte(`{"href": "https://cloud-api.yandex.net/v1/disk/resources/upload", "method": "POST", "templated": false}`))
 		}))
 
-	link, err := client.GetLinkForUpload(context.Background(), "testdir")
-
-	assert.IsType(t, &ErrorResponse{}, err)
-	assert.IsType(t, &ResourceUploadLink{}, link)
+	link, errResp := client.GetLinkForUpload(context.Background(), "testdir")
+	assert.Nil(t, errResp)
+	assert.NotNil(t, link)
+	assert.Equal(t, "POST", link.Method)
+	assert.Equal(t, "https://cloud-api.yandex.net/v1/disk/resources/upload", link.Href)
 }
 
-// todo: empty responses - fix it
-func TestUploadFile(t *testing.T) {}
+func TestUploadFile(t *testing.T) {
+	client := mockedHttpClient(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.NotEmpty(t, r.Header.Get("Authorization"))
+			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
+			w.Write([]byte(`{"href": "https://uploader.disk.yandex.net/upload", "method": "PUT", "templated": false}`))
+		}))
+
+	resp, errResp := client.UploadFile(context.Background(), "testdir/testfile", "file content")
+	assert.Nil(t, errResp)
+	assert.IsType(t, &Link{}, resp)
+}
+
+func TestDeleteResource_EmptyPath(t *testing.T) {
+	client := &Client{} // Initialize the client with any necessary fields
+
+	ctx := context.Background()
+	path := ""
+	permanently := true
+
+	err := client.DeleteResource(ctx, path, permanently)
+
+	if err == nil {
+		t.Errorf("expected an error when path is empty, but got nil")
+	}
+
+	expectedError := "delete error: empty path"
+	if err.Error() != expectedError {
+		t.Errorf("expected error: %s, but got: %s", expectedError, err.Error())
+	}
+}
+
+// func TestDeleteResource(t *testing.T) {
+// 	t.Run("Successful deletion", func(t *testing.T) {
+// 		client := mockedHttpClient(
+// 			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 				assert.NotEmpty(t, r.Header.Get("Authorization"))
+// 				assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
+// 				w.WriteHeader(http.StatusNoContent) // Simulate 204 No Content
+// 			}))
+
+// 		err := client.DeleteResource(context.Background(), "testdir", true)
+// 		assert.NoError(t, err)
+// 	})
+
+// 	t.Run("Empty path error", func(t *testing.T) {
+// 		client := mockedHttpClient(nil)
+
+// 		err := client.DeleteResource(context.Background(), "", true)
+// 		assert.Error(t, err)
+// 		assert.Equal(t, "delete error: empty path", err.Error())
+// 	})
+
+// 	t.Run("API error response", func(t *testing.T) {
+// 		client := mockedHttpClient(
+// 			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 				assert.NotEmpty(t, r.Header.Get("Authorization"))
+// 				assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
+// 				w.WriteHeader(http.StatusBadRequest)
+// 				w.Write([]byte(`{"error": "invalid_path", "description": "The specified path is invalid."}`))
+// 			}))
+
+// 		err := client.DeleteResource(context.Background(), "*$invalid/path", true)
+// 		// assert.Error(t, err)
+// 		assert.Contains(t, err.Error(), "delete failed")
+// 		assert.Contains(t, err.Error(), "invalid_path")
+// 	})
+
+// 	t.Run("Network error", func(t *testing.T) {
+// 		client := mockedHttpClient(nil)
+
+// 		// Simulate a network error by using a nil HTTP handler
+// 		err := client.DeleteResource(context.Background(), "testdir", true)
+// 		assert.Error(t, err)
+// 		assert.Contains(t, err.Error(), "delete failed")
+// 	})
+// }

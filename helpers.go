@@ -2,24 +2,19 @@ package disk
 
 import "log"
 
-// handleError is a helper function to handle errors
-// and exit the program if an error occurs
+// handleError logs the error without terminating the program.
 func handleError(err error) {
 	if err != nil {
-		log.Fatal("Error:", err)
+		log.Println("Error:", err)
 	}
 }
 
+// inArray checks if an integer exists in a slice.
 func inArray(n int, array []int) bool {
-	if len(array) == 0 {
-		return false
-	}
-
-	set := make(map[int]struct{}, len(array))
 	for _, b := range array {
-		set[b] = struct{}{}
+		if b == n {
+			return true
+		}
 	}
-
-	_, exists := set[n]
-	return exists
+	return false
 }
