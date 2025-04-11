@@ -2,8 +2,10 @@ package disk
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -228,6 +230,7 @@ func TestUnpublishResource(t *testing.T) {
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.NotEmpty(t, r.Header.Get("Authorization"))
 			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
+			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(`{"href": "https://cloud-api.yandex.net/v1/disk/resources/unpublish", "method": "POST", "templated": false}`))
 		}))
 
@@ -254,16 +257,31 @@ func TestGetLinkForUpload(t *testing.T) {
 }
 
 func TestUploadFile(t *testing.T) {
+	// Setup mock client that expects two requests:
+	// 1. Get upload URL
+	// 2. Actual file upload
+	requestCount := 0
 	client := mockedHttpClient(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.NotEmpty(t, r.Header.Get("Authorization"))
 			assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
-			w.Write([]byte(`{"href": "https://uploader.disk.yandex.net/upload", "method": "PUT", "templated": false}`))
+
+			requestCount++
+			if requestCount == 1 {
+				// First request - return upload URL
+				w.Write([]byte(`{"href": "https://uploader.disk.yandex.net/upload", "method": "PUT", "templated": false}`))
+			} else {
+				// Second request - handle file upload
+				body, err := io.ReadAll(r.Body)
+				assert.NoError(t, err)
+				assert.Equal(t, "file content", string(body))
+				w.WriteHeader(http.StatusCreated)
+			}
 		}))
 
-	resp, errResp := client.UploadFile(context.Background(), "testdir/testfile", "file content")
-	assert.Nil(t, errResp)
-	assert.IsType(t, &Link{}, resp)
+	err, errResp := client.UploadFile(context.Background(), "testdir/testfile", "file content")
+	assert.Nil(t, err)
+	assert.IsType(t, &ErrorResponse{}, errResp)
 }
 
 func TestDeleteResource_EmptyPath(t *testing.T) {
@@ -285,48 +303,34 @@ func TestDeleteResource_EmptyPath(t *testing.T) {
 	}
 }
 
-// func TestDeleteResource(t *testing.T) {
-// 	t.Run("Successful deletion", func(t *testing.T) {
-// 		client := mockedHttpClient(
-// 			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 				assert.NotEmpty(t, r.Header.Get("Authorization"))
-// 				assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
-// 				w.WriteHeader(http.StatusNoContent) // Simulate 204 No Content
-// 			}))
+// mockHTTPClient is a mock HTTP client for testing
+type mockHTTPClient struct {
+	response *http.Response
+}
 
-// 		err := client.DeleteResource(context.Background(), "testdir", true)
-// 		assert.NoError(t, err)
-// 	})
+func (m *mockHTTPClient) RoundTrip(req *http.Request) (*http.Response, error) {
+	return m.response, nil
+}
 
-// 	t.Run("Empty path error", func(t *testing.T) {
-// 		client := mockedHttpClient(nil)
+func TestCopyResource_NonASCIIPath2(t *testing.T) {
+	client, _ := New("token")
+	client.HTTPClient = &http.Client{
+		Transport: &mockHTTPClient{
+			response: &http.Response{
+				StatusCode: http.StatusCreated,
+				Body: io.NopCloser(strings.NewReader(`{
+					"href": "https://example.com/copy-resource",
+					"method": "POST", 
+					"templated": false
+				}`)),
+			},
+		},
+	}
 
-// 		err := client.DeleteResource(context.Background(), "", true)
-// 		assert.Error(t, err)
-// 		assert.Equal(t, "delete error: empty path", err.Error())
-// 	})
+	link, err := client.CopyResource(context.Background(), "résumé.txt", "コピー.txt")
 
-// 	t.Run("API error response", func(t *testing.T) {
-// 		client := mockedHttpClient(
-// 			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 				assert.NotEmpty(t, r.Header.Get("Authorization"))
-// 				assert.Equal(t, "OAuth token", r.Header.Get("Authorization"))
-// 				w.WriteHeader(http.StatusBadRequest)
-// 				w.Write([]byte(`{"error": "invalid_path", "description": "The specified path is invalid."}`))
-// 			}))
-
-// 		err := client.DeleteResource(context.Background(), "*$invalid/path", true)
-// 		// assert.Error(t, err)
-// 		assert.Contains(t, err.Error(), "delete failed")
-// 		assert.Contains(t, err.Error(), "invalid_path")
-// 	})
-
-// 	t.Run("Network error", func(t *testing.T) {
-// 		client := mockedHttpClient(nil)
-
-// 		// Simulate a network error by using a nil HTTP handler
-// 		err := client.DeleteResource(context.Background(), "testdir", true)
-// 		assert.Error(t, err)
-// 		assert.Contains(t, err.Error(), "delete failed")
-// 	})
-// }
+	assert.Nil(t, err)
+	assert.Equal(t, "https://example.com/copy-resource", link.Href)
+	assert.Equal(t, "POST", link.Method)
+	assert.False(t, link.Templated)
+}
