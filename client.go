@@ -2,6 +2,7 @@ package disk
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -80,4 +81,58 @@ func (c *Client) doRequest(ctx context.Context, method HttpMethod, resource stri
 	}
 
 	return resp, err
+}
+
+// handleResponse provides centralized response handling with consistent error management
+func (c *Client) handleResponse(resp *http.Response, expectedCodes []int) (*ErrorResponse, error) {
+	if len(expectedCodes) == 0 {
+		expectedCodes = []int{200}
+	}
+	
+	// Check if status code is expected
+	for _, code := range expectedCodes {
+		if resp.StatusCode == code {
+			return nil, nil // Success
+		}
+	}
+	
+	// Handle error response
+	var errorResponse ErrorResponse
+	if resp.Body != nil {
+		decoder := json.NewDecoder(resp.Body)
+		if decodeErr := decoder.Decode(&errorResponse); decodeErr != nil {
+			// If we can't decode the error response, create a generic one
+			errorResponse = ErrorResponse{
+				Error:       fmt.Sprintf("HTTP %d: %s", resp.StatusCode, http.StatusText(resp.StatusCode)),
+				Description: fmt.Sprintf("Failed to decode error response: %v", decodeErr),
+			}
+		}
+	} else {
+		errorResponse = ErrorResponse{
+			Error: fmt.Sprintf("HTTP %d: %s", resp.StatusCode, http.StatusText(resp.StatusCode)),
+		}
+	}
+	
+	return &errorResponse, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, errorResponse.Error)
+}
+
+// safeDecodeJSON safely decodes JSON response with proper error handling for partial responses
+func (c *Client) safeDecodeJSON(resp *http.Response, target interface{}) error {
+	if resp.Body == nil {
+		return fmt.Errorf("response body is nil")
+	}
+	
+	decoder := json.NewDecoder(resp.Body)
+	if err := decoder.Decode(target); err != nil {
+		// Check if this is a partial response or connection error
+		if err.Error() == "EOF" {
+			return fmt.Errorf("partial response received: connection may have been interrupted")
+		}
+		if err.Error() == "unexpected EOF" {
+			return fmt.Errorf("incomplete response received: connection interrupted during transfer")
+		}
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+	
+	return nil
 }

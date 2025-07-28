@@ -2,7 +2,6 @@ package disk
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 )
 
@@ -14,16 +13,13 @@ func (c *Client) DiskInfo(ctx context.Context) (*Disk, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		var errorResponse ErrorResponse
-		if decodeErr := json.NewDecoder(resp.Body).Decode(&errorResponse); decodeErr != nil {
-			return nil, fmt.Errorf("request failed with status %d: %w", resp.StatusCode, decodeErr)
-		}
-		return nil, fmt.Errorf("request failed: %s", errorResponse.Error)
+	// Use centralized response handling
+	if _, err := c.handleResponse(resp, []int{200}); err != nil {
+		return nil, fmt.Errorf("failed to get disk info: %w", err)
 	}
 
-	decoded := json.NewDecoder(resp.Body)
-	if err := decoded.Decode(&disk); err != nil {
+	// Use safe JSON decoding
+	if err := c.safeDecodeJSON(resp, &disk); err != nil {
 		return nil, fmt.Errorf("failed to decode disk info: %w", err)
 	}
 

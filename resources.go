@@ -31,13 +31,9 @@ func (c *Client) DeleteResource(ctx context.Context, path string, permanently bo
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		var errorResponse ErrorResponse
-		decoded := json.NewDecoder(resp.Body)
-		if err := decoded.Decode(&errorResponse); err != nil {
-			return fmt.Errorf("delete request failed: %w", err)
-		}
-		return fmt.Errorf("delete request failed: %s", errorResponse.Error)
+	// Use centralized response handling
+	if _, err := c.handleResponse(resp, []int{200}); err != nil {
+		return fmt.Errorf("delete request failed: %w", err)
 	}
 
 	return nil
