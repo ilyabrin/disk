@@ -2,12 +2,14 @@ package disk
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -64,13 +66,36 @@ func NewWithConfig(config *ClientConfig, token ...string) (*Client, error) {
 		config = DefaultClientConfig()
 	}
 
+	// Validate and sanitize token
+	sanitizedToken := strings.TrimSpace(token[0])
+	if sanitizedToken == "" {
+		return nil, errors.New("access token cannot be empty")
+	}
+
 	// Initialize logger
 	logger := NewLogger(config.Logger)
 	
+	// Create HTTP client with secure TLS configuration
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+			CipherSuites: []uint16{
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			},
+		},
+		MaxIdleConns:        10,
+		MaxIdleConnsPerHost: 2,
+		IdleConnTimeout:     90 * time.Second,
+	}
+	
 	return &Client{
-		AccessToken: token[0],
+		AccessToken: sanitizedToken,
 		HTTPClient: &http.Client{
-			Timeout: config.DefaultTimeout,
+			Timeout:   config.DefaultTimeout,
+			Transport: transport,
 		},
 		Config: config,
 		Logger: logger,
@@ -121,6 +146,9 @@ func (c *Client) doRequest(ctx context.Context, method HttpMethod, resource stri
 
 	if method == GET || method == DELETE {
 		body = nil
+	} else if data != nil {
+		// Limit request body size to prevent memory exhaustion
+		body = io.LimitReader(data, 100*1024*1024) // 100MB limit
 	}
 
 	requestURL := API_URL + resource

@@ -1,9 +1,17 @@
 on: [push, pull_request]
 
 name: Run Tests
+
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -11,12 +19,13 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version-file: go.mod
+        check-latest: true
     - name: Run tests with coverage
       run: |
         go test -v -covermode=count -coverprofile=coverage.out
     - name: Coveralls
       uses: coverallsapp/github-action@v2.3.6
       with:
-        github-token: ${{ secrets.github_token }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         file: coverage.out
         format: golang
