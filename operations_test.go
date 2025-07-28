@@ -91,7 +91,7 @@ func TestOperationStatus(t *testing.T) {
 			t.Error("Expected response to be returned")
 		}
 
-		if resp.StatusCode != 404 {
+		if resp != nil && resp.StatusCode != 404 {
 			t.Errorf("Expected status code 404, got %d", resp.StatusCode)
 		}
 
@@ -129,7 +129,7 @@ func TestOperationStatus(t *testing.T) {
 			t.Error("Expected response to be returned")
 		}
 
-		if resp.StatusCode != 400 {
+		if resp != nil && resp.StatusCode != 400 {
 			t.Errorf("Expected status code 400, got %d", resp.StatusCode)
 		}
 

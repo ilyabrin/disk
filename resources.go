@@ -17,25 +17,25 @@ func validatePath(path string) error {
 	if path == "" {
 		return errors.New("path cannot be empty")
 	}
-	
+
 	// Remove any null bytes
 	if strings.Contains(path, "\x00") {
 		return errors.New("path contains null bytes")
 	}
-	
+
 	// Clean the path to resolve any .. sequences
 	cleaned := filepath.Clean(path)
-	
+
 	// Check for path traversal attempts
 	if strings.Contains(cleaned, "..") {
 		return errors.New("path traversal detected")
 	}
-	
+
 	// Check for excessively long paths
 	if len(path) > 4096 {
 		return errors.New("path too long")
 	}
-	
+
 	return nil
 }
 
@@ -287,7 +287,7 @@ func (c *Client) GetSortedFilesWithPagination(ctx context.Context, options *Pagi
 // GetSortedFilesPaged returns a paginated wrapper with pagination info
 func (c *Client) GetSortedFilesPaged(ctx context.Context, options *PaginationOptions) (*PagedFilesResourceList, *ErrorResponse) {
 	options = ValidatePaginationOptions(options)
-	
+
 	files, errResp := c.GetSortedFilesWithPagination(ctx, options)
 	if errResp != nil {
 		return nil, errResp
@@ -369,7 +369,7 @@ func (c *Client) GetLastUploadedResourcesWithPagination(ctx context.Context, opt
 // GetLastUploadedResourcesPaged returns a paginated wrapper with pagination info
 func (c *Client) GetLastUploadedResourcesPaged(ctx context.Context, options *PaginationOptions) (*PagedLastUploadedResourceList, *ErrorResponse) {
 	options = ValidatePaginationOptions(options)
-	
+
 	files, errResp := c.GetLastUploadedResourcesWithPagination(ctx, options)
 	if errResp != nil {
 		return nil, errResp
@@ -483,7 +483,7 @@ func (c *Client) GetPublicResourcesWithPagination(ctx context.Context, options *
 // GetPublicResourcesPaged returns a paginated wrapper with pagination info
 func (c *Client) GetPublicResourcesPaged(ctx context.Context, options *PaginationOptions) (*PagedPublicResourcesList, *ErrorResponse) {
 	options = ValidatePaginationOptions(options)
-	
+
 	list, errResp := c.GetPublicResourcesWithPagination(ctx, options)
 	if errResp != nil {
 		return nil, errResp

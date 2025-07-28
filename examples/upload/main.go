@@ -40,7 +40,7 @@ func main() {
 
 	// Set up progress callback
 	progressCallback := func(progress disk.UploadProgress) {
-		fmt.Printf("\rUploading... %.1f%% (%s / %s)", 
+		fmt.Printf("\rUploading... %.1f%% (%s / %s)",
 			progress.Percentage,
 			disk.FormatFileSize(progress.BytesUploaded),
 			disk.FormatFileSize(progress.TotalBytes))

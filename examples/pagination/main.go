@@ -28,10 +28,10 @@ func main() {
 	// Example 1: Basic pagination with offset/limit
 	fmt.Println("1. Basic Pagination with GetSortedFiles")
 	fmt.Println("--------------------------------------")
-	
+
 	options := &disk.PaginationOptions{
-		Limit:  5,  // Get 5 files per page
-		Offset: 0,  // Start from beginning
+		Limit:  5, // Get 5 files per page
+		Offset: 0, // Start from beginning
 	}
 
 	files, errResp := client.GetSortedFilesWithPagination(ctx, options)
@@ -71,11 +71,11 @@ func main() {
 
 	iteratorOptions := &disk.PaginationOptions{Limit: 3}
 	iterator := client.GetSortedFilesIterator(iteratorOptions)
-	
+
 	pageNum := 1
 	for iterator.HasNext() && pageNum <= 3 { // Limit to 3 pages for demo
 		fmt.Printf("Page %d:\n", pageNum)
-		
+
 		page, err := iterator.Next(ctx)
 		if err != nil {
 			log.Printf("Error getting next page: %v", err)
@@ -85,12 +85,12 @@ func main() {
 		for i, file := range page.FilesResourceList.Items {
 			fmt.Printf("  %d. %s\n", i+1, file.Name)
 		}
-		
-		fmt.Printf("  Pagination: Offset=%d, HasMore=%t\n", 
+
+		fmt.Printf("  Pagination: Offset=%d, HasMore=%t\n",
 			page.Pagination.Offset, page.Pagination.HasMore)
-		
+
 		pageNum++
-		
+
 		// Add a small delay to be respectful to the API
 		time.Sleep(500 * time.Millisecond)
 	}
@@ -167,8 +167,8 @@ func main() {
 
 		pageCount++
 		totalFiles += len(page.FilesResourceList.Items)
-		
-		fmt.Printf("Page %d: %d files (Total so far: %d)\n", 
+
+		fmt.Printf("Page %d: %d files (Total so far: %d)\n",
 			pageCount, len(page.FilesResourceList.Items), totalFiles)
 
 		// Add delay to be respectful
@@ -201,45 +201,45 @@ func main() {
 // Example helper function showing how to collect all results across pages
 func collectAllFiles(client *disk.Client, ctx context.Context) ([]*disk.Resource, error) {
 	var allFiles []*disk.Resource
-	
+
 	iterator := client.GetSortedFilesIterator(&disk.PaginationOptions{Limit: 20})
-	
+
 	for iterator.HasNext() {
 		page, err := iterator.Next(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get page: %w", err)
 		}
-		
+
 		allFiles = append(allFiles, page.FilesResourceList.Items...)
-		
+
 		// Add delay to respect API rate limits
 		time.Sleep(200 * time.Millisecond)
 	}
-	
+
 	return allFiles, nil
 }
 
 // Example helper function showing how to find specific files with pagination
 func findFilesByName(client *disk.Client, ctx context.Context, namePattern string) ([]*disk.Resource, error) {
 	var matchingFiles []*disk.Resource
-	
+
 	iterator := client.GetSortedFilesIterator(&disk.PaginationOptions{Limit: 50})
-	
+
 	for iterator.HasNext() {
 		page, err := iterator.Next(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get page: %w", err)
 		}
-		
+
 		for _, file := range page.FilesResourceList.Items {
 			// Simple name matching - you could use regex or other matching logic
 			if len(file.Name) > 0 && file.Name[0:1] == namePattern {
 				matchingFiles = append(matchingFiles, file)
 			}
 		}
-		
+
 		time.Sleep(200 * time.Millisecond)
 	}
-	
+
 	return matchingFiles, nil
 }

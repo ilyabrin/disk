@@ -193,13 +193,13 @@ func createPaginationInfoWithCursor(limit, offset int, itemCount int, hasTotal b
 
 // CursorPaginationIterator provides cursor-based pagination iterator
 type CursorPaginationIterator[T any] struct {
-	client       *Client
-	fetcher      func(ctx context.Context, cursor string, limit int) (T, string, error)
-	limit        int
-	currentPage  T
-	nextCursor   string
-	hasMore      bool
-	initialized  bool
+	client      *Client
+	fetcher     func(ctx context.Context, cursor string, limit int) (T, string, error)
+	limit       int
+	currentPage T
+	nextCursor  string
+	hasMore     bool
+	initialized bool
 }
 
 // NewCursorPaginationIterator creates a new cursor-based pagination iterator

@@ -11,7 +11,7 @@ func TestPaginationOptions(t *testing.T) {
 		if options == nil {
 			t.Error("Expected non-nil options")
 		}
-		if options.Limit != 20 {
+		if options == nil || options.Limit != 20 {
 			t.Errorf("Expected default limit 20, got %d", options.Limit)
 		}
 		if options.Offset != 0 {
@@ -445,7 +445,7 @@ func TestPaginationEdgeCases(t *testing.T) {
 func TestCursorPaginationWithMockData(t *testing.T) {
 	t.Run("Cursor pagination with mock fetcher", func(t *testing.T) {
 		client, _ := New("test-token")
-		
+
 		pages := []struct {
 			data   []string
 			cursor string
@@ -454,29 +454,29 @@ func TestCursorPaginationWithMockData(t *testing.T) {
 			{[]string{"item4", "item5", "item6"}, "cursor2"},
 			{[]string{"item7", "item8"}, ""},
 		}
-		
+
 		currentPage := 0
-		
+
 		fetcher := func(ctx context.Context, cursor string, limit int) (*PagedFilesResourceList, string, error) {
 			if currentPage >= len(pages) {
 				return &PagedFilesResourceList{}, "", nil
 			}
-			
+
 			page := pages[currentPage]
 			currentPage++
-			
+
 			// Mock response
 			result := &PagedFilesResourceList{
 				FilesResourceList: &FilesResourceList{
 					Items: make([]*Resource, len(page.data)),
 				},
 			}
-			
+
 			return result, page.cursor, nil
 		}
-		
+
 		iterator := NewCursorPaginationIterator(client, fetcher, 10)
-		
+
 		// Test first page
 		page1, err := iterator.Next(context.Background())
 		if err != nil {
@@ -488,7 +488,7 @@ func TestCursorPaginationWithMockData(t *testing.T) {
 		if !iterator.HasNext() {
 			t.Error("Expected more pages after first page")
 		}
-		
+
 		// Test second page
 		page2, err := iterator.Next(context.Background())
 		if err != nil {
@@ -500,7 +500,7 @@ func TestCursorPaginationWithMockData(t *testing.T) {
 		if !iterator.HasNext() {
 			t.Error("Expected more pages after second page")
 		}
-		
+
 		// Test third page (last)
 		page3, err := iterator.Next(context.Background())
 		if err != nil {
@@ -512,7 +512,7 @@ func TestCursorPaginationWithMockData(t *testing.T) {
 		if iterator.HasNext() {
 			t.Error("Expected no more pages after third page")
 		}
-		
+
 		// Test beyond last page
 		_, err = iterator.Next(context.Background())
 		if err == nil {
@@ -520,4 +520,3 @@ func TestCursorPaginationWithMockData(t *testing.T) {
 		}
 	})
 }
-

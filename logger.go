@@ -40,24 +40,24 @@ func (l LogLevel) String() string {
 
 // LoggerConfig holds configuration for the logger
 type LoggerConfig struct {
-	Level       LogLevel    // Minimum log level to output
-	Output      io.Writer   // Where to write logs (default: os.Stdout)
-	Prefix      string      // Prefix for log messages
-	TimeFormat  string      // Time format for timestamps
-	Structured  bool        // Enable structured logging
-	Verbose     bool        // Enable verbose mode (includes DEBUG level)
-	SanitizeAuth bool       // Sanitize authorization headers in logs
+	Level        LogLevel  // Minimum log level to output
+	Output       io.Writer // Where to write logs (default: os.Stdout)
+	Prefix       string    // Prefix for log messages
+	TimeFormat   string    // Time format for timestamps
+	Structured   bool      // Enable structured logging
+	Verbose      bool      // Enable verbose mode (includes DEBUG level)
+	SanitizeAuth bool      // Sanitize authorization headers in logs
 }
 
 // DefaultLoggerConfig returns a LoggerConfig with sensible defaults
 func DefaultLoggerConfig() *LoggerConfig {
 	return &LoggerConfig{
-		Level:       INFO,
-		Output:      os.Stdout,
-		Prefix:      "[disk] ",
-		TimeFormat:  "2006-01-02 15:04:05",
-		Structured:  true,
-		Verbose:     false,
+		Level:        INFO,
+		Output:       os.Stdout,
+		Prefix:       "[disk] ",
+		TimeFormat:   "2006-01-02 15:04:05",
+		Structured:   true,
+		Verbose:      false,
 		SanitizeAuth: true,
 	}
 }
@@ -94,7 +94,7 @@ func (l *DiskLogger) shouldLog(level LogLevel) bool {
 func (l *DiskLogger) formatMessage(level LogLevel, format string, args ...interface{}) string {
 	timestamp := time.Now().Format(l.config.TimeFormat)
 	message := fmt.Sprintf(format, args...)
-	
+
 	if l.config.Structured {
 		return fmt.Sprintf("[%s] %s: %s", timestamp, level.String(), message)
 	}
@@ -153,12 +153,12 @@ func (l *DiskLogger) SanitizeValue(key, value string) string {
 	if !l.config.SanitizeAuth {
 		return value
 	}
-	
+
 	lowerKey := strings.ToLower(key)
-	if strings.Contains(lowerKey, "auth") || 
-	   strings.Contains(lowerKey, "token") || 
-	   strings.Contains(lowerKey, "key") ||
-	   strings.Contains(lowerKey, "secret") {
+	if strings.Contains(lowerKey, "auth") ||
+		strings.Contains(lowerKey, "token") ||
+		strings.Contains(lowerKey, "key") ||
+		strings.Contains(lowerKey, "secret") {
 		if len(value) <= 8 {
 			return "***"
 		}
@@ -172,9 +172,9 @@ func (l *DiskLogger) LogRequest(method, url string, headers map[string]string) {
 	if !l.shouldLog(DEBUG) {
 		return
 	}
-	
+
 	l.Debug("HTTP Request: %s %s", method, url)
-	
+
 	if l.config.Verbose {
 		for key, value := range headers {
 			sanitizedValue := l.SanitizeValue(key, value)
@@ -190,7 +190,7 @@ func (l *DiskLogger) LogRequest(method, url string, headers map[string]string) {
 // LogResponse logs HTTP response details
 func (l *DiskLogger) LogResponse(statusCode int, contentLength int64, duration time.Duration) {
 	if l.shouldLog(DEBUG) {
-		l.Debug("HTTP Response: %d (Content-Length: %d, Duration: %v)", 
+		l.Debug("HTTP Response: %d (Content-Length: %d, Duration: %v)",
 			statusCode, contentLength, duration)
 	} else if l.shouldLog(INFO) && statusCode >= 400 {
 		l.Info("HTTP Error Response: %d (Duration: %v)", statusCode, duration)

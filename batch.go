@@ -16,22 +16,22 @@ type BatchOperationResult struct {
 	Error     error         `json:"error,omitempty"`
 	Operation string        `json:"operation"`
 	Duration  time.Duration `json:"duration"`
-	Link      *Link         `json:"link,omitempty"`      // For async operations
-	Resource  *Resource     `json:"resource,omitempty"`  // For operations that return resources
+	Link      *Link         `json:"link,omitempty"`     // For async operations
+	Resource  *Resource     `json:"resource,omitempty"` // For operations that return resources
 }
 
 // BatchOperationStatus represents the overall status of a batch operation
 type BatchOperationStatus struct {
-	Total       int                     `json:"total"`
-	Completed   int                     `json:"completed"`
-	Successful  int                     `json:"successful"`
-	Failed      int                     `json:"failed"`
-	InProgress  int                     `json:"in_progress"`
-	Results     []*BatchOperationResult `json:"results"`
-	StartTime   time.Time               `json:"start_time"`
-	EndTime     *time.Time              `json:"end_time,omitempty"`
-	Duration    time.Duration           `json:"duration"`
-	Percentage  float64                 `json:"percentage"`
+	Total      int                     `json:"total"`
+	Completed  int                     `json:"completed"`
+	Successful int                     `json:"successful"`
+	Failed     int                     `json:"failed"`
+	InProgress int                     `json:"in_progress"`
+	Results    []*BatchOperationResult `json:"results"`
+	StartTime  time.Time               `json:"start_time"`
+	EndTime    *time.Time              `json:"end_time,omitempty"`
+	Duration   time.Duration           `json:"duration"`
+	Percentage float64                 `json:"percentage"`
 }
 
 // BatchProgressCallback is called during batch operations to report progress
@@ -39,7 +39,7 @@ type BatchProgressCallback func(status BatchOperationStatus)
 
 // BatchOptions contains configuration options for batch operations
 type BatchOptions struct {
-	MaxConcurrency int                    // Maximum number of concurrent operations (default: 5)
+	MaxConcurrency  int                   // Maximum number of concurrent operations (default: 5)
 	ContinueOnError bool                  // Whether to continue processing if some operations fail
 	Progress        BatchProgressCallback // Optional progress callback
 	Timeout         time.Duration         // Timeout for individual operations
@@ -55,14 +55,14 @@ type BatchDeleteOptions struct {
 type BatchCopyMoveOptions struct {
 	BatchOptions
 	DestinationPrefix string // Prefix to add to destination paths
-	Overwrite        bool   // Whether to overwrite existing files
+	Overwrite         bool   // Whether to overwrite existing files
 }
 
 // BatchUpdateMetadataOptions contains options for batch metadata updates
 type BatchUpdateMetadataOptions struct {
 	BatchOptions
 	CustomProperties map[string]map[string]string // Properties to set on all files
-	Fields          []string                     // Specific fields to update
+	Fields           []string                     // Specific fields to update
 }
 
 // BatchDeleteFiles deletes multiple files in parallel
@@ -144,7 +144,7 @@ func (c *Client) BatchDeleteFiles(ctx context.Context, paths []string, options *
 				status.Failed++
 			}
 			status.Percentage = float64(status.Completed) / float64(status.Total) * 100
-			
+
 			// Report progress if callback is provided
 			if options.Progress != nil {
 				statusCopy := *status
@@ -165,7 +165,7 @@ func (c *Client) BatchDeleteFiles(ctx context.Context, paths []string, options *
 	status.Duration = endTime.Sub(status.StartTime)
 	status.InProgress = 0
 
-	c.Logger.Info("Batch delete completed: %d/%d successful, %d failed in %v", 
+	c.Logger.Info("Batch delete completed: %d/%d successful, %d failed in %v",
 		status.Successful, status.Total, status.Failed, status.Duration)
 
 	return status, nil
@@ -256,7 +256,7 @@ func (c *Client) BatchCopyFiles(ctx context.Context, operations map[string]strin
 				status.Failed++
 			}
 			status.Percentage = float64(status.Completed) / float64(status.Total) * 100
-			
+
 			// Report progress if callback is provided
 			if options.Progress != nil {
 				statusCopy := *status
@@ -278,7 +278,7 @@ func (c *Client) BatchCopyFiles(ctx context.Context, operations map[string]strin
 	status.Duration = endTime.Sub(status.StartTime)
 	status.InProgress = 0
 
-	c.Logger.Info("Batch copy completed: %d/%d successful, %d failed in %v", 
+	c.Logger.Info("Batch copy completed: %d/%d successful, %d failed in %v",
 		status.Successful, status.Total, status.Failed, status.Duration)
 
 	return status, nil
@@ -369,7 +369,7 @@ func (c *Client) BatchMoveFiles(ctx context.Context, operations map[string]strin
 				status.Failed++
 			}
 			status.Percentage = float64(status.Completed) / float64(status.Total) * 100
-			
+
 			// Report progress if callback is provided
 			if options.Progress != nil {
 				statusCopy := *status
@@ -391,7 +391,7 @@ func (c *Client) BatchMoveFiles(ctx context.Context, operations map[string]strin
 	status.Duration = endTime.Sub(status.StartTime)
 	status.InProgress = 0
 
-	c.Logger.Info("Batch move completed: %d/%d successful, %d failed in %v", 
+	c.Logger.Info("Batch move completed: %d/%d successful, %d failed in %v",
 		status.Successful, status.Total, status.Failed, status.Duration)
 
 	return status, nil
@@ -480,7 +480,7 @@ func (c *Client) BatchUpdateMetadata(ctx context.Context, paths []string, custom
 				status.Failed++
 			}
 			status.Percentage = float64(status.Completed) / float64(status.Total) * 100
-			
+
 			// Report progress if callback is provided
 			if options.Progress != nil {
 				statusCopy := *status
@@ -501,7 +501,7 @@ func (c *Client) BatchUpdateMetadata(ctx context.Context, paths []string, custom
 	status.Duration = endTime.Sub(status.StartTime)
 	status.InProgress = 0
 
-	c.Logger.Info("Batch metadata update completed: %d/%d successful, %d failed in %v", 
+	c.Logger.Info("Batch metadata update completed: %d/%d successful, %d failed in %v",
 		status.Successful, status.Total, status.Failed, status.Duration)
 
 	return status, nil
@@ -624,7 +624,7 @@ func (c *Client) BatchRenameFiles(ctx context.Context, paths []string, prefix, s
 		filename := filepath.Base(path)
 		ext := filepath.Ext(filename)
 		nameWithoutExt := strings.TrimSuffix(filename, ext)
-		
+
 		newFilename := prefix + nameWithoutExt + suffix + ext
 		newPath := filepath.Join(dir, newFilename)
 		operations[path] = newPath

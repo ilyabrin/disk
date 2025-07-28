@@ -193,7 +193,7 @@ func (c *Client) uploadFileMultipart(ctx context.Context, localPath string, remo
 
 	// Note: Yandex Disk API doesn't have built-in resumable upload like Google Drive
 	// For large files, we use the standard upload with better progress tracking and retry logic
-	
+
 	// Open the file for reading
 	file, err := os.Open(localPath)
 	if err != nil {
@@ -249,7 +249,7 @@ func (c *Client) uploadFileMultipart(ctx context.Context, localPath string, remo
 			c.HTTPClient.Timeout = originalTimeout // Restore original timeout
 		}()
 	}
-	
+
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		c.Logger.LogError("multipart file upload", err)
@@ -289,7 +289,7 @@ type progressReader struct {
 func (pr *progressReader) Read(p []byte) (int, error) {
 	n, err := pr.reader.Read(p)
 	pr.current += int64(n)
-	
+
 	if pr.callback != nil {
 		percentage := float64(pr.current) / float64(pr.total) * 100
 		pr.callback(UploadProgress{
@@ -298,27 +298,27 @@ func (pr *progressReader) Read(p []byte) (int, error) {
 			Percentage:    percentage,
 		})
 	}
-	
+
 	return n, err
 }
 
 // multipartProgressReader provides chunked progress tracking for large file uploads
 type multipartProgressReader struct {
-	reader    io.Reader
-	total     int64
-	current   int64
-	chunkSize int64
-	callback  ProgressCallback
+	reader       io.Reader
+	total        int64
+	current      int64
+	chunkSize    int64
+	callback     ProgressCallback
 	lastReported int64
 }
 
 func (mpr *multipartProgressReader) Read(p []byte) (int, error) {
 	n, err := mpr.reader.Read(p)
 	mpr.current += int64(n)
-	
+
 	if mpr.callback != nil {
 		// Report progress every chunk or at the end
-		if mpr.current - mpr.lastReported >= mpr.chunkSize || err == io.EOF {
+		if mpr.current-mpr.lastReported >= mpr.chunkSize || err == io.EOF {
 			percentage := float64(mpr.current) / float64(mpr.total) * 100
 			mpr.callback(UploadProgress{
 				BytesUploaded: mpr.current,
@@ -328,7 +328,7 @@ func (mpr *multipartProgressReader) Read(p []byte) (int, error) {
 			mpr.lastReported = mpr.current
 		}
 	}
-	
+
 	return n, err
 }
 

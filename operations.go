@@ -9,7 +9,7 @@ import (
 )
 
 // TODO: add tests and use generics instead of interface{}
-func (c *Client) OperationStatus(ctx context.Context, operationID string) (interface{}, *http.Response, error) {
+func (c *Client) OperationStatus(ctx context.Context, operationID string) (any, *http.Response, error) {
 	query := url.Values{}
 	query.Set("operation_id", operationID)
 	resp, err := c.doRequest(ctx, GET, "operations?"+query.Encode(), nil)

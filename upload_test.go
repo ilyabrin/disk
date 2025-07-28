@@ -12,7 +12,7 @@ import (
 func TestUploadFileFromPath(t *testing.T) {
 	t.Run("UploadFileFromPath function exists and validates input", func(t *testing.T) {
 		client, _ := New("test-token")
-		
+
 		// Test that the method exists and can be called
 		// We expect it to fail since we don't have a real token, but we're just testing the method exists
 		_, err := client.UploadFileFromPath(context.Background(), "", "/test/upload.txt", nil)
@@ -87,7 +87,7 @@ func TestUploadFileFromPath(t *testing.T) {
 
 	t.Run("UploadFileFromPath progress callback validation", func(t *testing.T) {
 		client, _ := New("test-token")
-		
+
 		// Test that progress callback is properly accepted and validated
 		var progressUpdates []UploadProgress
 		progressCallback := func(progress UploadProgress) {
@@ -103,7 +103,7 @@ func TestUploadFileFromPath(t *testing.T) {
 		if err == nil {
 			t.Error("Expected error for non-existent file")
 		}
-		
+
 		// Verify the error is about file validation, not about progress callback
 		if !strings.Contains(err.Error(), "file does not exist") {
 			t.Errorf("Expected file validation error, got: %s", err.Error())
@@ -277,7 +277,7 @@ func TestUploadOptions(t *testing.T) {
 		if err == nil {
 			t.Error("Expected error for non-existent file")
 		}
-		
+
 		// Verify the error is about file validation, not about options
 		if !strings.Contains(err.Error(), "file does not exist") {
 			t.Errorf("Expected file validation error, got: %s", err.Error())
@@ -339,7 +339,7 @@ func TestUtilityFunctions(t *testing.T) {
 
 	t.Run("FormatFileSize formats correctly", func(t *testing.T) {
 		testCases := []struct {
-			bytes   int64
+			bytes    int64
 			expected string
 		}{
 			{512, "512 B"},
@@ -382,7 +382,7 @@ func TestConvenienceMethods(t *testing.T) {
 func TestUploadInternalFunctions(t *testing.T) {
 	t.Run("UploadFile function validation", func(t *testing.T) {
 		client, _ := New("test-token")
-		
+
 		// Test the public UploadFile function with correct signature
 		_, err := client.UploadFile(context.Background(), "/test/file.txt", "https://mock-upload-url.com")
 		if err != nil {
@@ -393,16 +393,16 @@ func TestUploadInternalFunctions(t *testing.T) {
 
 	t.Run("DetectMimeType covers additional cases", func(t *testing.T) {
 		client, _ := New("test-token")
-		
+
 		// Test DetectMimeType with various extensions
 		testCases := []struct {
 			filename string
-			contains string  // Use contains instead of exact match
+			contains string // Use contains instead of exact match
 		}{
 			{"test.txt", "text/plain"},
 			{"test.json", "application/json"},
 		}
-		
+
 		for _, tc := range testCases {
 			mimeType, _ := client.DetectMimeType(tc.filename)
 			if !strings.Contains(mimeType, tc.contains) {

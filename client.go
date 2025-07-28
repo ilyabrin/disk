@@ -29,19 +29,19 @@ const (
 
 // ClientConfig holds configuration options for the Client
 type ClientConfig struct {
-	DefaultTimeout    time.Duration // Default timeout for requests
-	MaxRetries        int           // Maximum number of retries (future use)
-	EnableDebugLogging bool         // Enable debug logging (future use)
-	Logger            *LoggerConfig // Logger configuration
+	DefaultTimeout     time.Duration // Default timeout for requests
+	MaxRetries         int           // Maximum number of retries (future use)
+	EnableDebugLogging bool          // Enable debug logging (future use)
+	Logger             *LoggerConfig // Logger configuration
 }
 
 // DefaultClientConfig returns a ClientConfig with sensible defaults
 func DefaultClientConfig() *ClientConfig {
 	return &ClientConfig{
-		DefaultTimeout:    30 * time.Second,
-		MaxRetries:        3,
+		DefaultTimeout:     30 * time.Second,
+		MaxRetries:         3,
 		EnableDebugLogging: false,
-		Logger:            DefaultLoggerConfig(),
+		Logger:             DefaultLoggerConfig(),
 	}
 }
 
@@ -74,7 +74,7 @@ func NewWithConfig(config *ClientConfig, token ...string) (*Client, error) {
 
 	// Initialize logger
 	logger := NewLogger(config.Logger)
-	
+
 	// Create HTTP client with secure TLS configuration
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{
@@ -90,7 +90,7 @@ func NewWithConfig(config *ClientConfig, token ...string) (*Client, error) {
 		MaxIdleConnsPerHost: 2,
 		IdleConnTimeout:     90 * time.Second,
 	}
-	
+
 	return &Client{
 		AccessToken: sanitizedToken,
 		HTTPClient: &http.Client{
@@ -110,7 +110,7 @@ func New(token ...string) (*Client, error) {
 
 func (c *Client) doRequest(ctx context.Context, method HttpMethod, resource string, data io.Reader) (*http.Response, error) {
 	startTime := time.Now()
-	
+
 	// Ensure we have a proper context
 	if ctx == nil {
 		ctx = context.Background()
@@ -174,7 +174,7 @@ func (c *Client) doRequest(ctx context.Context, method HttpMethod, resource stri
 
 	if resp, err = c.HTTPClient.Do(req); err != nil {
 		c.Logger.LogError("execute request", err)
-		
+
 		// Provide more context about the error
 		if ctx.Err() != nil {
 			return nil, fmt.Errorf("request failed due to context: %w", ctx.Err())
@@ -256,14 +256,14 @@ func (c *Client) handleResponse(resp *http.Response, expectedCodes []int) (*Erro
 	if len(expectedCodes) == 0 {
 		expectedCodes = []int{200}
 	}
-	
+
 	// Check if status code is expected
 	for _, code := range expectedCodes {
 		if resp.StatusCode == code {
 			return nil, nil // Success
 		}
 	}
-	
+
 	// Handle error response
 	var errorResponse ErrorResponse
 	if resp.Body != nil {
@@ -280,7 +280,7 @@ func (c *Client) handleResponse(resp *http.Response, expectedCodes []int) (*Erro
 			Error: fmt.Sprintf("HTTP %d: %s", resp.StatusCode, http.StatusText(resp.StatusCode)),
 		}
 	}
-	
+
 	return &errorResponse, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, errorResponse.Error)
 }
 
@@ -289,7 +289,7 @@ func (c *Client) safeDecodeJSON(resp *http.Response, target interface{}) error {
 	if resp.Body == nil {
 		return fmt.Errorf("response body is nil")
 	}
-	
+
 	decoder := json.NewDecoder(resp.Body)
 	if err := decoder.Decode(target); err != nil {
 		// Check if this is a partial response or connection error
@@ -301,6 +301,6 @@ func (c *Client) safeDecodeJSON(resp *http.Response, target interface{}) error {
 		}
 		return fmt.Errorf("failed to decode response: %w", err)
 	}
-	
+
 	return nil
 }

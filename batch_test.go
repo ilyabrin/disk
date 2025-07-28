@@ -25,7 +25,7 @@ func TestBatchDeleteFiles(t *testing.T) {
 		client, _ := New("test-token")
 
 		paths := []string{"/file1.txt", "/file2.txt"}
-		
+
 		// This will fail at the API level but we're testing the batch structure
 		status, err := client.BatchDeleteFiles(context.Background(), paths, nil)
 		if err != nil {
@@ -58,7 +58,7 @@ func TestBatchDeleteFiles(t *testing.T) {
 		}
 
 		paths := []string{"/file1.txt"}
-		
+
 		status, err := client.BatchDeleteFiles(context.Background(), paths, options)
 		if err != nil {
 			t.Fatal("Batch delete should not fail on setup:", err)
@@ -90,7 +90,7 @@ func TestBatchCopyFiles(t *testing.T) {
 			"/source1.txt": "/dest1.txt",
 			"/source2.txt": "/dest2.txt",
 		}
-		
+
 		status, err := client.BatchCopyFiles(context.Background(), operations, nil)
 		if err != nil {
 			t.Fatal("Batch copy should not fail on setup:", err)
@@ -122,7 +122,7 @@ func TestBatchCopyFiles(t *testing.T) {
 		operations := map[string]string{
 			"/source.txt": "/dest.txt",
 		}
-		
+
 		status, err := client.BatchCopyFiles(context.Background(), operations, options)
 		if err != nil {
 			t.Fatal("Batch copy should not fail on setup:", err)
@@ -154,7 +154,7 @@ func TestBatchMoveFiles(t *testing.T) {
 			"/old1.txt": "/new1.txt",
 			"/old2.txt": "/new2.txt",
 		}
-		
+
 		status, err := client.BatchMoveFiles(context.Background(), operations, nil)
 		if err != nil {
 			t.Fatal("Batch move should not fail on setup:", err)
@@ -214,7 +214,7 @@ func TestBatchUpdateMetadata(t *testing.T) {
 				"author": "user123",
 			},
 		}
-		
+
 		status, err := client.BatchUpdateMetadata(context.Background(), paths, customProps, nil)
 		if err != nil {
 			t.Fatal("Batch metadata update should not fail on setup:", err)
@@ -238,13 +238,13 @@ func TestBatchOperationStatus(t *testing.T) {
 	t.Run("GetSummary provides correct summary", func(t *testing.T) {
 		endTime := time.Now()
 		status := &BatchOperationStatus{
-			Total:       5,
-			Completed:   5,
-			Successful:  3,
-			Failed:      2,
-			Percentage:  100.0,
-			Duration:    time.Minute,
-			EndTime:     &endTime,
+			Total:      5,
+			Completed:  5,
+			Successful: 3,
+			Failed:     2,
+			Percentage: 100.0,
+			Duration:   time.Minute,
+			EndTime:    &endTime,
 			Results: []*BatchOperationResult{
 				{Path: "/file1.txt", Success: true, Operation: "delete", Duration: time.Second},
 				{Path: "/file2.txt", Success: true, Operation: "delete", Duration: time.Second},
@@ -318,7 +318,7 @@ func TestBatchOptions(t *testing.T) {
 		client, _ := New("test-token")
 
 		paths := []string{"/file1.txt"}
-		
+
 		// Test with nil options - should use defaults
 		status, err := client.BatchDeleteFiles(context.Background(), paths, nil)
 		if err != nil {
@@ -345,7 +345,7 @@ func TestBatchOptions(t *testing.T) {
 		}
 
 		paths := []string{"/file1.txt"}
-		
+
 		status, err := client.BatchDeleteFiles(context.Background(), paths, options)
 		if err != nil {
 			t.Fatal("Batch delete should not fail on setup:", err)
@@ -365,7 +365,7 @@ func TestBatchConvenienceMethods(t *testing.T) {
 		client, _ := New("test-token")
 
 		paths := []string{"/file1.txt"}
-		
+
 		status, err := client.BatchDeleteFilesSimple(context.Background(), paths, true)
 		if err != nil {
 			t.Fatal("Batch delete simple should not fail on setup:", err)
@@ -500,7 +500,7 @@ func TestBatchConvenienceMethodsExtended(t *testing.T) {
 			"/source1.txt": "/dest1.txt",
 			"/source2.txt": "/dest2.txt",
 		}
-		
+
 		status, err := client.BatchCopyFilesSimple(context.Background(), operations)
 		if err != nil {
 			t.Fatal("BatchCopyFilesSimple should not fail on setup:", err)
@@ -518,7 +518,7 @@ func TestBatchConvenienceMethodsExtended(t *testing.T) {
 			"/old1.txt": "/new1.txt",
 			"/old2.txt": "/new2.txt",
 		}
-		
+
 		status, err := client.BatchMoveFilesSimple(context.Background(), operations)
 		if err != nil {
 			t.Fatal("BatchMoveFilesSimple should not fail on setup:", err)
@@ -533,7 +533,7 @@ func TestBatchConvenienceMethodsExtended(t *testing.T) {
 		client, _ := New("test-token")
 
 		paths := []string{"/file1.txt", "/file2.txt"}
-		
+
 		status, err := client.BatchRenameFiles(context.Background(), paths, "backup_", "_old", nil)
 		if err != nil {
 			t.Fatal("BatchRenameFiles should not fail on setup:", err)
@@ -548,7 +548,7 @@ func TestBatchConvenienceMethodsExtended(t *testing.T) {
 		client, _ := New("test-token")
 
 		paths := []string{"/file1.txt", "/file2.txt"}
-		
+
 		status, err := client.BatchMoveToDirectory(context.Background(), paths, "/backup", nil)
 		if err != nil {
 			t.Fatal("BatchMoveToDirectory should not fail on setup:", err)
@@ -563,7 +563,7 @@ func TestBatchConvenienceMethodsExtended(t *testing.T) {
 		client, _ := New("test-token")
 
 		paths := []string{"/file1.txt", "/file2.txt"}
-		
+
 		status, err := client.BatchCopyToDirectory(context.Background(), paths, "/backup", nil)
 		if err != nil {
 			t.Fatal("BatchCopyToDirectory should not fail on setup:", err)
@@ -585,7 +585,7 @@ func TestBatchConvenienceMethodsExtended(t *testing.T) {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
-		
+
 		err := client.WaitForBatchOperation(ctx, status, 50*time.Millisecond)
 		if err == nil {
 			t.Log("Operation completed or no async operations found")
