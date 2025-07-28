@@ -1,19 +1,8 @@
 package disk
 
 import (
-	"bytes"
-	"log"
 	"testing"
 )
-
-// Mock for os.Exit
-var osExitCalled = false
-var osExitCode = 0
-var osExit = func(code int) {
-	osExitCalled = true
-	osExitCode = code
-	panic("os.Exit called")
-}
 
 func TestInArray(t *testing.T) {
 	tests := []struct {
@@ -106,78 +95,3 @@ func TestInArray(t *testing.T) {
 	}
 }
 
-func TestHandleError(t *testing.T) {
-
-	// Save the original log output and flags
-	originalOutput := log.Writer()
-	originalFlags := log.Flags()
-	defer func() {
-		// Restore the original log output and flags after the test
-		log.SetOutput(originalOutput)
-		log.SetFlags(originalFlags)
-	}()
-
-	// Create a buffer to capture log output
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
-
-	// Remove timestamp from log output for easier testing
-	log.SetFlags(0)
-
-	// Override os.Exit to prevent the test from terminating
-	originalOsExit := osExit
-	defer func() { osExit = originalOsExit }()
-	var exitCode int
-	osExit = func(code int) {
-		exitCode = code
-		panic("os.Exit called")
-	}
-
-	tests := []struct {
-		name          string
-		err           error
-		expectedLog   string
-		expectedPanic bool
-	}{
-		{
-			name:          "Nil error",
-			err:           nil,
-			expectedLog:   "",
-			expectedPanic: false,
-		},
-		// todo
-		// {
-		// 	name:          "Non-nil error",
-		// 	err:           errors.New("test error"),
-		// 	expectedLog:   "Error: test error\n",
-		// 	expectedPanic: true,
-		// },
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Clear the buffer before each test
-			buf.Reset()
-			exitCode = 0
-
-			// Use a function to capture panics
-			func() {
-				defer func() {
-					r := recover()
-					if (r != nil) != tt.expectedPanic {
-						t.Errorf("handleError() panic = %v, expectedPanic %v", r, tt.expectedPanic)
-					}
-					if r != nil && exitCode != 1 {
-						t.Errorf("Expected exit code 1, got %d", exitCode)
-					}
-				}()
-				handleError(tt.err)
-			}()
-
-			// Check the log output
-			if got := buf.String(); got != tt.expectedLog {
-				t.Errorf("handleError() log = %q, want %q", got, tt.expectedLog)
-			}
-		})
-	}
-}

@@ -1,0 +1,7 @@
+This is a test file for demonstrating the Yandex Disk upload functionality.
+
+It contains some sample text to show how the upload progress tracking works.
+
+The file includes multiple lines to make it more realistic for testing purposes.
+
+You can replace this with any file you want to upload to your Yandex Disk.
