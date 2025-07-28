@@ -491,3 +491,128 @@ func TestBatchUtilityMethods(t *testing.T) {
 		}
 	})
 }
+
+func TestBatchConvenienceMethodsExtended(t *testing.T) {
+	t.Run("BatchCopyFilesSimple", func(t *testing.T) {
+		client, _ := New("test-token")
+
+		operations := map[string]string{
+			"/source1.txt": "/dest1.txt",
+			"/source2.txt": "/dest2.txt",
+		}
+		
+		status, err := client.BatchCopyFilesSimple(context.Background(), operations)
+		if err != nil {
+			t.Fatal("BatchCopyFilesSimple should not fail on setup:", err)
+		}
+
+		if status.Total != 2 {
+			t.Errorf("Expected total 2, got %d", status.Total)
+		}
+	})
+
+	t.Run("BatchMoveFilesSimple", func(t *testing.T) {
+		client, _ := New("test-token")
+
+		operations := map[string]string{
+			"/old1.txt": "/new1.txt",
+			"/old2.txt": "/new2.txt",
+		}
+		
+		status, err := client.BatchMoveFilesSimple(context.Background(), operations)
+		if err != nil {
+			t.Fatal("BatchMoveFilesSimple should not fail on setup:", err)
+		}
+
+		if status.Total != 2 {
+			t.Errorf("Expected total 2, got %d", status.Total)
+		}
+	})
+
+	t.Run("BatchRenameFiles with valid inputs", func(t *testing.T) {
+		client, _ := New("test-token")
+
+		paths := []string{"/file1.txt", "/file2.txt"}
+		
+		status, err := client.BatchRenameFiles(context.Background(), paths, "backup_", "_old", nil)
+		if err != nil {
+			t.Fatal("BatchRenameFiles should not fail on setup:", err)
+		}
+
+		if status.Total != 2 {
+			t.Errorf("Expected total 2, got %d", status.Total)
+		}
+	})
+
+	t.Run("BatchMoveToDirectory with valid inputs", func(t *testing.T) {
+		client, _ := New("test-token")
+
+		paths := []string{"/file1.txt", "/file2.txt"}
+		
+		status, err := client.BatchMoveToDirectory(context.Background(), paths, "/backup", nil)
+		if err != nil {
+			t.Fatal("BatchMoveToDirectory should not fail on setup:", err)
+		}
+
+		if status.Total != 2 {
+			t.Errorf("Expected total 2, got %d", status.Total)
+		}
+	})
+
+	t.Run("BatchCopyToDirectory with valid inputs", func(t *testing.T) {
+		client, _ := New("test-token")
+
+		paths := []string{"/file1.txt", "/file2.txt"}
+		
+		status, err := client.BatchCopyToDirectory(context.Background(), paths, "/backup", nil)
+		if err != nil {
+			t.Fatal("BatchCopyToDirectory should not fail on setup:", err)
+		}
+
+		if status.Total != 2 {
+			t.Errorf("Expected total 2, got %d", status.Total)
+		}
+	})
+
+	t.Run("WaitForBatchOperation with async operations", func(t *testing.T) {
+		client, _ := New("test-token")
+
+		status := &BatchOperationStatus{
+			Results: []*BatchOperationResult{
+				{Path: "/file1.txt", Success: true, Operation: "delete", Link: &Link{Href: "async123"}},
+			},
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer cancel()
+		
+		err := client.WaitForBatchOperation(ctx, status, 50*time.Millisecond)
+		if err == nil {
+			t.Log("Operation completed or no async operations found")
+		}
+	})
+
+	t.Run("RetryFailedOperations with failed operations", func(t *testing.T) {
+		client, _ := New("test-token")
+
+		status := &BatchOperationStatus{
+			Total:      2,
+			Completed:  2,
+			Successful: 1,
+			Failed:     1,
+			Results: []*BatchOperationResult{
+				{Path: "/file1.txt", Success: true, Operation: "delete"},
+				{Path: "/file2.txt", Success: false, Error: errors.New("test error"), Operation: "delete"},
+			},
+		}
+
+		retryStatus, err := client.RetryFailedOperations(context.Background(), status, 1)
+		if err != nil {
+			t.Fatal("RetryFailedOperations should not fail on setup:", err)
+		}
+
+		if retryStatus.Total == 0 {
+			t.Error("Expected retry status to have operations")
+		}
+	})
+}
