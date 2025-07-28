@@ -24,11 +24,14 @@ jobs:
       with:
         languages: go
 
-    - name: build
-      uses: docker://golang:1.23.2-alpine3.20
+    - name: Set up Go
+      uses: actions/setup-go@v5
       with:
-        entrypoint: /bin/sh
-        args: -c "go build ."
+        go-version-file: go.mod
+        check-latest: true
+    
+    - name: Build
+      run: go build .
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
