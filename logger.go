@@ -178,11 +178,7 @@ func (l *DiskLogger) LogRequest(method, url string, headers map[string]string) {
 	if l.config.Verbose {
 		for key, value := range headers {
 			sanitizedValue := l.SanitizeValue(key, value)
-			if sanitizedValue != value {
-				l.Debug("  Header: %s: %s", key, sanitizedValue)
-			} else {
-				l.Debug("  Header: %s: [sanitized]", key)
-			}
+			l.Debug("  Header: %s: %s", key, sanitizedValue)
 		}
 	}
 }
