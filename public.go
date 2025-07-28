@@ -3,65 +3,82 @@ package disk
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"fmt"
 	"net/http"
 )
 
 func (c *Client) GetMetadataForPublicResource(ctx context.Context, public_key string) (*PublicResource, *ErrorResponse) {
+	if len(public_key) < 1 {
+		return nil, &ErrorResponse{Error: "public_key cannot be empty"}
+	}
+
 	var resource *PublicResource
 	var errorResponse *ErrorResponse
-	var err error
-	var decoded *json.Decoder
 
 	resp, err := c.doRequest(ctx, GET, "public/resources?public_key="+public_key, nil)
-	handleError(err)
+	if err != nil {
+		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
+	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		decoded = json.NewDecoder(resp.Body)
-		err := decoded.Decode(&errorResponse)
-		handleError(err)
-
+		decoded := json.NewDecoder(resp.Body)
+		if err := decoded.Decode(&errorResponse); err != nil {
+			return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode error response: %v", err)}
+		}
 		return nil, errorResponse
 	}
-	decoded = json.NewDecoder(resp.Body)
+
+	decoded := json.NewDecoder(resp.Body)
 	if err := decoded.Decode(&resource); err != nil {
-		log.Fatal(err)
+		return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode resource: %v", err)}
 	}
 	return resource, nil
 }
 
 func (c *Client) GetDownloadURLForPublicResource(ctx context.Context, public_key string) (*Link, *ErrorResponse) {
+	if len(public_key) < 1 {
+		return nil, &ErrorResponse{Error: "public_key cannot be empty"}
+	}
+
 	var link *Link
 	var errorResponse *ErrorResponse
-	var err error
-	var decoded *json.Decoder
 
 	resp, err := c.doRequest(ctx, GET, "public/resources/download?public_key="+public_key, nil)
-	handleError(err)
+	if err != nil {
+		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
+	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		decoded = json.NewDecoder(resp.Body)
-		err := decoded.Decode(&errorResponse)
-		handleError(err)
+		decoded := json.NewDecoder(resp.Body)
+		if err := decoded.Decode(&errorResponse); err != nil {
+			return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode error response: %v", err)}
+		}
 		return nil, errorResponse
 	}
 
-	decoded = json.NewDecoder(resp.Body)
+	decoded := json.NewDecoder(resp.Body)
 	if err := decoded.Decode(&link); err != nil {
-		log.Fatal(err)
+		return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode link: %v", err)}
 	}
 
 	return link, nil
 }
 
 func (c *Client) SavePublicResource(ctx context.Context, public_key string) (*Link, *ErrorResponse) {
+	if len(public_key) < 1 {
+		return nil, &ErrorResponse{Error: "public_key cannot be empty"}
+	}
+
 	var link *Link
 	var errorResponse *ErrorResponse
-	var err error
-	var decoded *json.Decoder
 
 	resp, err := c.doRequest(ctx, POST, "public/resources/save-to-disk?public_key="+public_key, nil)
-	handleError(err)
+	if err != nil {
+		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
+	}
+	defer resp.Body.Close()
 
 	// Если сохранение происходит асинхронно,
 	// то вернёт ответ с кодом 202 и ссылкой на асинхронную операцию.
@@ -71,15 +88,16 @@ func (c *Client) SavePublicResource(ctx context.Context, public_key string) (*Li
 		http.StatusCreated,
 		http.StatusAccepted,
 	}) {
-		decoded = json.NewDecoder(resp.Body)
-		err := decoded.Decode(&errorResponse)
-		handleError(err)
+		decoded := json.NewDecoder(resp.Body)
+		if err := decoded.Decode(&errorResponse); err != nil {
+			return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode error response: %v", err)}
+		}
 		return nil, errorResponse
 	}
 
-	decoded = json.NewDecoder(resp.Body)
+	decoded := json.NewDecoder(resp.Body)
 	if err := decoded.Decode(&link); err != nil {
-		log.Fatal(err)
+		return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode link: %v", err)}
 	}
 
 	return link, nil

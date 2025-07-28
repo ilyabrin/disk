@@ -21,3 +21,4 @@ example.go
 .DS_Store
 
 TODO
+.claude/settings.local.json

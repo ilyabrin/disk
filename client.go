@@ -2,6 +2,7 @@ package disk
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -65,16 +66,14 @@ func (c *Client) doRequest(ctx context.Context, method HttpMethod, resource stri
 
 	req, err := http.NewRequestWithContext(ctx, string(method), API_URL+resource, body)
 	if err != nil {
-		c.Logger.Fatal("error request", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "OAuth "+c.AccessToken)
 
 	if resp, err = c.HTTPClient.Do(req); err != nil {
-		c.Logger.Fatal("error response", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
 
 	return resp, err
