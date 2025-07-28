@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 )
 
 func (c *Client) GetMetadataForPublicResource(ctx context.Context, public_key string) (*PublicResource, *ErrorResponse) {
@@ -15,7 +16,9 @@ func (c *Client) GetMetadataForPublicResource(ctx context.Context, public_key st
 	var resource *PublicResource
 	var errorResponse *ErrorResponse
 
-	resp, err := c.doRequest(ctx, GET, "public/resources?public_key="+public_key, nil)
+	query := url.Values{}
+	query.Set("public_key", public_key)
+	resp, err := c.doRequest(ctx, GET, "public/resources?"+query.Encode(), nil)
 	if err != nil {
 		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
 	}
@@ -44,7 +47,9 @@ func (c *Client) GetDownloadURLForPublicResource(ctx context.Context, public_key
 	var link *Link
 	var errorResponse *ErrorResponse
 
-	resp, err := c.doRequest(ctx, GET, "public/resources/download?public_key="+public_key, nil)
+	query := url.Values{}
+	query.Set("public_key", public_key)
+	resp, err := c.doRequest(ctx, GET, "public/resources/download?"+query.Encode(), nil)
 	if err != nil {
 		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
 	}
@@ -74,7 +79,9 @@ func (c *Client) SavePublicResource(ctx context.Context, public_key string) (*Li
 	var link *Link
 	var errorResponse *ErrorResponse
 
-	resp, err := c.doRequest(ctx, POST, "public/resources/save-to-disk?public_key="+public_key, nil)
+	query := url.Values{}
+	query.Set("public_key", public_key)
+	resp, err := c.doRequest(ctx, POST, "public/resources/save-to-disk?"+query.Encode(), nil)
 	if err != nil {
 		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
 	}

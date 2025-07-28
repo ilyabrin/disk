@@ -31,11 +31,11 @@ type Client struct {
 }
 
 // New(token ...string) fetch token from OS env var if has not direct defined
-func New(token ...string) *Client {
+func New(token ...string) (*Client, error) {
 	if len(token) == 0 {
 		envToken := os.Getenv("YANDEX_DISK_ACCESS_TOKEN")
 		if envToken == "" {
-			return nil
+			return nil, fmt.Errorf("access token not provided and YANDEX_DISK_ACCESS_TOKEN env var not set")
 		}
 		token = append(token, envToken)
 	}
@@ -43,9 +43,9 @@ func New(token ...string) *Client {
 	return &Client{
 		AccessToken: token[0],
 		HTTPClient: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: 30 * time.Second,
 		},
-	}
+	}, nil
 }
 
 func (c *Client) doRequest(ctx context.Context, method HttpMethod, resource string, data io.Reader) (*http.Response, error) {
@@ -56,9 +56,12 @@ func (c *Client) doRequest(ctx context.Context, method HttpMethod, resource stri
 
 	body = data
 
-	// todo: make time parameterized, not const
-	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(10*time.Second))
-	defer cancel()
+	// Use configurable timeout or context deadline if already set
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, c.HTTPClient.Timeout)
+		defer cancel()
+	}
 
 	if method == GET || method == DELETE {
 		body = nil

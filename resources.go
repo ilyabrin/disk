@@ -51,7 +51,9 @@ func (c *Client) GetMetadata(ctx context.Context, path string) (*Resource, *Erro
 	var resource *Resource
 	var errorResponse *ErrorResponse
 
-	resp, err := c.doRequest(ctx, GET, "resources?path="+path, nil)
+	query := url.Values{}
+	query.Set("path", path)
+	resp, err := c.doRequest(ctx, GET, "resources?"+query.Encode(), nil)
 	if err != nil {
 		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
 	}
@@ -96,7 +98,9 @@ func (c *Client) UpdateMetadata(ctx context.Context, path string, custom_propert
 		return nil, &ErrorResponse{Error: fmt.Sprintf("failed to marshal properties: %v", err)}
 	}
 
-	resp, err := c.doRequest(ctx, PATCH, "resources?path="+path, bytes.NewBuffer(body))
+	query := url.Values{}
+	query.Set("path", path)
+	resp, err := c.doRequest(ctx, PATCH, "resources?"+query.Encode(), bytes.NewBuffer(body))
 	if err != nil {
 		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
 	}
@@ -127,7 +131,9 @@ func (c *Client) CreateDir(ctx context.Context, path string) (*Link, *ErrorRespo
 	var link *Link
 	var errorResponse *ErrorResponse
 
-	resp, err := c.doRequest(ctx, PUT, "resources?path="+path, nil)
+	query := url.Values{}
+	query.Set("path", path)
+	resp, err := c.doRequest(ctx, PUT, "resources?"+query.Encode(), nil)
 	if err != nil {
 		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
 	}
@@ -156,7 +162,10 @@ func (c *Client) CopyResource(ctx context.Context, from, path string) (*Link, *E
 	var link *Link
 	var errorResponse *ErrorResponse
 
-	resp, err := c.doRequest(ctx, POST, "resources/copy?from="+from+"&path="+path, nil)
+	query := url.Values{}
+	query.Set("from", from)
+	query.Set("path", path)
+	resp, err := c.doRequest(ctx, POST, "resources/copy?"+query.Encode(), nil)
 	if err != nil {
 		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
 	}
@@ -185,7 +194,9 @@ func (c *Client) GetDownloadURL(ctx context.Context, path string) (*Link, *Error
 	var link *Link
 	var errorResponse *ErrorResponse
 
-	resp, err := c.doRequest(ctx, GET, "resources/download?path="+path, nil)
+	query := url.Values{}
+	query.Set("path", path)
+	resp, err := c.doRequest(ctx, GET, "resources/download?"+query.Encode(), nil)
 	if err != nil {
 		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
 	}
@@ -266,7 +277,10 @@ func (c *Client) MoveResource(ctx context.Context, from, path string) (*Link, *E
 	var link *Link
 	var errorResponse *ErrorResponse
 
-	resp, err := c.doRequest(ctx, POST, "resources/move?from="+from+"&path="+path, nil)
+	query := url.Values{}
+	query.Set("from", from)
+	query.Set("path", path)
+	resp, err := c.doRequest(ctx, POST, "resources/move?"+query.Encode(), nil)
 	if err != nil {
 		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
 	}
@@ -322,7 +336,9 @@ func (c *Client) PublishResource(ctx context.Context, path string) (*Link, *Erro
 	var link *Link
 	var errorResponse *ErrorResponse
 
-	resp, err := c.doRequest(ctx, PUT, "resources/publish?path="+path, nil)
+	query := url.Values{}
+	query.Set("path", path)
+	resp, err := c.doRequest(ctx, PUT, "resources/publish?"+query.Encode(), nil)
 	if err != nil {
 		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
 	}
@@ -352,7 +368,9 @@ func (c *Client) UnpublishResource(ctx context.Context, path string) (*Link, *Er
 	var link *Link
 	var errorResponse *ErrorResponse
 
-	resp, err := c.doRequest(ctx, PUT, "resources/unpublish?path="+path, nil)
+	query := url.Values{}
+	query.Set("path", path)
+	resp, err := c.doRequest(ctx, PUT, "resources/unpublish?"+query.Encode(), nil)
 	if err != nil {
 		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
 	}
@@ -382,7 +400,9 @@ func (c *Client) GetLinkForUpload(ctx context.Context, path string) (*ResourceUp
 	var resource *ResourceUploadLink
 	var errorResponse *ErrorResponse
 
-	resp, err := c.doRequest(ctx, GET, "resources/upload?path="+path, nil)
+	query := url.Values{}
+	query.Set("path", path)
+	resp, err := c.doRequest(ctx, GET, "resources/upload?"+query.Encode(), nil)
 	if err != nil {
 		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
 	}
@@ -405,15 +425,18 @@ func (c *Client) GetLinkForUpload(ctx context.Context, path string) (*ResourceUp
 }
 
 // todo: empty resonses - fix it
-func (c *Client) UploadFile(ctx context.Context, path, url string) (*Link, *ErrorResponse) {
-	if len(path) < 1 || len(url) < 1 {
+func (c *Client) UploadFile(ctx context.Context, path, uploadURL string) (*Link, *ErrorResponse) {
+	if len(path) < 1 || len(uploadURL) < 1 {
 		return nil, &ErrorResponse{Error: "path and url cannot be empty"}
 	}
 
 	var link *Link
 	var errorResponse *ErrorResponse
 
-	resp, err := c.doRequest(ctx, POST, "resources/upload?path="+path+"&url="+url, nil)
+	queryParams := url.Values{}
+	queryParams.Set("path", path)
+	queryParams.Set("url", uploadURL)
+	resp, err := c.doRequest(ctx, POST, "resources/upload?"+queryParams.Encode(), nil)
 	if err != nil {
 		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
 	}
