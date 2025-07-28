@@ -7,8 +7,37 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"strconv"
+	"strings"
 )
+
+// validatePath sanitizes and validates file paths to prevent path traversal attacks
+func validatePath(path string) error {
+	if path == "" {
+		return errors.New("path cannot be empty")
+	}
+	
+	// Remove any null bytes
+	if strings.Contains(path, "\x00") {
+		return errors.New("path contains null bytes")
+	}
+	
+	// Clean the path to resolve any .. sequences
+	cleaned := filepath.Clean(path)
+	
+	// Check for path traversal attempts
+	if strings.Contains(cleaned, "..") {
+		return errors.New("path traversal detected")
+	}
+	
+	// Check for excessively long paths
+	if len(path) > 4096 {
+		return errors.New("path too long")
+	}
+	
+	return nil
+}
 
 func (c *Client) buildDeleteResourceURL(path string, permanently bool) string {
 	query := url.Values{}
@@ -19,8 +48,8 @@ func (c *Client) buildDeleteResourceURL(path string, permanently bool) string {
 
 // todo: add *ErrorResponse to return
 func (c *Client) DeleteResource(ctx context.Context, path string, permanently bool) error {
-	if path == "" {
-		return errors.New("delete error: path cannot be empty")
+	if err := validatePath(path); err != nil {
+		return fmt.Errorf("delete error: %w", err)
 	}
 
 	url := c.buildDeleteResourceURL(path, permanently)
@@ -40,8 +69,8 @@ func (c *Client) DeleteResource(ctx context.Context, path string, permanently bo
 }
 
 func (c *Client) GetMetadata(ctx context.Context, path string) (*Resource, *ErrorResponse) {
-	if len(path) < 1 {
-		return nil, &ErrorResponse{Error: "path cannot be empty"}
+	if err := validatePath(path); err != nil {
+		return nil, &ErrorResponse{Error: err.Error()}
 	}
 
 	var resource *Resource
