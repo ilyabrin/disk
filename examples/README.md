@@ -4,12 +4,13 @@ This directory contains examples demonstrating the file upload functionality imp
 
 ## Examples
 
-### 1. `demo.go` - Utility Functions Demo
+### 1. `demo/main.go` - Utility Functions Demo
 
 A demonstration of utility functions that work without requiring a Yandex Disk token:
 
 ```bash
-go run demo.go test_file.txt
+cd demo
+go run main.go test_file.txt
 ```
 
 **Features demonstrated:**
@@ -19,7 +20,7 @@ go run demo.go test_file.txt
 - Upload method recommendations based on file size
 - File size formatting examples
 
-### 2. `upload_example.go` - Full Upload Example
+### 2. `upload/main.go` - Full Upload Example
 
 A complete example showing how to upload files to Yandex Disk with progress tracking:
 
@@ -28,7 +29,8 @@ A complete example showing how to upload files to Yandex Disk with progress trac
 export YANDEX_DISK_TOKEN="your_token_here"
 
 # Upload a file
-go run upload_example.go test_file.txt /uploaded/test_file.txt
+cd upload
+go run main.go test_file.txt /uploaded/test_file.txt
 ```
 
 **Features demonstrated:**
@@ -37,6 +39,28 @@ go run upload_example.go test_file.txt /uploaded/test_file.txt
 - Automatic selection of upload method based on file size
 - Progress callback with formatted file sizes
 - Error handling and validation
+
+### 3. `pagination/main.go` - Pagination Examples
+
+A comprehensive example demonstrating all pagination features:
+
+```bash
+# Set your OAuth token
+export YANDEX_DISK_TOKEN="your_token_here"
+
+# Run pagination examples
+cd pagination
+go run main.go
+```
+
+**Features demonstrated:**
+
+- Basic offset/limit pagination
+- Enhanced pagination with metadata
+- Iterator patterns for seamless page traversal
+- Cursor-based pagination concepts
+- Custom page sizes and configuration
+- Rate limiting and best practices
 
 ## Getting a Yandex Disk Token
 

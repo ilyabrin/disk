@@ -214,10 +214,27 @@ func (c *Client) GetDownloadURL(ctx context.Context, path string) (*Link, *Error
 }
 
 func (c *Client) GetSortedFiles(ctx context.Context) (*FilesResourceList, *ErrorResponse) {
+	return c.GetSortedFilesWithPagination(ctx, nil)
+}
+
+// GetSortedFilesWithPagination gets a sorted list of files with pagination support
+func (c *Client) GetSortedFilesWithPagination(ctx context.Context, options *PaginationOptions) (*FilesResourceList, *ErrorResponse) {
 	var files *FilesResourceList
 	var errorResponse *ErrorResponse
 
-	resp, err := c.doRequest(ctx, GET, "resources/files", nil)
+	// Validate and normalize pagination options
+	options = ValidatePaginationOptions(options)
+
+	// Build query parameters
+	query := url.Values{}
+	addPaginationParams(query, options)
+
+	endpoint := "resources/files"
+	if len(query) > 0 {
+		endpoint += "?" + query.Encode()
+	}
+
+	resp, err := c.doRequest(ctx, GET, endpoint, nil)
 	if err != nil {
 		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
 	}
@@ -238,12 +255,67 @@ func (c *Client) GetSortedFiles(ctx context.Context) (*FilesResourceList, *Error
 	return files, nil
 }
 
+// GetSortedFilesPaged returns a paginated wrapper with pagination info
+func (c *Client) GetSortedFilesPaged(ctx context.Context, options *PaginationOptions) (*PagedFilesResourceList, *ErrorResponse) {
+	options = ValidatePaginationOptions(options)
+	
+	files, errResp := c.GetSortedFilesWithPagination(ctx, options)
+	if errResp != nil {
+		return nil, errResp
+	}
+
+	// Create pagination info
+	itemCount := len(files.Items)
+	paginationInfo := createPaginationInfo(
+		options.Limit,
+		options.Offset,
+		itemCount,
+		false, // FilesResourceList doesn't provide total count
+		0,
+	)
+
+	return &PagedFilesResourceList{
+		FilesResourceList: files,
+		Pagination:        paginationInfo,
+	}, nil
+}
+
+// GetSortedFilesIterator returns an iterator for paginated access to sorted files
+func (c *Client) GetSortedFilesIterator(options *PaginationOptions) *PaginationIterator[*PagedFilesResourceList] {
+	fetcher := func(ctx context.Context, opts *PaginationOptions) (*PagedFilesResourceList, error) {
+		result, errResp := c.GetSortedFilesPaged(ctx, opts)
+		if errResp != nil {
+			return nil, fmt.Errorf(errResp.Error)
+		}
+		return result, nil
+	}
+
+	return NewPaginationIterator(c, fetcher, options)
+}
+
 // get | sortBy = [name = default, uploadDate]
 func (c *Client) GetLastUploadedResources(ctx context.Context) (*LastUploadedResourceList, *ErrorResponse) {
+	return c.GetLastUploadedResourcesWithPagination(ctx, nil)
+}
+
+// GetLastUploadedResourcesWithPagination gets last uploaded resources with pagination support
+func (c *Client) GetLastUploadedResourcesWithPagination(ctx context.Context, options *PaginationOptions) (*LastUploadedResourceList, *ErrorResponse) {
 	var files *LastUploadedResourceList
 	var errorResponse *ErrorResponse
 
-	resp, err := c.doRequest(ctx, GET, "resources/last-uploaded", nil)
+	// Validate and normalize pagination options
+	options = ValidatePaginationOptions(options)
+
+	// Build query parameters
+	query := url.Values{}
+	addPaginationParams(query, options)
+
+	endpoint := "resources/last-uploaded"
+	if len(query) > 0 {
+		endpoint += "?" + query.Encode()
+	}
+
+	resp, err := c.doRequest(ctx, GET, endpoint, nil)
 	if err != nil {
 		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
 	}
@@ -263,6 +335,44 @@ func (c *Client) GetLastUploadedResources(ctx context.Context) (*LastUploadedRes
 	}
 
 	return files, nil
+}
+
+// GetLastUploadedResourcesPaged returns a paginated wrapper with pagination info
+func (c *Client) GetLastUploadedResourcesPaged(ctx context.Context, options *PaginationOptions) (*PagedLastUploadedResourceList, *ErrorResponse) {
+	options = ValidatePaginationOptions(options)
+	
+	files, errResp := c.GetLastUploadedResourcesWithPagination(ctx, options)
+	if errResp != nil {
+		return nil, errResp
+	}
+
+	// Create pagination info
+	itemCount := len(files.Items)
+	paginationInfo := createPaginationInfo(
+		options.Limit,
+		options.Offset,
+		itemCount,
+		false, // LastUploadedResourceList doesn't provide total count
+		0,
+	)
+
+	return &PagedLastUploadedResourceList{
+		LastUploadedResourceList: files,
+		Pagination:               paginationInfo,
+	}, nil
+}
+
+// GetLastUploadedResourcesIterator returns an iterator for paginated access to last uploaded resources
+func (c *Client) GetLastUploadedResourcesIterator(options *PaginationOptions) *PaginationIterator[*PagedLastUploadedResourceList] {
+	fetcher := func(ctx context.Context, opts *PaginationOptions) (*PagedLastUploadedResourceList, error) {
+		result, errResp := c.GetLastUploadedResourcesPaged(ctx, opts)
+		if errResp != nil {
+			return nil, fmt.Errorf(errResp.Error)
+		}
+		return result, nil
+	}
+
+	return NewPaginationIterator(c, fetcher, options)
 }
 
 func (c *Client) MoveResource(ctx context.Context, from, path string) (*Link, *ErrorResponse) {
@@ -299,10 +409,27 @@ func (c *Client) MoveResource(ctx context.Context, from, path string) (*Link, *E
 }
 
 func (c *Client) GetPublicResources(ctx context.Context) (*PublicResourcesList, *ErrorResponse) {
+	return c.GetPublicResourcesWithPagination(ctx, nil)
+}
+
+// GetPublicResourcesWithPagination gets public resources with pagination support
+func (c *Client) GetPublicResourcesWithPagination(ctx context.Context, options *PaginationOptions) (*PublicResourcesList, *ErrorResponse) {
 	var list *PublicResourcesList
 	var errorResponse *ErrorResponse
 
-	resp, err := c.doRequest(ctx, GET, "resources/public", nil)
+	// Validate and normalize pagination options
+	options = ValidatePaginationOptions(options)
+
+	// Build query parameters
+	query := url.Values{}
+	addPaginationParams(query, options)
+
+	endpoint := "resources/public"
+	if len(query) > 0 {
+		endpoint += "?" + query.Encode()
+	}
+
+	resp, err := c.doRequest(ctx, GET, endpoint, nil)
 	if err != nil {
 		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
 	}
@@ -322,6 +449,44 @@ func (c *Client) GetPublicResources(ctx context.Context) (*PublicResourcesList, 
 	}
 
 	return list, nil
+}
+
+// GetPublicResourcesPaged returns a paginated wrapper with pagination info
+func (c *Client) GetPublicResourcesPaged(ctx context.Context, options *PaginationOptions) (*PagedPublicResourcesList, *ErrorResponse) {
+	options = ValidatePaginationOptions(options)
+	
+	list, errResp := c.GetPublicResourcesWithPagination(ctx, options)
+	if errResp != nil {
+		return nil, errResp
+	}
+
+	// Create pagination info - PublicResourcesList includes limit and offset
+	itemCount := len(list.Items)
+	paginationInfo := createPaginationInfo(
+		list.Limit,  // Use actual limit from response
+		list.Offset, // Use actual offset from response
+		itemCount,
+		false, // PublicResourcesList doesn't provide total count
+		0,
+	)
+
+	return &PagedPublicResourcesList{
+		PublicResourcesList: list,
+		Pagination:          paginationInfo,
+	}, nil
+}
+
+// GetPublicResourcesIterator returns an iterator for paginated access to public resources
+func (c *Client) GetPublicResourcesIterator(options *PaginationOptions) *PaginationIterator[*PagedPublicResourcesList] {
+	fetcher := func(ctx context.Context, opts *PaginationOptions) (*PagedPublicResourcesList, error) {
+		result, errResp := c.GetPublicResourcesPaged(ctx, opts)
+		if errResp != nil {
+			return nil, fmt.Errorf(errResp.Error)
+		}
+		return result, nil
+	}
+
+	return NewPaginationIterator(c, fetcher, options)
 }
 
 func (c *Client) PublishResource(ctx context.Context, path string) (*Link, *ErrorResponse) {
