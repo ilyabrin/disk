@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -31,6 +30,7 @@ type ClientConfig struct {
 	DefaultTimeout    time.Duration // Default timeout for requests
 	MaxRetries        int           // Maximum number of retries (future use)
 	EnableDebugLogging bool         // Enable debug logging (future use)
+	Logger            *LoggerConfig // Logger configuration
 }
 
 // DefaultClientConfig returns a ClientConfig with sensible defaults
@@ -39,13 +39,14 @@ func DefaultClientConfig() *ClientConfig {
 		DefaultTimeout:    30 * time.Second,
 		MaxRetries:        3,
 		EnableDebugLogging: false,
+		Logger:            DefaultLoggerConfig(),
 	}
 }
 
 type Client struct {
 	AccessToken string
 	HTTPClient  *http.Client
-	Logger      *log.Logger
+	Logger      *DiskLogger
 	Config      *ClientConfig
 }
 
@@ -63,12 +64,16 @@ func NewWithConfig(config *ClientConfig, token ...string) (*Client, error) {
 		config = DefaultClientConfig()
 	}
 
+	// Initialize logger
+	logger := NewLogger(config.Logger)
+	
 	return &Client{
 		AccessToken: token[0],
 		HTTPClient: &http.Client{
 			Timeout: config.DefaultTimeout,
 		},
 		Config: config,
+		Logger: logger,
 	}, nil
 }
 
@@ -79,6 +84,8 @@ func New(token ...string) (*Client, error) {
 }
 
 func (c *Client) doRequest(ctx context.Context, method HttpMethod, resource string, data io.Reader) (*http.Response, error) {
+	startTime := time.Now()
+	
 	// Ensure we have a proper context
 	if ctx == nil {
 		ctx = context.Background()
@@ -106,6 +113,7 @@ func (c *Client) doRequest(ctx context.Context, method HttpMethod, resource stri
 	// Check if context is already cancelled before making the request
 	select {
 	case <-ctx.Done():
+		c.Logger.LogError("doRequest", ctx.Err())
 		return nil, fmt.Errorf("request cancelled: %w", ctx.Err())
 	default:
 		// Continue with request
@@ -115,20 +123,45 @@ func (c *Client) doRequest(ctx context.Context, method HttpMethod, resource stri
 		body = nil
 	}
 
-	req, err := http.NewRequestWithContext(ctx, string(method), API_URL+resource, body)
+	requestURL := API_URL + resource
+	req, err := http.NewRequestWithContext(ctx, string(method), requestURL, body)
 	if err != nil {
+		c.Logger.LogError("create request", err)
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "OAuth "+c.AccessToken)
 
+	// Log request details
+	if c.Logger != nil {
+		headers := make(map[string]string)
+		for key, values := range req.Header {
+			if len(values) > 0 {
+				headers[key] = values[0]
+			}
+		}
+		c.Logger.LogRequest(string(method), requestURL, headers)
+	}
+
 	if resp, err = c.HTTPClient.Do(req); err != nil {
+		c.Logger.LogError("execute request", err)
+		
 		// Provide more context about the error
 		if ctx.Err() != nil {
 			return nil, fmt.Errorf("request failed due to context: %w", ctx.Err())
 		}
 		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+
+	// Log response details
+	if c.Logger != nil {
+		duration := time.Since(startTime)
+		contentLength := resp.ContentLength
+		if contentLength == -1 {
+			contentLength = 0
+		}
+		c.Logger.LogResponse(resp.StatusCode, contentLength, duration)
 	}
 
 	return resp, err
@@ -164,6 +197,30 @@ func (c *Client) GetTimeout() time.Duration {
 		return c.Config.DefaultTimeout
 	}
 	return c.HTTPClient.Timeout
+}
+
+// SetLogLevel sets the minimum log level for the client
+func (c *Client) SetLogLevel(level LogLevel) {
+	if c.Logger != nil {
+		c.Logger.SetLevel(level)
+	}
+}
+
+// SetVerbose enables or disables verbose logging
+func (c *Client) SetVerbose(verbose bool) {
+	if c.Logger != nil {
+		c.Logger.SetVerbose(verbose)
+	}
+	if c.Config != nil {
+		c.Config.EnableDebugLogging = verbose
+	}
+}
+
+// SetLogOutput changes the log output destination
+func (c *Client) SetLogOutput(output io.Writer) {
+	if c.Logger != nil {
+		c.Logger.SetOutput(output)
+	}
 }
 
 // handleResponse provides centralized response handling with consistent error management
