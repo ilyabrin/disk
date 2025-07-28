@@ -3,6 +3,7 @@ package disk
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -11,7 +12,7 @@ import (
 	"time"
 )
 
-// todo: add context cancellation
+// Context management and timeout handling implemented
 
 const API_URL = "https://cloud-api.yandex.net/v1/disk/"
 
@@ -25,31 +26,63 @@ const (
 	DELETE HttpMethod = "DELETE"
 )
 
+// ClientConfig holds configuration options for the Client
+type ClientConfig struct {
+	DefaultTimeout    time.Duration // Default timeout for requests
+	MaxRetries        int           // Maximum number of retries (future use)
+	EnableDebugLogging bool         // Enable debug logging (future use)
+}
+
+// DefaultClientConfig returns a ClientConfig with sensible defaults
+func DefaultClientConfig() *ClientConfig {
+	return &ClientConfig{
+		DefaultTimeout:    30 * time.Second,
+		MaxRetries:        3,
+		EnableDebugLogging: false,
+	}
+}
+
 type Client struct {
 	AccessToken string
 	HTTPClient  *http.Client
 	Logger      *log.Logger
+	Config      *ClientConfig
 }
 
-// New(token ...string) fetch token from OS env var if has not direct defined
-func New(token ...string) (*Client, error) {
+// NewWithConfig creates a new Client with custom configuration
+func NewWithConfig(config *ClientConfig, token ...string) (*Client, error) {
 	if len(token) == 0 {
 		envToken := os.Getenv("YANDEX_DISK_ACCESS_TOKEN")
 		if envToken == "" {
-			return nil, fmt.Errorf("access token not provided and YANDEX_DISK_ACCESS_TOKEN env var not set")
+			return nil, errors.New("provide yandex disk access token")
 		}
 		token = append(token, envToken)
+	}
+
+	if config == nil {
+		config = DefaultClientConfig()
 	}
 
 	return &Client{
 		AccessToken: token[0],
 		HTTPClient: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: config.DefaultTimeout,
 		},
+		Config: config,
 	}, nil
 }
 
+// New(token ...string) fetch token from OS env var if has not direct defined
+// Uses default configuration for backward compatibility
+func New(token ...string) (*Client, error) {
+	return NewWithConfig(nil, token...)
+}
+
 func (c *Client) doRequest(ctx context.Context, method HttpMethod, resource string, data io.Reader) (*http.Response, error) {
+	// Ensure we have a proper context
+	if ctx == nil {
+		ctx = context.Background()
+	}
 
 	var resp *http.Response
 	var err error
@@ -57,11 +90,25 @@ func (c *Client) doRequest(ctx context.Context, method HttpMethod, resource stri
 
 	body = data
 
-	// Use configurable timeout or context deadline if already set
-	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+	// Use configurable timeout from client config if no deadline is set
+	// This respects any existing context deadline while providing a fallback
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline && c.Config != nil {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, c.Config.DefaultTimeout)
+		defer cancel()
+	} else if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		// Fallback to HTTP client timeout if no config is available
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, c.HTTPClient.Timeout)
 		defer cancel()
+	}
+
+	// Check if context is already cancelled before making the request
+	select {
+	case <-ctx.Done():
+		return nil, fmt.Errorf("request cancelled: %w", ctx.Err())
+	default:
+		// Continue with request
 	}
 
 	if method == GET || method == DELETE {
@@ -77,10 +124,46 @@ func (c *Client) doRequest(ctx context.Context, method HttpMethod, resource stri
 	req.Header.Add("Authorization", "OAuth "+c.AccessToken)
 
 	if resp, err = c.HTTPClient.Do(req); err != nil {
+		// Provide more context about the error
+		if ctx.Err() != nil {
+			return nil, fmt.Errorf("request failed due to context: %w", ctx.Err())
+		}
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
 
 	return resp, err
+}
+
+// WithTimeout creates a context with the specified timeout duration
+func WithTimeout(timeout time.Duration) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), timeout)
+}
+
+// WithDeadline creates a context with the specified deadline
+func WithDeadline(deadline time.Time) (context.Context, context.CancelFunc) {
+	return context.WithDeadline(context.Background(), deadline)
+}
+
+// WithCancel creates a cancellable context
+func WithCancel() (context.Context, context.CancelFunc) {
+	return context.WithCancel(context.Background())
+}
+
+// SetTimeout updates the default timeout for the client
+func (c *Client) SetTimeout(timeout time.Duration) {
+	if c.Config == nil {
+		c.Config = DefaultClientConfig()
+	}
+	c.Config.DefaultTimeout = timeout
+	c.HTTPClient.Timeout = timeout
+}
+
+// GetTimeout returns the current default timeout for the client
+func (c *Client) GetTimeout() time.Duration {
+	if c.Config != nil {
+		return c.Config.DefaultTimeout
+	}
+	return c.HTTPClient.Timeout
 }
 
 // handleResponse provides centralized response handling with consistent error management
