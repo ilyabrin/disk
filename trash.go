@@ -1,60 +1,152 @@
 package disk
 
-// TODO
+import (
+	"context"
+	"fmt"
+	"net/url"
+)
 
-/*
-func (c *Client) Delete(ctx context.Context, path string, params *QueryParams) (*Link, *ErrorResponse) {
-	resp, err := c.delete(ctx, s.client.apiURL+"trash/resources?path="+path, nil, params)
+// RestoreFromTrash restores a resource from trash to its original location or a new path
+func (c *Client) RestoreFromTrash(ctx context.Context, path string, overwrite bool, name string) (*Link, error) {
+	if path == "" {
+		return nil, fmt.Errorf("path cannot be empty")
+	}
+
+	query := url.Values{}
+	query.Set("path", path)
+	if overwrite {
+		query.Set("overwrite", "true")
+	}
+	if name != "" {
+		query.Set("name", name)
+	}
+
+	c.Logger.Debug("Restoring resource from trash: %s", path)
+
+	resp, err := c.doRequest(ctx, PUT, "trash/resources/restore?"+query.Encode(), nil)
 	if err != nil {
-		return nil, handleResponseCode(resp.StatusCode)
+		c.Logger.LogError("restore from trash", err)
+		return nil, fmt.Errorf("failed to restore from trash: %w", err)
 	}
 	defer resp.Body.Close()
 
-	var link *Link
+	// Handle different response codes
+	if _, err := c.handleResponse(resp, []int{200, 201, 202}); err != nil {
+		return nil, fmt.Errorf("failed to restore from trash: %w", err)
+	}
 
-	if resp.StatusCode == http.StatusOK {
-		err = json.NewDecoder(resp.Body).Decode(&link)
-		if err != nil {
-			return nil, jsonDecodeError(err)
+	var link Link
+	if resp.StatusCode == 202 {
+		// Asynchronous operation - return link with operation info
+		if err := c.safeDecodeJSON(resp, &link); err != nil {
+			return nil, fmt.Errorf("failed to decode restore response: %w", err)
 		}
 	}
 
-	return nil, nil
+	c.Logger.Info("Successfully restored resource from trash: %s", path)
+	return &link, nil
 }
 
-// RestoreFromTrash -
-func (s *TrashService) Restore(ctx context.Context, path string, params *QueryParams) (*Link, *Operation, *ErrorResponse) {
-	var link *Link
+// ListTrashResources lists resources in the trash, optionally filtered by path
+func (c *Client) ListTrashResources(ctx context.Context, path string, limit int, offset int) (*TrashResourceList, error) {
+	query := url.Values{}
+	if path != "" {
+		query.Set("path", path)
+	}
+	if limit > 0 {
+		query.Set("limit", fmt.Sprintf("%d", limit))
+	}
+	if offset > 0 {
+		query.Set("offset", fmt.Sprintf("%d", offset))
+	}
 
-	resp, err := s.client.put(ctx, s.client.apiURL+"trash/resources/restore?path="+path, nil, nil, params)
-	if haveError(err) {
-		return nil, nil, handleResponseCode(resp.StatusCode)
+	c.Logger.Debug("Listing trash resources with path: %s", path)
+
+	resp, err := c.doRequest(ctx, GET, "trash/resources?"+query.Encode(), nil)
+	if err != nil {
+		c.Logger.LogError("list trash resources", err)
+		return nil, fmt.Errorf("failed to list trash resources: %w", err)
 	}
 	defer resp.Body.Close()
 
-	err = json.NewDecoder(resp.Body).Decode(&link)
-	if haveError(err) {
-		return nil, nil, jsonDecodeError(err)
+	if _, err := c.handleResponse(resp, []int{200}); err != nil {
+		return nil, fmt.Errorf("failed to list trash resources: %w", err)
 	}
 
-	return link, nil, nil
+	var trashList TrashResourceList
+	if err := c.safeDecodeJSON(resp, &trashList); err != nil {
+		return nil, fmt.Errorf("failed to decode trash list: %w", err)
+	}
+
+	c.Logger.Info("Successfully listed %d trash resources", len(trashList.Items))
+	return &trashList, nil
 }
 
-// ListTrashResources -
-func (s *TrashService) List(ctx context.Context, path string, params *QueryParams) (*TrashResource, *ErrorResponse) {
-	var resource *TrashResource
+// EmptyTrash permanently deletes all resources from trash or a specific path in trash
+func (c *Client) EmptyTrash(ctx context.Context, path string, force bool) error {
+	query := url.Values{}
+	if path != "" {
+		query.Set("path", path)
+	}
+	if force {
+		query.Set("force_async", "false")
+	}
 
-	resp, err := s.client.get(ctx, s.client.apiURL+"trash/resources?path="+path, params)
-	if haveError(err) {
-		return nil, handleResponseCode(resp.StatusCode)
+	c.Logger.Debug("Emptying trash with path: %s", path)
+
+	resp, err := c.doRequest(ctx, DELETE, "trash/resources?"+query.Encode(), nil)
+	if err != nil {
+		c.Logger.LogError("empty trash", err)
+		return fmt.Errorf("failed to empty trash: %w", err)
 	}
 	defer resp.Body.Close()
 
-	err = json.NewDecoder(resp.Body).Decode(&resource)
-	if haveError(err) {
-		return nil, jsonDecodeError(err)
+	// Handle different response codes
+	if _, err := c.handleResponse(resp, []int{200, 202, 204}); err != nil {
+		return fmt.Errorf("failed to empty trash: %w", err)
 	}
 
-	return resource, nil
+	if resp.StatusCode == 202 {
+		c.Logger.Info("Trash emptying started asynchronously")
+	} else {
+		c.Logger.Info("Successfully emptied trash")
+	}
+
+	return nil
 }
-*/
+
+// GetTrashResourceMetadata retrieves metadata for a specific resource in trash
+func (c *Client) GetTrashResourceMetadata(ctx context.Context, path string, fields []string) (*TrashResource, error) {
+	if path == "" {
+		return nil, fmt.Errorf("path cannot be empty")
+	}
+
+	query := url.Values{}
+	query.Set("path", path)
+	if len(fields) > 0 {
+		for _, field := range fields {
+			query.Add("fields", field)
+		}
+	}
+
+	c.Logger.Debug("Getting trash resource metadata: %s", path)
+
+	resp, err := c.doRequest(ctx, GET, "trash/resources?"+query.Encode(), nil)
+	if err != nil {
+		c.Logger.LogError("get trash resource metadata", err)
+		return nil, fmt.Errorf("failed to get trash resource metadata: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if _, err := c.handleResponse(resp, []int{200}); err != nil {
+		return nil, fmt.Errorf("failed to get trash resource metadata: %w", err)
+	}
+
+	var trashResource TrashResource
+	if err := c.safeDecodeJSON(resp, &trashResource); err != nil {
+		return nil, fmt.Errorf("failed to decode trash resource metadata: %w", err)
+	}
+
+	c.Logger.Info("Successfully retrieved trash resource metadata: %s", path)
+	return &trashResource, nil
+}

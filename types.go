@@ -136,3 +136,18 @@ type ErrorResponse struct {
 	Description string `json:"description"`
 	Error       string `json:"error"`
 }
+
+// TrashResource represents a resource in the trash
+type TrashResource struct {
+	Resource
+	OriginPath string `json:"origin_path,omitempty"` // Original path before deletion
+	Deleted    string `json:"deleted,omitempty"`     // Deletion timestamp
+}
+
+// TrashResourceList represents a list of resources in trash
+type TrashResourceList struct {
+	Items  []*TrashResource `json:"items"`            // List of trash resources
+	Limit  int              `json:"limit,omitempty"`  // Number of items per page
+	Offset int              `json:"offset,omitempty"` // Offset from the beginning of the list
+	Path   string           `json:"path"`             // Path in trash
+}
