@@ -24,7 +24,7 @@ jobs:
       run: |
         go test -v -covermode=count -coverprofile=coverage.out
     - name: Coveralls
-      uses: coverallsapp/github-action@v2.3.6
+      uses: coverallsapp/github-action@v2.3.7
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         file: coverage.out
