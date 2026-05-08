@@ -68,16 +68,50 @@ func (c *Client) DeleteResource(ctx context.Context, path string, permanently bo
 	return nil
 }
 
+// ResourceOptions contains optional parameters for GetMetadata requests.
+// When listing directory contents, Limit/Offset/Sort control pagination of the
+// _embedded.items list returned by the API.
+type ResourceOptions struct {
+	Limit       int    // Number of items to return in _embedded (0 = API default)
+	Offset      int    // Offset into the _embedded list
+	Sort        string // Sort field: "name", "path", "created", "modified", "size" (prefix with "-" for descending)
+	PreviewSize string // Thumbnail size, e.g. "S", "M", "L", "XL", "XXL", "XXXL" or "NxM"
+	PreviewCrop bool   // Whether to crop preview to square
+}
+
 func (c *Client) GetMetadata(ctx context.Context, path string) (*Resource, *ErrorResponse) {
+	return c.GetMetadataWithOptions(ctx, path, nil)
+}
+
+// GetMetadataWithOptions retrieves metadata for a file or directory.
+// For directories the response includes an _embedded field with paginated contents.
+// Use opts to control pagination (Limit/Offset) and sorting of directory contents.
+func (c *Client) GetMetadataWithOptions(ctx context.Context, path string, opts *ResourceOptions) (*Resource, *ErrorResponse) {
 	if err := validatePath(path); err != nil {
 		return nil, &ErrorResponse{Error: err.Error()}
 	}
 
-	var resource *Resource
-	var errorResponse *ErrorResponse
-
 	query := url.Values{}
 	query.Set("path", path)
+
+	if opts != nil {
+		if opts.Limit > 0 {
+			query.Set("limit", strconv.Itoa(opts.Limit))
+		}
+		if opts.Offset > 0 {
+			query.Set("offset", strconv.Itoa(opts.Offset))
+		}
+		if opts.Sort != "" {
+			query.Set("sort", opts.Sort)
+		}
+		if opts.PreviewSize != "" {
+			query.Set("preview_size", opts.PreviewSize)
+		}
+		if opts.PreviewCrop {
+			query.Set("preview_crop", "true")
+		}
+	}
+
 	resp, err := c.doRequest(ctx, GET, "resources?"+query.Encode(), nil)
 	if err != nil {
 		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
@@ -85,6 +119,7 @@ func (c *Client) GetMetadata(ctx context.Context, path string) (*Resource, *Erro
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
+		var errorResponse *ErrorResponse
 		decoded := json.NewDecoder(resp.Body)
 		if err := decoded.Decode(&errorResponse); err != nil {
 			return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode error response: %v", err)}
@@ -92,6 +127,7 @@ func (c *Client) GetMetadata(ctx context.Context, path string) (*Resource, *Erro
 		return nil, errorResponse
 	}
 
+	var resource *Resource
 	decoded := json.NewDecoder(resp.Body)
 	if err := decoded.Decode(&resource); err != nil {
 		return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode resource: %v", err)}
