@@ -154,3 +154,76 @@ func TestSavePublicResource(t *testing.T) {
 	// check type
 	assert.IsType(t, &Link{}, link)
 }
+
+func TestGetMetadataForPublicResourceErrors(t *testing.T) {
+	t.Run("empty public_key returns error", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		res, err := client.GetMetadataForPublicResource(context.Background(), "")
+		assert.Nil(t, res)
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error, "public_key cannot be empty")
+	})
+
+	t.Run("API error is returned", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(`{"error":"DiskNotFoundError","description":"not found"}`))
+		}))
+		res, err := client.GetMetadataForPublicResource(context.Background(), "some-key")
+		assert.Nil(t, res)
+		assert.NotNil(t, err)
+		assert.Equal(t, "DiskNotFoundError", err.Error)
+	})
+}
+
+func TestGetDownloadURLForPublicResourceErrors(t *testing.T) {
+	t.Run("empty public_key returns error", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		link, err := client.GetDownloadURLForPublicResource(context.Background(), "")
+		assert.Nil(t, link)
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error, "public_key cannot be empty")
+	})
+
+	t.Run("API error is returned", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte(`{"error":"DiskForbiddenError","description":"forbidden"}`))
+		}))
+		link, err := client.GetDownloadURLForPublicResource(context.Background(), "some-key")
+		assert.Nil(t, link)
+		assert.NotNil(t, err)
+		assert.Equal(t, "DiskForbiddenError", err.Error)
+	})
+}
+
+func TestSavePublicResourceErrors(t *testing.T) {
+	t.Run("empty public_key returns error", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		link, err := client.SavePublicResource(context.Background(), "")
+		assert.Nil(t, link)
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error, "public_key cannot be empty")
+	})
+
+	t.Run("API error is returned", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(`{"error":"UnauthorizedError","description":"no token"}`))
+		}))
+		link, err := client.SavePublicResource(context.Background(), "some-key")
+		assert.Nil(t, link)
+		assert.NotNil(t, err)
+		assert.Equal(t, "UnauthorizedError", err.Error)
+	})
+
+	t.Run("202 Accepted is treated as success", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusAccepted)
+			w.Write([]byte(`{"href":"https://cloud-api.yandex.net/v1/disk/operations/123","method":"GET","templated":false}`))
+		}))
+		link, err := client.SavePublicResource(context.Background(), "some-key")
+		assert.Nil(t, err)
+		assert.NotNil(t, link)
+	})
+}

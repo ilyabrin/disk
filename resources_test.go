@@ -585,3 +585,105 @@ func TestGetLinkForUpload(t *testing.T) {
 
 // todo: empty responses - fix it
 func TestUploadFile(t *testing.T) {}
+
+func TestCreateDirSuccess(t *testing.T) {
+	client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte(`{"href":"https://cloud-api.yandex.net/v1/disk/resources?path=disk%3A%2Fnewdir","method":"GET","templated":false}`))
+	}))
+
+	link, err := client.CreateDir(context.Background(), "newdir")
+	assert.Nil(t, err)
+	assert.NotNil(t, link)
+	assert.Equal(t, "GET", link.Method)
+}
+
+func TestCreateDirErrors(t *testing.T) {
+	t.Run("empty path", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		link, err := client.CreateDir(context.Background(), "")
+		assert.Nil(t, link)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("API error", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusConflict)
+			w.Write([]byte(`{"error":"DiskPathPointsToExistentDirectoryError","description":"already exists"}`))
+		}))
+		link, err := client.CreateDir(context.Background(), "existing")
+		assert.Nil(t, link)
+		assert.NotNil(t, err)
+		assert.Equal(t, "DiskPathPointsToExistentDirectoryError", err.Error)
+	})
+}
+
+func TestPublishResourceErrors(t *testing.T) {
+	t.Run("empty path", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		link, err := client.PublishResource(context.Background(), "")
+		assert.Nil(t, link)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("API error", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(`{"error":"DiskNotFoundError","description":"not found"}`))
+		}))
+		link, err := client.PublishResource(context.Background(), "missing")
+		assert.Nil(t, link)
+		assert.NotNil(t, err)
+		assert.Equal(t, "DiskNotFoundError", err.Error)
+	})
+}
+
+func TestUnpublishResourceErrors(t *testing.T) {
+	t.Run("empty path", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		link, err := client.UnpublishResource(context.Background(), "")
+		assert.Nil(t, link)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("API error", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(`{"error":"DiskNotFoundError","description":"not found"}`))
+		}))
+		link, err := client.UnpublishResource(context.Background(), "missing")
+		assert.Nil(t, link)
+		assert.NotNil(t, err)
+		assert.Equal(t, "DiskNotFoundError", err.Error)
+	})
+}
+
+func TestUploadFileWithMock(t *testing.T) {
+	t.Run("success with 202", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusAccepted)
+			w.Write([]byte(`{"href":"https://cloud-api.yandex.net/v1/disk/operations/abc","method":"GET","templated":false}`))
+		}))
+		link, err := client.UploadFile(context.Background(), "/test/file.txt", "https://example.com/source")
+		assert.Nil(t, err)
+		assert.NotNil(t, link)
+	})
+
+	t.Run("empty path", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		link, err := client.UploadFile(context.Background(), "", "https://example.com/source")
+		assert.Nil(t, link)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("API error", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(`{"error":"UnauthorizedError","description":"no token"}`))
+		}))
+		link, err := client.UploadFile(context.Background(), "/test/file.txt", "https://example.com/source")
+		assert.Nil(t, link)
+		assert.NotNil(t, err)
+		assert.Equal(t, "UnauthorizedError", err.Error)
+	})
+}
