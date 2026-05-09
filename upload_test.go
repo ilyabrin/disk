@@ -804,3 +804,45 @@ func TestUploadFileMultipart(t *testing.T) {
 		}
 	})
 }
+
+func TestDetectMimeTypeContentBased(t *testing.T) {
+	client, _ := New("test-token")
+
+	t.Run("detects PNG from content when no extension", func(t *testing.T) {
+		// PNG magic bytes: \x89PNG\r\n\x1a\n
+		pngHeader := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+		f, err := os.CreateTemp("", "mime_no_ext_*")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer os.Remove(f.Name())
+		f.Write(pngHeader)
+		f.Close()
+
+		mimeType, err := client.DetectMimeType(f.Name())
+		if err != nil {
+			t.Fatalf("expected no error, got: %v", err)
+		}
+		if !strings.Contains(mimeType, "image/png") {
+			t.Errorf("expected image/png, got %q", mimeType)
+		}
+	})
+
+	t.Run("detects text from content when no extension", func(t *testing.T) {
+		f, err := os.CreateTemp("", "mime_no_ext_*")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer os.Remove(f.Name())
+		f.WriteString("Hello, world! This is plain text content.")
+		f.Close()
+
+		mimeType, err := client.DetectMimeType(f.Name())
+		if err != nil {
+			t.Fatalf("expected no error, got: %v", err)
+		}
+		if mimeType == "" {
+			t.Error("expected non-empty mime type")
+		}
+	})
+}

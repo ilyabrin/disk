@@ -686,3 +686,130 @@ func TestAddPaginationParams(t *testing.T) {
 		}
 	})
 }
+
+const (
+	sortedFilesJSON    = `{"items":[],"limit":20,"offset":0}`
+	lastUploadedJSON   = `{"items":[],"limit":20}`
+	publicResourceJSON = `{"items":[],"type":"dir","limit":20,"offset":0}`
+)
+
+func TestGetSortedFilesPagedWithMock(t *testing.T) {
+	t.Run("success returns PagedFilesResourceList with pagination", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(sortedFilesJSON))
+		}))
+		result, errResp := client.GetSortedFilesPaged(context.Background(), nil)
+		if errResp != nil {
+			t.Fatalf("unexpected error: %v", errResp)
+		}
+		if result == nil || result.Pagination == nil {
+			t.Fatal("expected non-nil result with pagination")
+		}
+	})
+
+	t.Run("API error is propagated", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(`{"error":"UnauthorizedError","description":"bad token"}`))
+		}))
+		result, errResp := client.GetSortedFilesPaged(context.Background(), nil)
+		if errResp == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if result != nil {
+			t.Error("expected nil result on error")
+		}
+	})
+}
+
+func TestGetSortedFilesIteratorNext(t *testing.T) {
+	t.Run("Next returns pages and advances offset", func(t *testing.T) {
+		call := 0
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			call++
+			w.Write([]byte(sortedFilesJSON))
+		}))
+		iter := client.GetSortedFilesIterator(&PaginationOptions{Limit: 20})
+		page, err := iter.Next(context.Background())
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if page == nil {
+			t.Fatal("expected non-nil page")
+		}
+		if call != 1 {
+			t.Errorf("expected 1 API call, got %d", call)
+		}
+		if iter.GetCurrentOffset() != 20 {
+			t.Errorf("expected offset 20 after first page, got %d", iter.GetCurrentOffset())
+		}
+	})
+
+	t.Run("Next propagates fetcher error", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(`{"error":"ServerError","description":"boom"}`))
+		}))
+		iter := client.GetSortedFilesIterator(nil)
+		_, err := iter.Next(context.Background())
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+}
+
+func TestGetLastUploadedResourcesIteratorNext(t *testing.T) {
+	t.Run("Next returns page with items", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(lastUploadedJSON))
+		}))
+		iter := client.GetLastUploadedResourcesIterator(&PaginationOptions{Limit: 20})
+		page, err := iter.Next(context.Background())
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if page == nil {
+			t.Fatal("expected non-nil page")
+		}
+	})
+
+	t.Run("Next propagates fetcher error", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte(`{"error":"ForbiddenError","description":"no access"}`))
+		}))
+		iter := client.GetLastUploadedResourcesIterator(nil)
+		_, err := iter.Next(context.Background())
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+}
+
+func TestGetPublicResourcesIteratorNext(t *testing.T) {
+	t.Run("Next returns page", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(publicResourceJSON))
+		}))
+		iter := client.GetPublicResourcesIterator(&PaginationOptions{Limit: 20})
+		page, err := iter.Next(context.Background())
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if page == nil {
+			t.Fatal("expected non-nil page")
+		}
+	})
+
+	t.Run("Next propagates fetcher error", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(`{"error":"NotFoundError","description":"gone"}`))
+		}))
+		iter := client.GetPublicResourcesIterator(nil)
+		_, err := iter.Next(context.Background())
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+}
