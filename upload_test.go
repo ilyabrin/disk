@@ -2,6 +2,7 @@ package disk
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -412,6 +413,11 @@ func TestUploadInternalFunctions(t *testing.T) {
 	})
 }
 
+// errTransport is an http.RoundTripper that always returns an error.
+type errTransport struct{ err error }
+
+func (e *errTransport) RoundTrip(_ *http.Request) (*http.Response, error) { return nil, e.err }
+
 // makeTempFile creates a temp file with the given content and returns its path.
 func makeTempFile(t *testing.T, content string) string {
 	t.Helper()
@@ -569,6 +575,144 @@ func TestUploadFileSingle(t *testing.T) {
 		}
 		if resource.Path != "/test/file.txt" {
 			t.Errorf("expected path '/test/file.txt', got %q", resource.Path)
+		}
+	})
+}
+
+func TestUploadFileSingleEdgeCases(t *testing.T) {
+	t.Run("empty href in upload link returns error", func(t *testing.T) {
+		// API returns a link with an empty href → "received invalid upload link"
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(`{"href":"","method":"PUT","templated":false}`))
+		}))
+
+		localPath := makeTempFile(t, "some content")
+		_, err := client.UploadFileFromPath(context.Background(), localPath, "/test/file.txt", nil)
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), "invalid upload link") {
+			t.Errorf("expected 'invalid upload link', got: %v", err)
+		}
+	})
+
+	t.Run("file deleted between validation and open returns error", func(t *testing.T) {
+		// We obtain the upload link successfully, but then the file is gone before os.Open.
+		// The trick: write a file, register a handler that deletes it on first call,
+		// then uploadFileSingle tries os.Open on the now-missing file.
+		localPath := makeTempFile(t, "will be deleted")
+
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/v1/disk/resources/upload" {
+				// Delete the file right after the upload link is issued.
+				os.Remove(localPath)
+				addr := r.Host
+				href := "http://" + addr + "/do-upload"
+				w.Write([]byte(`{"href":"` + href + `","method":"PUT","templated":false}`))
+				return
+			}
+			http.NotFound(w, r)
+		}))
+
+		_, err := client.UploadFileFromPath(context.Background(), localPath, "/test/file.txt", nil)
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), "failed to open local file") {
+			t.Errorf("expected 'failed to open local file', got: %v", err)
+		}
+	})
+
+	t.Run("HTTPClient.Do network error returns error", func(t *testing.T) {
+		// First call (GetLinkForUpload) succeeds via testTransport.
+		// Then we swap the transport to one that always errors, so the actual PUT fails.
+		var uploadClient *Client
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/v1/disk/resources/upload" {
+				addr := r.Host
+				href := "http://" + addr + "/do-upload"
+				// Swap transport right before responding, so the next Do() call errors.
+				uploadClient.HTTPClient.Transport = &errTransport{err: errors.New("simulated network error")}
+				w.Write([]byte(`{"href":"` + href + `","method":"PUT","templated":false}`))
+				return
+			}
+			http.NotFound(w, r)
+		})
+		uploadClient = mockedHttpClient(handler)
+
+		localPath := makeTempFile(t, "network will fail")
+		_, err := uploadClient.UploadFileFromPath(context.Background(), localPath, "/test/file.txt", nil)
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), "upload request failed") {
+			t.Errorf("expected 'upload request failed', got: %v", err)
+		}
+	})
+}
+
+func TestUploadFileMultipartEdgeCases(t *testing.T) {
+	t.Run("empty href in multipart upload link returns error", func(t *testing.T) {
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(`{"href":"","method":"PUT","templated":false}`))
+		}))
+
+		localPath := makeTempFile(t, strings.Repeat("a", 100))
+		_, err := client.UploadFileFromPath(context.Background(), localPath, "/test/file.txt", &UploadOptions{ChunkSize: 50})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), "invalid upload link") {
+			t.Errorf("expected 'invalid upload link', got: %v", err)
+		}
+	})
+
+	t.Run("file deleted between validation and multipart open returns error", func(t *testing.T) {
+		// uploadFileMultipart calls os.Open internally before fetching the upload link.
+		// To trigger "failed to open local file" we call uploadFileMultipart directly
+		// with a path that no longer exists (bypassing UploadFileFromPath validation).
+		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.NotFound(w, r)
+		}))
+
+		// Create a temp file so we have a valid path, then remove it immediately.
+		localPath := makeTempFile(t, strings.Repeat("b", 100))
+		fakeInfo, statErr := os.Stat(localPath)
+		if statErr != nil {
+			t.Fatal(statErr)
+		}
+		os.Remove(localPath)
+
+		_, err := client.uploadFileMultipart(context.Background(), localPath, "/test/file.txt", fakeInfo, &UploadOptions{ChunkSize: 50})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), "failed to open local file") {
+			t.Errorf("expected 'failed to open local file', got: %v", err)
+		}
+	})
+
+	t.Run("HTTPClient.Do network error in multipart returns error", func(t *testing.T) {
+		var uploadClient *Client
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/v1/disk/resources/upload" {
+				addr := r.Host
+				href := "http://" + addr + "/do-upload"
+				uploadClient.HTTPClient.Transport = &errTransport{err: errors.New("simulated network error")}
+				w.Write([]byte(`{"href":"` + href + `","method":"PUT","templated":false}`))
+				return
+			}
+			http.NotFound(w, r)
+		})
+		uploadClient = mockedHttpClient(handler)
+
+		localPath := makeTempFile(t, strings.Repeat("c", 100))
+		_, err := uploadClient.UploadFileFromPath(context.Background(), localPath, "/test/file.txt", &UploadOptions{ChunkSize: 50})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), "multipart upload request failed") {
+			t.Errorf("expected 'multipart upload request failed', got: %v", err)
 		}
 	})
 }

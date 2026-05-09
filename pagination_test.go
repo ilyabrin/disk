@@ -2,6 +2,10 @@ package disk
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
 	"testing"
 )
 
@@ -517,6 +521,168 @@ func TestCursorPaginationWithMockData(t *testing.T) {
 		_, err = iterator.Next(context.Background())
 		if err == nil {
 			t.Error("Expected error when trying to get page beyond last")
+		}
+	})
+}
+
+func TestPaginationIteratorNext(t *testing.T) {
+	t.Run("successful fetch advances offset and returns value", func(t *testing.T) {
+		client, _ := New("test-token")
+
+		called := 0
+		fetcher := func(ctx context.Context, options *PaginationOptions) (*PagedFilesResourceList, error) {
+			called++
+			return &PagedFilesResourceList{
+				FilesResourceList: &FilesResourceList{Items: make([]*Resource, options.Limit)},
+				Pagination:        &PaginationInfo{HasMore: true},
+			}, nil
+		}
+
+		iter := NewPaginationIterator(client, fetcher, &PaginationOptions{Limit: 10, Offset: 0})
+		result, err := iter.Next(context.Background())
+		if err != nil {
+			t.Fatalf("expected no error, got: %v", err)
+		}
+		if result == nil {
+			t.Fatal("expected non-nil result")
+		}
+		if called != 1 {
+			t.Errorf("expected fetcher called once, got %d", called)
+		}
+		if iter.GetCurrentOffset() != 10 {
+			t.Errorf("expected offset 10 after Next, got %d", iter.GetCurrentOffset())
+		}
+	})
+
+	t.Run("fetcher error is returned", func(t *testing.T) {
+		client, _ := New("test-token")
+
+		fetcher := func(ctx context.Context, options *PaginationOptions) (*PagedFilesResourceList, error) {
+			return nil, fmt.Errorf("fetch failed")
+		}
+
+		iter := NewPaginationIterator(client, fetcher, nil)
+		_, err := iter.Next(context.Background())
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), "fetch failed") {
+			t.Errorf("expected 'fetch failed', got: %v", err)
+		}
+	})
+
+	t.Run("hasMore false returns no more pages error", func(t *testing.T) {
+		client, _ := New("test-token")
+
+		fetcher := func(ctx context.Context, options *PaginationOptions) (*PagedFilesResourceList, error) {
+			return nil, nil
+		}
+
+		iter := NewPaginationIterator(client, fetcher, nil)
+		iter.hasMore = false
+
+		_, err := iter.Next(context.Background())
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), "no more pages available") {
+			t.Errorf("expected 'no more pages available', got: %v", err)
+		}
+	})
+}
+
+func TestGetLastUploadedResourcesPaged(t *testing.T) {
+	client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"items":[],"limit":20}`))
+	}))
+
+	result, errResp := client.GetLastUploadedResourcesPaged(context.Background(), nil)
+	if errResp != nil {
+		t.Fatalf("expected no error, got: %v", errResp)
+	}
+	if result == nil {
+		t.Fatal("expected non-nil result")
+	}
+	if result.Pagination == nil {
+		t.Error("expected non-nil Pagination")
+	}
+}
+
+func TestGetPublicResourcesPaged(t *testing.T) {
+	client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"items":[],"type":"dir","limit":20,"offset":0}`))
+	}))
+
+	result, errResp := client.GetPublicResourcesPaged(context.Background(), nil)
+	if errResp != nil {
+		t.Fatalf("expected no error, got: %v", errResp)
+	}
+	if result == nil {
+		t.Fatal("expected non-nil result")
+	}
+	if result.Pagination == nil {
+		t.Error("expected non-nil Pagination")
+	}
+}
+
+func TestCursorPaginationIteratorSetPageSize(t *testing.T) {
+	client, _ := New("test-token")
+	fetcher := func(ctx context.Context, cursor string, limit int) (*PagedFilesResourceList, string, error) {
+		return nil, "", nil
+	}
+
+	iter := NewCursorPaginationIterator(client, fetcher, 20)
+
+	iter.SetPageSize(50)
+	if iter.GetPageSize() != 50 {
+		t.Errorf("expected page size 50, got %d", iter.GetPageSize())
+	}
+
+	// Invalid sizes are ignored
+	for _, invalid := range []int{0, -1, 20001} {
+		iter.SetPageSize(invalid)
+		if iter.GetPageSize() != 50 {
+			t.Errorf("expected page size unchanged (50) after invalid size %d, got %d", invalid, iter.GetPageSize())
+		}
+	}
+}
+
+func TestAddPaginationParams(t *testing.T) {
+	t.Run("nil options sets no params", func(t *testing.T) {
+		q := url.Values{}
+		addPaginationParams(q, nil)
+		if len(q) != 0 {
+			t.Errorf("expected no params, got %v", q)
+		}
+	})
+
+	t.Run("cursor takes precedence over offset", func(t *testing.T) {
+		q := url.Values{}
+		addPaginationParams(q, &PaginationOptions{Limit: 20, Offset: 10, Cursor: "abc"})
+		if q.Get("cursor") != "abc" {
+			t.Errorf("expected cursor 'abc', got %q", q.Get("cursor"))
+		}
+		if q.Get("offset") != "" {
+			t.Errorf("expected no offset param when cursor present, got %q", q.Get("offset"))
+		}
+	})
+
+	t.Run("offset set when no cursor", func(t *testing.T) {
+		q := url.Values{}
+		addPaginationParams(q, &PaginationOptions{Limit: 20, Offset: 40})
+		if q.Get("offset") != "40" {
+			t.Errorf("expected offset '40', got %q", q.Get("offset"))
+		}
+		if q.Get("cursor") != "" {
+			t.Errorf("expected no cursor param, got %q", q.Get("cursor"))
+		}
+	})
+
+	t.Run("limit clamped to 10000", func(t *testing.T) {
+		q := url.Values{}
+		addPaginationParams(q, &PaginationOptions{Limit: 99999})
+		if q.Get("limit") != "10000" {
+			t.Errorf("expected limit '10000', got %q", q.Get("limit"))
 		}
 	})
 }
