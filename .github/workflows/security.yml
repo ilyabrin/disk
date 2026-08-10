@@ -23,18 +23,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      # Scan with the current Go release rather than the module's minimum
+      # version: go.mod declares a compatibility floor, but stdlib advisories
+      # are reported against whatever toolchain built the code, and old point
+      # releases carry vulnerabilities that are already fixed upstream.
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
-          go-version-file: go.mod
+          go-version: stable
           check-latest: true
 
-      # govulncheck itself is built with a newer toolchain than the module's
-      # minimum Go version, so it needs GOTOOLCHAIN=auto to fetch one.
       - name: Install govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
-        env:
-          GOTOOLCHAIN: auto
 
       - name: Run govulncheck
         run: govulncheck ./...
