@@ -6,34 +6,39 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
-	"path/filepath"
 	"strconv"
 	"strings"
 )
 
-// validatePath sanitizes and validates file paths to prevent path traversal attacks
-func validatePath(path string) error {
-	if path == "" {
+// validatePath sanitizes and validates Yandex Disk resource paths to prevent
+// path traversal. Disk paths are always POSIX-style, so this deliberately uses
+// POSIX semantics rather than filepath (which would treat "\" as a separator
+// on Windows).
+func validatePath(p string) error {
+	if p == "" {
 		return errors.New("path cannot be empty")
 	}
 
 	// Remove any null bytes
-	if strings.Contains(path, "\x00") {
+	if strings.Contains(p, "\x00") {
 		return errors.New("path contains null bytes")
 	}
 
-	// Clean the path to resolve any .. sequences
-	cleaned := filepath.Clean(path)
-
-	// Check for path traversal attempts
-	if strings.Contains(cleaned, "..") {
-		return errors.New("path traversal detected")
+	// Check for excessively long paths
+	if len(p) > 4096 {
+		return errors.New("path too long")
 	}
 
-	// Check for excessively long paths
-	if len(path) > 4096 {
-		return errors.New("path too long")
+	// Reject traversal only when ".." is a whole path segment, so that regular
+	// names such as "report..final.pdf" stay valid. The raw path is inspected
+	// rather than the cleaned one: path.Clean would silently resolve "/a/../b"
+	// into "/b" instead of flagging it.
+	for _, segment := range strings.Split(p, "/") {
+		if segment == ".." {
+			return errors.New("path traversal detected")
+		}
 	}
 
 	return nil
@@ -72,11 +77,36 @@ func (c *Client) DeleteResource(ctx context.Context, path string, permanently bo
 // When listing directory contents, Limit/Offset/Sort control pagination of the
 // _embedded.items list returned by the API.
 type ResourceOptions struct {
-	Limit       int    // Number of items to return in _embedded (0 = API default)
-	Offset      int    // Offset into the _embedded list
-	Sort        string // Sort field: "name", "path", "created", "modified", "size" (prefix with "-" for descending)
-	PreviewSize string // Thumbnail size, e.g. "S", "M", "L", "XL", "XXL", "XXXL" or "NxM"
-	PreviewCrop bool   // Whether to crop preview to square
+	Limit       int      // Number of items to return in _embedded (0 = API default)
+	Offset      int      // Offset into the _embedded list
+	Sort        string   // Sort field: "name", "path", "created", "modified", "size" (prefix with "-" for descending)
+	PreviewSize string   // Thumbnail size, e.g. "S", "M", "L", "XL", "XXL", "XXXL" or "NxM"
+	PreviewCrop bool     // Whether to crop preview to square
+	Fields      []string // Response fields to return, e.g. "name", "_embedded.items.path" (empty = all)
+}
+
+func (o *ResourceOptions) apply(query url.Values) {
+	if o == nil {
+		return
+	}
+	if o.Limit > 0 {
+		query.Set("limit", strconv.Itoa(o.Limit))
+	}
+	if o.Offset > 0 {
+		query.Set("offset", strconv.Itoa(o.Offset))
+	}
+	if o.Sort != "" {
+		query.Set("sort", o.Sort)
+	}
+	if o.PreviewSize != "" {
+		query.Set("preview_size", o.PreviewSize)
+	}
+	if o.PreviewCrop {
+		query.Set("preview_crop", "true")
+	}
+	if len(o.Fields) > 0 {
+		query.Set("fields", strings.Join(o.Fields, ","))
+	}
 }
 
 func (c *Client) GetMetadata(ctx context.Context, path string) (*Resource, *ErrorResponse) {
@@ -85,7 +115,7 @@ func (c *Client) GetMetadata(ctx context.Context, path string) (*Resource, *Erro
 
 // GetMetadataWithOptions retrieves metadata for a file or directory.
 // For directories the response includes an _embedded field with paginated contents.
-// Use opts to control pagination (Limit/Offset) and sorting of directory contents.
+// Use opts to control pagination (Limit/Offset), sorting and returned fields.
 func (c *Client) GetMetadataWithOptions(ctx context.Context, path string, opts *ResourceOptions) (*Resource, *ErrorResponse) {
 	if err := validatePath(path); err != nil {
 		return nil, &ErrorResponse{Error: err.Error()}
@@ -93,46 +123,9 @@ func (c *Client) GetMetadataWithOptions(ctx context.Context, path string, opts *
 
 	query := url.Values{}
 	query.Set("path", path)
+	opts.apply(query)
 
-	if opts != nil {
-		if opts.Limit > 0 {
-			query.Set("limit", strconv.Itoa(opts.Limit))
-		}
-		if opts.Offset > 0 {
-			query.Set("offset", strconv.Itoa(opts.Offset))
-		}
-		if opts.Sort != "" {
-			query.Set("sort", opts.Sort)
-		}
-		if opts.PreviewSize != "" {
-			query.Set("preview_size", opts.PreviewSize)
-		}
-		if opts.PreviewCrop {
-			query.Set("preview_crop", "true")
-		}
-	}
-
-	resp, err := c.doRequest(ctx, GET, "resources?"+query.Encode(), nil)
-	if err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		var errorResponse *ErrorResponse
-		decoded := json.NewDecoder(resp.Body)
-		if err := decoded.Decode(&errorResponse); err != nil {
-			return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode error response: %v", err)}
-		}
-		return nil, errorResponse
-	}
-
-	var resource *Resource
-	decoded := json.NewDecoder(resp.Body)
-	if err := decoded.Decode(&resource); err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode resource: %v", err)}
-	}
-	return resource, nil
+	return requestJSON[Resource](ctx, c, GET, "resources?"+query.Encode(), nil)
 }
 
 /*
@@ -151,9 +144,6 @@ func (c *Client) UpdateMetadata(ctx context.Context, path string, custom_propert
 		return nil, &ErrorResponse{Error: "path cannot be empty"}
 	}
 
-	var resource *Resource
-	var errorResponse *ErrorResponse
-
 	body, err := json.Marshal(custom_properties)
 	if err != nil {
 		return nil, &ErrorResponse{Error: fmt.Sprintf("failed to marshal properties: %v", err)}
@@ -161,25 +151,8 @@ func (c *Client) UpdateMetadata(ctx context.Context, path string, custom_propert
 
 	query := url.Values{}
 	query.Set("path", path)
-	resp, err := c.doRequest(ctx, PATCH, "resources?"+query.Encode(), bytes.NewBuffer(body))
-	if err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
-	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		decoded := json.NewDecoder(resp.Body)
-		if err := decoded.Decode(&errorResponse); err != nil {
-			return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode error response: %v", err)}
-		}
-		return nil, errorResponse
-	}
-
-	decoded := json.NewDecoder(resp.Body)
-	if err := decoded.Decode(&resource); err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode resource: %v", err)}
-	}
-	return resource, nil
+	return requestJSON[Resource](ctx, c, PATCH, "resources?"+query.Encode(), bytes.NewBuffer(body))
 }
 
 // CreateDir creates a new directory with the specified 'path' name.
@@ -189,30 +162,10 @@ func (c *Client) CreateDir(ctx context.Context, path string) (*Link, *ErrorRespo
 		return nil, &ErrorResponse{Error: "path cannot be empty"}
 	}
 
-	var link *Link
-	var errorResponse *ErrorResponse
-
 	query := url.Values{}
 	query.Set("path", path)
-	resp, err := c.doRequest(ctx, PUT, "resources?"+query.Encode(), nil)
-	if err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
-	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != 201 {
-		decoded := json.NewDecoder(resp.Body)
-		if err := decoded.Decode(&errorResponse); err != nil {
-			return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode error response: %v", err)}
-		}
-		return nil, errorResponse
-	}
-
-	decoded := json.NewDecoder(resp.Body)
-	if err := decoded.Decode(&link); err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode link: %v", err)}
-	}
-	return link, nil
+	return requestJSON[Link](ctx, c, PUT, "resources?"+query.Encode(), nil, http.StatusCreated)
 }
 
 func (c *Client) CopyResource(ctx context.Context, from, path string) (*Link, *ErrorResponse) {
@@ -220,31 +173,12 @@ func (c *Client) CopyResource(ctx context.Context, from, path string) (*Link, *E
 		return nil, &ErrorResponse{Error: "from and path cannot be empty"}
 	}
 
-	var link *Link
-	var errorResponse *ErrorResponse
-
 	query := url.Values{}
 	query.Set("from", from)
 	query.Set("path", path)
-	resp, err := c.doRequest(ctx, POST, "resources/copy?"+query.Encode(), nil)
-	if err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
-	}
-	defer resp.Body.Close()
 
-	if !inArray(resp.StatusCode, []int{200, 201, 202}) {
-		decoded := json.NewDecoder(resp.Body)
-		if err := decoded.Decode(&errorResponse); err != nil {
-			return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode error response: %v", err)}
-		}
-		return nil, errorResponse
-	}
-
-	decoded := json.NewDecoder(resp.Body)
-	if err := decoded.Decode(&link); err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode link: %v", err)}
-	}
-	return link, nil
+	return requestJSON[Link](ctx, c, POST, "resources/copy?"+query.Encode(), nil,
+		http.StatusOK, http.StatusCreated, http.StatusAccepted)
 }
 
 func (c *Client) GetDownloadURL(ctx context.Context, path string) (*Link, *ErrorResponse) {
@@ -252,30 +186,45 @@ func (c *Client) GetDownloadURL(ctx context.Context, path string) (*Link, *Error
 		return nil, &ErrorResponse{Error: "path cannot be empty"}
 	}
 
-	var link *Link
-	var errorResponse *ErrorResponse
-
 	query := url.Values{}
 	query.Set("path", path)
-	resp, err := c.doRequest(ctx, GET, "resources/download?"+query.Encode(), nil)
-	if err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
-	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		decoded := json.NewDecoder(resp.Body)
-		if err := decoded.Decode(&errorResponse); err != nil {
-			return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode error response: %v", err)}
-		}
-		return nil, errorResponse
-	}
+	return requestJSON[Link](ctx, c, GET, "resources/download?"+query.Encode(), nil)
+}
 
-	decoded := json.NewDecoder(resp.Body)
-	if err := decoded.Decode(&link); err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode link: %v", err)}
+// FilesOptions contains the filters accepted by the flat file list endpoint
+// (/v1/disk/resources/files) in addition to pagination.
+type FilesOptions struct {
+	// MediaType filters by file category: "audio", "backup", "book",
+	// "compressed", "data", "development", "diskimage", "document",
+	// "encoded", "executable", "flash", "font", "image", "settings",
+	// "spreadsheet", "text", "unknown", "video", "web".
+	MediaType   []string
+	Sort        string // "name", "path", "created", "modified", "size" (prefix "-" to reverse)
+	PreviewSize string // Thumbnail size, e.g. "M" or "120x240"
+	PreviewCrop bool   // Crop previews to the requested size
+	Fields      []string
+}
+
+func (o *FilesOptions) apply(query url.Values) {
+	if o == nil {
+		return
 	}
-	return link, nil
+	if len(o.MediaType) > 0 {
+		query.Set("media_type", strings.Join(o.MediaType, ","))
+	}
+	if o.Sort != "" {
+		query.Set("sort", o.Sort)
+	}
+	if o.PreviewSize != "" {
+		query.Set("preview_size", o.PreviewSize)
+	}
+	if o.PreviewCrop {
+		query.Set("preview_crop", "true")
+	}
+	if len(o.Fields) > 0 {
+		query.Set("fields", strings.Join(o.Fields, ","))
+	}
 }
 
 func (c *Client) GetSortedFiles(ctx context.Context) (*FilesResourceList, *ErrorResponse) {
@@ -284,40 +233,24 @@ func (c *Client) GetSortedFiles(ctx context.Context) (*FilesResourceList, *Error
 
 // GetSortedFilesWithPagination gets a sorted list of files with pagination support
 func (c *Client) GetSortedFilesWithPagination(ctx context.Context, options *PaginationOptions) (*FilesResourceList, *ErrorResponse) {
-	var files *FilesResourceList
-	var errorResponse *ErrorResponse
+	return c.GetSortedFilesWithOptions(ctx, options, nil)
+}
 
-	// Validate and normalize pagination options
+// GetSortedFilesWithOptions returns the flat file list with pagination plus the
+// media_type/sort/preview/fields filters supported by the API.
+func (c *Client) GetSortedFilesWithOptions(ctx context.Context, options *PaginationOptions, filters *FilesOptions) (*FilesResourceList, *ErrorResponse) {
 	options = ValidatePaginationOptions(options)
 
-	// Build query parameters
 	query := url.Values{}
 	addPaginationParams(query, options)
+	filters.apply(query)
 
 	endpoint := "resources/files"
 	if len(query) > 0 {
 		endpoint += "?" + query.Encode()
 	}
 
-	resp, err := c.doRequest(ctx, GET, endpoint, nil)
-	if err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		decoded := json.NewDecoder(resp.Body)
-		if err := decoded.Decode(&errorResponse); err != nil {
-			return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode error response: %v", err)}
-		}
-		return nil, errorResponse
-	}
-
-	decoded := json.NewDecoder(resp.Body)
-	if err := decoded.Decode(&files); err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode files: %v", err)}
-	}
-	return files, nil
+	return requestJSON[FilesResourceList](ctx, c, GET, endpoint, nil)
 }
 
 // GetSortedFilesPaged returns a paginated wrapper with pagination info
@@ -350,7 +283,7 @@ func (c *Client) GetSortedFilesIterator(options *PaginationOptions) *PaginationI
 	fetcher := func(ctx context.Context, opts *PaginationOptions) (*PagedFilesResourceList, error) {
 		result, errResp := c.GetSortedFilesPaged(ctx, opts)
 		if errResp != nil {
-			return nil, fmt.Errorf(errResp.Error)
+			return nil, errors.New(errResp.Error)
 		}
 		return result, nil
 	}
@@ -365,13 +298,8 @@ func (c *Client) GetLastUploadedResources(ctx context.Context) (*LastUploadedRes
 
 // GetLastUploadedResourcesWithPagination gets last uploaded resources with pagination support
 func (c *Client) GetLastUploadedResourcesWithPagination(ctx context.Context, options *PaginationOptions) (*LastUploadedResourceList, *ErrorResponse) {
-	var files *LastUploadedResourceList
-	var errorResponse *ErrorResponse
-
-	// Validate and normalize pagination options
 	options = ValidatePaginationOptions(options)
 
-	// Build query parameters
 	query := url.Values{}
 	addPaginationParams(query, options)
 
@@ -380,26 +308,7 @@ func (c *Client) GetLastUploadedResourcesWithPagination(ctx context.Context, opt
 		endpoint += "?" + query.Encode()
 	}
 
-	resp, err := c.doRequest(ctx, GET, endpoint, nil)
-	if err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		decoded := json.NewDecoder(resp.Body)
-		if err := decoded.Decode(&errorResponse); err != nil {
-			return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode error response: %v", err)}
-		}
-		return nil, errorResponse
-	}
-
-	decoded := json.NewDecoder(resp.Body)
-	if err := decoded.Decode(&files); err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode files: %v", err)}
-	}
-
-	return files, nil
+	return requestJSON[LastUploadedResourceList](ctx, c, GET, endpoint, nil)
 }
 
 // GetLastUploadedResourcesPaged returns a paginated wrapper with pagination info
@@ -432,7 +341,7 @@ func (c *Client) GetLastUploadedResourcesIterator(options *PaginationOptions) *P
 	fetcher := func(ctx context.Context, opts *PaginationOptions) (*PagedLastUploadedResourceList, error) {
 		result, errResp := c.GetLastUploadedResourcesPaged(ctx, opts)
 		if errResp != nil {
-			return nil, fmt.Errorf(errResp.Error)
+			return nil, errors.New(errResp.Error)
 		}
 		return result, nil
 	}
@@ -445,32 +354,12 @@ func (c *Client) MoveResource(ctx context.Context, from, path string) (*Link, *E
 		return nil, &ErrorResponse{Error: "from and path cannot be empty"}
 	}
 
-	var link *Link
-	var errorResponse *ErrorResponse
-
 	query := url.Values{}
 	query.Set("from", from)
 	query.Set("path", path)
-	resp, err := c.doRequest(ctx, POST, "resources/move?"+query.Encode(), nil)
-	if err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
-	}
-	defer resp.Body.Close()
 
-	if !inArray(resp.StatusCode, []int{201, 202}) {
-		decoded := json.NewDecoder(resp.Body)
-		if err := decoded.Decode(&errorResponse); err != nil {
-			return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode error response: %v", err)}
-		}
-		return nil, errorResponse
-	}
-
-	decoded := json.NewDecoder(resp.Body)
-	if err := decoded.Decode(&link); err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode link: %v", err)}
-	}
-
-	return link, nil
+	return requestJSON[Link](ctx, c, POST, "resources/move?"+query.Encode(), nil,
+		http.StatusCreated, http.StatusAccepted)
 }
 
 func (c *Client) GetPublicResources(ctx context.Context) (*PublicResourcesList, *ErrorResponse) {
@@ -479,13 +368,8 @@ func (c *Client) GetPublicResources(ctx context.Context) (*PublicResourcesList, 
 
 // GetPublicResourcesWithPagination gets public resources with pagination support
 func (c *Client) GetPublicResourcesWithPagination(ctx context.Context, options *PaginationOptions) (*PublicResourcesList, *ErrorResponse) {
-	var list *PublicResourcesList
-	var errorResponse *ErrorResponse
-
-	// Validate and normalize pagination options
 	options = ValidatePaginationOptions(options)
 
-	// Build query parameters
 	query := url.Values{}
 	addPaginationParams(query, options)
 
@@ -494,26 +378,7 @@ func (c *Client) GetPublicResourcesWithPagination(ctx context.Context, options *
 		endpoint += "?" + query.Encode()
 	}
 
-	resp, err := c.doRequest(ctx, GET, endpoint, nil)
-	if err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		decoded := json.NewDecoder(resp.Body)
-		if err := decoded.Decode(&errorResponse); err != nil {
-			return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode error response: %v", err)}
-		}
-		return nil, errorResponse
-	}
-
-	decoded := json.NewDecoder(resp.Body)
-	if err := decoded.Decode(&list); err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode list: %v", err)}
-	}
-
-	return list, nil
+	return requestJSON[PublicResourcesList](ctx, c, GET, endpoint, nil)
 }
 
 // GetPublicResourcesPaged returns a paginated wrapper with pagination info
@@ -546,7 +411,7 @@ func (c *Client) GetPublicResourcesIterator(options *PaginationOptions) *Paginat
 	fetcher := func(ctx context.Context, opts *PaginationOptions) (*PagedPublicResourcesList, error) {
 		result, errResp := c.GetPublicResourcesPaged(ctx, opts)
 		if errResp != nil {
-			return nil, fmt.Errorf(errResp.Error)
+			return nil, errors.New(errResp.Error)
 		}
 		return result, nil
 	}
@@ -559,31 +424,10 @@ func (c *Client) PublishResource(ctx context.Context, path string) (*Link, *Erro
 		return nil, &ErrorResponse{Error: "path cannot be empty"}
 	}
 
-	var link *Link
-	var errorResponse *ErrorResponse
-
 	query := url.Values{}
 	query.Set("path", path)
-	resp, err := c.doRequest(ctx, PUT, "resources/publish?"+query.Encode(), nil)
-	if err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
-	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		decoded := json.NewDecoder(resp.Body)
-		if err := decoded.Decode(&errorResponse); err != nil {
-			return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode error response: %v", err)}
-		}
-		return nil, errorResponse
-	}
-
-	decoded := json.NewDecoder(resp.Body)
-	if err := decoded.Decode(&link); err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode link: %v", err)}
-	}
-
-	return link, nil
+	return requestJSON[Link](ctx, c, PUT, "resources/publish?"+query.Encode(), nil)
 }
 
 func (c *Client) UnpublishResource(ctx context.Context, path string) (*Link, *ErrorResponse) {
@@ -591,31 +435,10 @@ func (c *Client) UnpublishResource(ctx context.Context, path string) (*Link, *Er
 		return nil, &ErrorResponse{Error: "path cannot be empty"}
 	}
 
-	var link *Link
-	var errorResponse *ErrorResponse
-
 	query := url.Values{}
 	query.Set("path", path)
-	resp, err := c.doRequest(ctx, PUT, "resources/unpublish?"+query.Encode(), nil)
-	if err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
-	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		decoded := json.NewDecoder(resp.Body)
-		if err := decoded.Decode(&errorResponse); err != nil {
-			return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode error response: %v", err)}
-		}
-		return nil, errorResponse
-	}
-
-	decoded := json.NewDecoder(resp.Body)
-	if err := decoded.Decode(&link); err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode link: %v", err)}
-	}
-
-	return link, nil
+	return requestJSON[Link](ctx, c, PUT, "resources/unpublish?"+query.Encode(), nil)
 }
 
 func (c *Client) GetLinkForUpload(ctx context.Context, path string) (*ResourceUploadLink, *ErrorResponse) {
@@ -623,63 +446,23 @@ func (c *Client) GetLinkForUpload(ctx context.Context, path string) (*ResourceUp
 		return nil, &ErrorResponse{Error: "path cannot be empty"}
 	}
 
-	var resource *ResourceUploadLink
-	var errorResponse *ErrorResponse
-
 	query := url.Values{}
 	query.Set("path", path)
-	resp, err := c.doRequest(ctx, GET, "resources/upload?"+query.Encode(), nil)
-	if err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
-	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		decoded := json.NewDecoder(resp.Body)
-		if err := decoded.Decode(&errorResponse); err != nil {
-			return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode error response: %v", err)}
-		}
-		return nil, errorResponse
-	}
-
-	decoded := json.NewDecoder(resp.Body)
-	if err := decoded.Decode(&resource); err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode resource: %v", err)}
-	}
-
-	return resource, nil
+	return requestJSON[ResourceUploadLink](ctx, c, GET, "resources/upload?"+query.Encode(), nil)
 }
 
+// UploadFile asks Yandex Disk to fetch the file at uploadURL and store it at path.
 // todo: empty resonses - fix it
 func (c *Client) UploadFile(ctx context.Context, path, uploadURL string) (*Link, *ErrorResponse) {
 	if len(path) < 1 || len(uploadURL) < 1 {
 		return nil, &ErrorResponse{Error: "path and url cannot be empty"}
 	}
 
-	var link *Link
-	var errorResponse *ErrorResponse
-
 	queryParams := url.Values{}
 	queryParams.Set("path", path)
 	queryParams.Set("url", uploadURL)
-	resp, err := c.doRequest(ctx, POST, "resources/upload?"+queryParams.Encode(), nil)
-	if err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
-	}
-	defer resp.Body.Close()
 
-	if !inArray(resp.StatusCode, []int{200, 202}) {
-		decoded := json.NewDecoder(resp.Body)
-		if err := decoded.Decode(&errorResponse); err != nil {
-			return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode error response: %v", err)}
-		}
-		return nil, errorResponse
-	}
-
-	decoded := json.NewDecoder(resp.Body)
-	if err := decoded.Decode(&link); err != nil {
-		return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode link: %v", err)}
-	}
-
-	return link, nil
+	return requestJSON[Link](ctx, c, POST, "resources/upload?"+queryParams.Encode(), nil,
+		http.StatusOK, http.StatusAccepted)
 }

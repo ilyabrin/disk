@@ -2,28 +2,24 @@
 *.exe
 *.exe~
 *.dll
-*.a**
-*.b**
-*.c**
-*.d**
 *.so
 *.dylib
 
 # Test binary, built with `go test -c`
 *.test
 
-# Output of the go coverage tool, specifically when used with LiteIDE
+# Coverage output
 *.out
+coverage.html
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
 # developer config
 .dev.config.yml
-
-example.go
 .DS_Store
 
+# scratch
+example.go
 TODO
 tasks.md
-coverage.html

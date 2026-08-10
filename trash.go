@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strconv"
 )
 
 // RestoreFromTrash restores a resource from trash to its original location or a new path
@@ -35,9 +36,10 @@ func (c *Client) RestoreFromTrash(ctx context.Context, path string, overwrite bo
 		return nil, fmt.Errorf("failed to restore from trash: %w", err)
 	}
 
+	// 201 carries a link to the restored resource, 202 a link to the
+	// asynchronous operation. Both are worth returning to the caller.
 	var link Link
-	if resp.StatusCode == 202 {
-		// Asynchronous operation - return link with operation info
+	if resp.StatusCode != 204 {
 		if err := c.safeDecodeJSON(resp, &link); err != nil {
 			return nil, fmt.Errorf("failed to decode restore response: %w", err)
 		}
@@ -54,10 +56,10 @@ func (c *Client) ListTrashResources(ctx context.Context, path string, limit int,
 		query.Set("path", path)
 	}
 	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+		query.Set("limit", strconv.Itoa(limit))
 	}
 	if offset > 0 {
-		query.Set("offset", fmt.Sprintf("%d", offset))
+		query.Set("offset", strconv.Itoa(offset))
 	}
 
 	c.Logger.Debug("Listing trash resources with path: %s", path)
@@ -82,14 +84,16 @@ func (c *Client) ListTrashResources(ctx context.Context, path string, limit int,
 	return &trashList, nil
 }
 
-// EmptyTrash permanently deletes all resources from trash or a specific path in trash
-func (c *Client) EmptyTrash(ctx context.Context, path string, force bool) error {
+// EmptyTrash permanently deletes all resources from trash or a specific path in trash.
+// Set forceAsync to make the API always run the deletion in the background and
+// answer 202 with a link to the operation.
+func (c *Client) EmptyTrash(ctx context.Context, path string, forceAsync bool) error {
 	query := url.Values{}
 	if path != "" {
 		query.Set("path", path)
 	}
-	if force {
-		query.Set("force_async", "false")
+	if forceAsync {
+		query.Set("force_async", "true")
 	}
 
 	c.Logger.Debug("Emptying trash with path: %s", path)

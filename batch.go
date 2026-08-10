@@ -711,13 +711,19 @@ func (c *Client) WaitForBatchOperation(ctx context.Context, status *BatchOperati
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
-			// Poll each async operation
 			completed := 0
 			for _, result := range status.Results {
-				if result != nil && result.Link != nil {
-					// Check operation status (this would require implementing operation status checking)
-					// For now, we just log that we would check it
-					c.Logger.Debug("Would check status of operation: %s", result.Link.Href)
+				if result == nil || result.Link == nil {
+					continue
+				}
+
+				operation, err := c.GetOperationStatus(ctx, result.Link.Href)
+				if err != nil {
+					return fmt.Errorf("failed to poll operation %s: %w", result.Link.Href, err)
+				}
+
+				c.Logger.Debug("Operation %s status: %s", result.Link.Href, operation.Status)
+				if operation.Status != OperationInProgress {
 					completed++
 				}
 			}

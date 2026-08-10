@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 	"time"
 )
@@ -29,10 +30,17 @@ const (
 
 // ClientConfig holds configuration options for the Client
 type ClientConfig struct {
-	DefaultTimeout     time.Duration // Default timeout for requests
-	MaxRetries         int           // Maximum number of retries (future use)
-	EnableDebugLogging bool          // Enable debug logging (future use)
+	DefaultTimeout time.Duration // Default timeout for requests
+	// MaxRetries bounds how many extra attempts a retryable request gets.
+	// Only requests without a body (GET/DELETE/PUT with query parameters) are
+	// retried, and only on connection errors, 429 and 5xx responses.
+	MaxRetries         int
+	RetryBackoff       time.Duration // Base delay between retries; doubles per attempt
+	EnableDebugLogging bool          // Enable debug logging
 	Logger             *LoggerConfig // Logger configuration
+	// BaseURL overrides the Yandex Disk API endpoint. Useful for tests and
+	// proxies; defaults to API_URL. Must end with a slash.
+	BaseURL string
 }
 
 // DefaultClientConfig returns a ClientConfig with sensible defaults
@@ -40,9 +48,19 @@ func DefaultClientConfig() *ClientConfig {
 	return &ClientConfig{
 		DefaultTimeout:     30 * time.Second,
 		MaxRetries:         3,
+		RetryBackoff:       200 * time.Millisecond,
 		EnableDebugLogging: false,
 		Logger:             DefaultLoggerConfig(),
+		BaseURL:            API_URL,
 	}
+}
+
+// baseURL returns the API endpoint this client talks to.
+func (c *Client) baseURL() string {
+	if c.Config != nil && c.Config.BaseURL != "" {
+		return c.Config.BaseURL
+	}
+	return API_URL
 }
 
 type Client struct {
@@ -74,6 +92,10 @@ func NewWithConfig(config *ClientConfig, token ...string) (*Client, error) {
 
 	// Initialize logger
 	logger := NewLogger(config.Logger)
+	if config.EnableDebugLogging {
+		logger.SetLevel(DEBUG)
+		logger.SetVerbose(true)
+	}
 
 	// Create HTTP client with secure TLS configuration
 	transport := &http.Transport{
@@ -151,7 +173,7 @@ func (c *Client) doRequest(ctx context.Context, method HttpMethod, resource stri
 		body = io.LimitReader(data, 100*1024*1024) // 100MB limit
 	}
 
-	requestURL := API_URL + resource
+	requestURL := c.baseURL() + resource
 	req, err := http.NewRequestWithContext(ctx, string(method), requestURL, body)
 	if err != nil {
 		c.Logger.LogError("create request", err)
@@ -172,7 +194,8 @@ func (c *Client) doRequest(ctx context.Context, method HttpMethod, resource stri
 		c.Logger.LogRequest(string(method), requestURL, headers)
 	}
 
-	if resp, err = c.HTTPClient.Do(req); err != nil {
+	resp, err = c.doWithRetries(ctx, req, body == nil)
+	if err != nil {
 		c.Logger.LogError("execute request", err)
 
 		// Provide more context about the error
@@ -193,6 +216,54 @@ func (c *Client) doRequest(ctx context.Context, method HttpMethod, resource stri
 	}
 
 	return resp, err
+}
+
+// doWithRetries executes req, retrying transient failures when the request can
+// safely be replayed. Only bodyless requests are retryable: an io.Reader body
+// cannot be rewound for a second attempt.
+func (c *Client) doWithRetries(ctx context.Context, req *http.Request, retryable bool) (*http.Response, error) {
+	maxRetries := 0
+	backoff := 200 * time.Millisecond
+	if retryable && c.Config != nil && c.Config.MaxRetries > 0 {
+		maxRetries = c.Config.MaxRetries
+		if c.Config.RetryBackoff > 0 {
+			backoff = c.Config.RetryBackoff
+		}
+	}
+
+	var resp *http.Response
+	var err error
+
+	for attempt := 0; ; attempt++ {
+		resp, err = c.HTTPClient.Do(req)
+
+		if attempt >= maxRetries || !shouldRetry(resp, err) {
+			return resp, err
+		}
+
+		if resp != nil {
+			// The body has to be drained and closed before the connection can
+			// be reused for the next attempt.
+			_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
+			resp.Body.Close()
+		}
+
+		c.Logger.Debug("Retrying request %s %s (attempt %d/%d)", req.Method, req.URL.Path, attempt+1, maxRetries)
+
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(backoff << attempt):
+		}
+	}
+}
+
+// shouldRetry reports whether a failed attempt is worth repeating.
+func shouldRetry(resp *http.Response, err error) bool {
+	if err != nil {
+		return true
+	}
+	return resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= http.StatusInternalServerError
 }
 
 // WithTimeout creates a context with the specified timeout duration
@@ -282,6 +353,37 @@ func (c *Client) handleResponse(resp *http.Response, expectedCodes []int) (*Erro
 	}
 
 	return &errorResponse, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, errorResponse.Error)
+}
+
+// requestJSON performs an API request and decodes a successful response into T.
+//
+// okCodes lists the HTTP status codes that count as success (defaults to 200).
+// Any other status is decoded into an *ErrorResponse, which is what every
+// resource/public endpoint in this package returns to the caller.
+func requestJSON[T any](ctx context.Context, c *Client, method HttpMethod, endpoint string, body io.Reader, okCodes ...int) (*T, *ErrorResponse) {
+	if len(okCodes) == 0 {
+		okCodes = []int{http.StatusOK}
+	}
+
+	resp, err := c.doRequest(ctx, method, endpoint, body)
+	if err != nil {
+		return nil, &ErrorResponse{Error: fmt.Sprintf("request failed: %v", err)}
+	}
+	defer resp.Body.Close()
+
+	if !slices.Contains(okCodes, resp.StatusCode) {
+		var errorResponse ErrorResponse
+		if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
+			return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode error response: %v", err)}
+		}
+		return nil, &errorResponse
+	}
+
+	var result T
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode response: %v", err)}
+	}
+	return &result, nil
 }
 
 // safeDecodeJSON safely decodes JSON response with proper error handling for partial responses

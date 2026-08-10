@@ -1,6 +1,6 @@
-on: [push, pull_request]
-
 name: Run Tests
+
+on: [push, pull_request]
 
 permissions:
   contents: read
@@ -13,19 +13,20 @@ jobs:
       checks: write
       pull-requests: write
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v7
-    - name: Install Go
-      uses: actions/setup-go@v6
-      with:
-        go-version-file: go.mod
-        check-latest: true
-    - name: Run tests with coverage
-      run: |
-        go test -v -covermode=count -coverprofile=coverage.out
-    - name: Coveralls
-      uses: coverallsapp/github-action@v2.3.6
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        file: coverage.out
-        format: golang
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Install Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          check-latest: true
+      - name: Vet
+        run: go vet ./...
+      - name: Run tests with coverage
+        run: go test -race -v -covermode=atomic -coverprofile=coverage.out ./...
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2.3.8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: coverage.out
+          format: golang

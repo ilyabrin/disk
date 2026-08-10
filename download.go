@@ -77,12 +77,12 @@ func (c *Client) DownloadFileToPath(ctx context.Context, remotePath string, loca
 	}
 
 	// Step 3: Ensure destination directory exists
-	if err := os.MkdirAll(filepath.Dir(localPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(localPath), 0o750); err != nil {
 		return fmt.Errorf("failed to create destination directory: %w", err)
 	}
 
 	// Step 4: Create the local file
-	file, err := os.Create(localPath)
+	file, err := os.Create(localPath) // #nosec G304 -- localPath is supplied by the caller of this library
 	if err != nil {
 		return fmt.Errorf("failed to create local file: %w", err)
 	}

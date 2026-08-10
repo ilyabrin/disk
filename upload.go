@@ -2,6 +2,7 @@ package disk
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -11,6 +12,10 @@ import (
 	"strings"
 	"time"
 )
+
+// multipartUploadTimeout bounds a chunked upload when the caller did not set a
+// deadline of their own.
+const multipartUploadTimeout = 30 * time.Minute
 
 // UploadProgress represents the progress of an upload operation
 type UploadProgress struct {
@@ -80,11 +85,13 @@ func (c *Client) validateLocalFile(localPath string) (os.FileInfo, error) {
 	}
 
 	// Check if file is readable
-	file, err := os.Open(localPath)
+	file, err := os.Open(localPath) // #nosec G304 -- localPath is supplied by the caller of this library
 	if err != nil {
 		return nil, fmt.Errorf("cannot read file: %w", err)
 	}
-	file.Close()
+	if err := file.Close(); err != nil {
+		return nil, fmt.Errorf("cannot close file: %w", err)
+	}
 
 	// Check file size (Yandex Disk has limits)
 	if fileInfo.Size() == 0 {
@@ -111,7 +118,7 @@ func (c *Client) uploadFileSingle(ctx context.Context, localPath string, remoteP
 	c.Logger.Debug("Received upload link: %s", uploadLink.Href)
 
 	// Step 2: Open the local file
-	file, err := os.Open(localPath)
+	file, err := os.Open(localPath) // #nosec G304 -- localPath is supplied by the caller of this library
 	if err != nil {
 		return nil, fmt.Errorf("failed to open local file: %w", err)
 	}
@@ -195,7 +202,7 @@ func (c *Client) uploadFileMultipart(ctx context.Context, localPath string, remo
 	// For large files, we use the standard upload with better progress tracking and retry logic
 
 	// Open the file for reading
-	file, err := os.Open(localPath)
+	file, err := os.Open(localPath) // #nosec G304 -- localPath is supplied by the caller of this library
 	if err != nil {
 		return nil, fmt.Errorf("failed to open local file: %w", err)
 	}
@@ -240,17 +247,22 @@ func (c *Client) uploadFileMultipart(ctx context.Context, localPath string, remo
 
 	c.Logger.Debug("Starting multipart upload with content type: %s", contentType)
 
-	// Execute upload with configured HTTP client
-	// For large files, we may want to temporarily extend the timeout
-	originalTimeout := c.HTTPClient.Timeout
-	if c.HTTPClient.Timeout > 0 && c.HTTPClient.Timeout < 30*time.Second {
-		c.HTTPClient.Timeout = 30 * time.Second // Extend timeout for large uploads
-		defer func() {
-			c.HTTPClient.Timeout = originalTimeout // Restore original timeout
-		}()
+	// Large uploads need far more headroom than the default per-request timeout.
+	// Use a client that shares this client's transport but is bounded by the
+	// request context instead, so concurrent callers are not affected — mutating
+	// c.HTTPClient.Timeout here would be a data race.
+	uploadClient := &http.Client{
+		Transport:     c.HTTPClient.Transport,
+		CheckRedirect: c.HTTPClient.CheckRedirect,
+		Jar:           c.HTTPClient.Jar,
+	}
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		uploadCtx, cancel := context.WithTimeout(ctx, multipartUploadTimeout)
+		defer cancel()
+		req = req.WithContext(uploadCtx)
 	}
 
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := uploadClient.Do(req)
 	if err != nil {
 		c.Logger.LogError("multipart file upload", err)
 		return nil, fmt.Errorf("multipart upload request failed: %w", err)
@@ -291,7 +303,10 @@ func (pr *progressReader) Read(p []byte) (int, error) {
 	pr.current += int64(n)
 
 	if pr.callback != nil {
-		percentage := float64(pr.current) / float64(pr.total) * 100
+		percentage := float64(-1)
+		if pr.total > 0 {
+			percentage = float64(pr.current) / float64(pr.total) * 100
+		}
 		pr.callback(UploadProgress{
 			BytesUploaded: pr.current,
 			TotalBytes:    pr.total,
@@ -319,7 +334,10 @@ func (mpr *multipartProgressReader) Read(p []byte) (int, error) {
 	if mpr.callback != nil {
 		// Report progress every chunk or at the end
 		if mpr.current-mpr.lastReported >= mpr.chunkSize || err == io.EOF {
-			percentage := float64(mpr.current) / float64(mpr.total) * 100
+			percentage := float64(-1)
+			if mpr.total > 0 {
+				percentage = float64(mpr.current) / float64(mpr.total) * 100
+			}
 			mpr.callback(UploadProgress{
 				BytesUploaded: mpr.current,
 				TotalBytes:    mpr.total,
@@ -341,16 +359,17 @@ func (c *Client) DetectMimeType(filePath string) (string, error) {
 	}
 
 	// Try to detect from file content
-	file, err := os.Open(filePath)
+	file, err := os.Open(filePath) // #nosec G304 -- filePath is supplied by the caller of this library
 	if err != nil {
 		return "", fmt.Errorf("cannot open file for MIME detection: %w", err)
 	}
 	defer file.Close()
 
-	// Read first 512 bytes for detection
+	// Read up to the first 512 bytes for detection. io.ReadFull is used instead
+	// of a bare Read so short reads on the first call do not truncate the sniff.
 	buffer := make([]byte, 512)
-	n, err := file.Read(buffer)
-	if err != nil && err != io.EOF {
+	n, err := io.ReadFull(file, buffer)
+	if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
 		return "", fmt.Errorf("cannot read file for MIME detection: %w", err)
 	}
 

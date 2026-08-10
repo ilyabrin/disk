@@ -1,754 +1,538 @@
-# Клиентская библиотека Яндекс.Диска на Go
+<div align="center">
 
-[🇬🇧 English Version](./README.md)
+# disk
 
-[![Версия Go](https://img.shields.io/badge/go-%3E%3D1.20-blue.svg)](https://golang.org/)
-[![Лицензия](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
+**Идиоматичный Go-клиент для [REST API Яндекс Диска](https://yandex.ru/dev/disk-api/doc/ru/).**
 
-Комплексная, готовая к промышленной эксплуатации клиентская библиотека на Go для [REST API Яндекс.Диска](https://yandex.ru/dev/disk/rest/). Эта библиотека предоставляет чистый, идиоматичный Go-интерфейс для взаимодействия с облачным хранилищем Яндекс.Диск.
+[![Go Reference](https://pkg.go.dev/badge/github.com/ilyabrin/disk.svg)](https://pkg.go.dev/github.com/ilyabrin/disk)
+[![Run Tests](https://github.com/ilyabrin/disk/actions/workflows/test.yml/badge.svg)](https://github.com/ilyabrin/disk/actions/workflows/test.yml)
+[![Security Checks](https://github.com/ilyabrin/disk/actions/workflows/security.yml/badge.svg)](https://github.com/ilyabrin/disk/actions/workflows/security.yml)
+[![Coverage Status](https://coveralls.io/repos/github/ilyabrin/disk/badge.svg?branch=release)](https://coveralls.io/github/ilyabrin/disk?branch=release)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ilyabrin/disk)](https://goreportcard.com/report/github.com/ilyabrin/disk)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/ilyabrin/disk)](https://go.dev/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 
-## 🌟 Возможности
+[English version](./README.md) · [Справочник API](https://pkg.go.dev/github.com/ilyabrin/disk) · [Пагинация](./PAGINATION.md)
 
-### Основной функционал
+</div>
 
-- ✅ **Полное покрытие API** - Полная поддержка всех эндпоинтов REST API Яндекс.Диска
-- 🔐 **OAuth2 аутентификация** - Простая аутентификация на основе токенов
-- 📁 **Операции с файлами** - Загрузка, скачивание, копирование, перемещение и удаление файлов
-- 📊 **Управление метаданными** - Получение и обновление метаданных файлов/папок
-- 🗑️ **Управление корзиной** - Перемещение в корзину, восстановление и окончательное удаление
-- 🌐 **Публичные ссылки** - Создание и управление публичными ссылками на файлы и папки
-- 📦 **Информация о диске** - Получение информации о месте на диске, квоте и системных папках
+---
 
-### Расширенные возможности
+## Содержание
 
-- 🔄 **Поддержка пагинации** - Множество стратегий пагинации (на основе смещения и паттерн итератора)
-- 📦 **Пакетные операции** - Эффективная обработка нескольких файлов с параллельным выполнением
-- 📤 **Умная загрузка** - Автоматическая обработка больших файлов с отслеживанием прогресса
-- ⚡ **Поддержка контекста** - Полная интеграция с context.Context для таймаутов и отмены операций
-- 📝 **Всеобъемлющее логирование** - Встроенное структурированное логирование с несколькими уровнями важности
-- 🔒 **Безопасность** - Валидация и санитизация путей для предотвращения атак
-- ⚙️ **Настраиваемость** - Обширные параметры конфигурации для таймаутов, повторов и многого другого
-- 🧪 **Хорошо протестирована** - Высокое покрытие тестами с всесторонними модульными тестами
+- [Установка](#установка)
+- [Быстрый старт](#быстрый-старт)
+- [Аутентификация](#аутентификация)
+- [Информация о диске](#информация-о-диске)
+- [Файлы и папки](#файлы-и-папки)
+- [Загрузка на диск](#загрузка-на-диск)
+- [Скачивание](#скачивание)
+- [Публичные ресурсы](#публичные-ресурсы)
+- [Корзина](#корзина)
+- [Пагинация](#пагинация)
+- [Пакетные операции](#пакетные-операции)
+- [Конфигурация](#конфигурация)
+- [Логирование](#логирование)
+- [Обработка ошибок](#обработка-ошибок)
+- [Асинхронные операции](#асинхронные-операции)
+- [Примеры](#примеры)
+- [Разработка](#разработка)
+- [Лицензия](#лицензия)
 
-## 📋 Содержание
+---
 
-- [Установка](#-установка)
-- [Быстрый старт](#-быстрый-старт)
-- [Аутентификация](#-аутентификация)
-- [Базовое использование](#-базовое-использование)
-  - [Информация о диске](#информация-о-диске)
-  - [Операции с файлами](#операции-с-файлами)
-  - [Операции с папками](#операции-с-папками)
-  - [Загрузка файлов](#загрузка-файлов)
-  - [Скачивание файлов](#скачивание-файлов)
-  - [Публичные ресурсы](#публичные-ресурсы)
-  - [Управление корзиной](#управление-корзиной)
-- [Расширенные возможности](#-расширенные-возможности)
-  - [Пагинация](#пагинация)
-  - [Пакетные операции](#пакетные-операции)
-  - [Отслеживание прогресса](#отслеживание-прогресса)
-- [Пользовательская конфигурация](#пользовательская-конфигурация)
-  - [Логирование](#логирование)
-- [Обработка ошибок](#️-обработка-ошибок)
-- [Примеры](#-примеры)
-- [Справочник API](#-справочник-api)
-- [Тестирование](#-тестирование)
-- [Вклад в проект](#-вклад-в-проект)
-- [Лицензия](#-лицензия)
-
-## 📦 Установка
+## Установка
 
 ```bash
 go get github.com/ilyabrin/disk
 ```
 
-**Требования:**
+> [!NOTE]
+> Требуется Go 1.23 или новее. Кроме стандартной библиотеки у пакета нет зависимостей времени выполнения.
 
-- Go 1.20 или выше
-
-## 🚀 Быстрый старт
+## Быстрый старт
 
 ```go
 package main
 
 import (
-    "context"
-    "fmt"
-    "log"
-    "time"
+	"context"
+	"fmt"
+	"log"
 
-    "github.com/ilyabrin/disk"
+	"github.com/ilyabrin/disk"
 )
 
 func main() {
-    // Создание нового клиента с вашим OAuth-токеном
-    client := disk.NewClient("ВАШ_OAUTH_ТОКЕН")
+	// Если токен не передан явно, он читается из YANDEX_DISK_ACCESS_TOKEN.
+	client, err := disk.New()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    // Создание контекста с таймаутом
-    ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-    defer cancel()
+	ctx := context.Background()
 
-    // Получение информации о диске
-    diskInfo, err := client.GetDisk(ctx)
-    if err != nil {
-        log.Fatalf("Не удалось получить информацию о диске: %v", err)
-    }
+	info, err := client.DiskInfo(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    fmt.Printf("Общее место: %d байт\n", diskInfo.TotalSpace)
-    fmt.Printf("Использовано: %d байт\n", diskInfo.UsedSpace)
-    fmt.Printf("Доступно: %d байт\n", diskInfo.TotalSpace-diskInfo.UsedSpace)
+	fmt.Printf("Занято %s из %s\n",
+		disk.FormatFileSize(int64(info.UsedSpace)),
+		disk.FormatFileSize(int64(info.TotalSpace)),
+	)
 }
 ```
 
-## 🔐 Аутентификация
+## Аутентификация
 
-Для использования этой библиотеки вам нужен OAuth-токен от Яндекса. Вот как его получить:
-
-1. Перейдите на [Яндекс OAuth](https://oauth.yandex.ru/)
-2. Зарегистрируйте ваше приложение
-3. Запросите доступ к скоупам `cloud_api:disk.read` и `cloud_api:disk.write`
-4. Получите ваш OAuth-токен
+Клиент работает по OAuth-токену. Получить его можно в
+[консоли Яндекс OAuth](https://oauth.yandex.ru/) с правами `cloud_api:disk.*`.
 
 ```go
-// Создание клиента с вашим токеном
-client := disk.NewClient("ВАШ_OAUTH_ТОКЕН")
-
-// Или с пользовательской конфигурацией
-config := disk.DefaultClientConfig()
-config.DefaultTimeout = 60 * time.Second
-client = disk.NewClientWithConfig("ВАШ_OAUTH_ТОКЕН", config)
+client, err := disk.New("y0_AgAAAA...")       // токен явно
+client, err := disk.New()                     // из $YANDEX_DISK_ACCESS_TOKEN
 ```
 
-## 💡 Базовое использование
+> [!WARNING]
+> Не коммитьте токены. Встроенный логгер скрывает заголовок `Authorization`,
+> но за собственное логирование отвечаете вы.
 
-### Информация о диске
+## Информация о диске
 
 ```go
-// Получение информации о диске
-diskInfo, err := client.GetDisk(ctx)
+info, err := client.DiskInfo(ctx)
 if err != nil {
-    log.Fatal(err)
+	log.Fatal(err)
 }
 
-fmt.Printf("Общее место: %d\n", diskInfo.TotalSpace)
-fmt.Printf("Использовано: %d\n", diskInfo.UsedSpace)
-fmt.Printf("Размер корзины: %d\n", diskInfo.TrashSize)
-fmt.Printf("Платная подписка: %t\n", diskInfo.IsPaid)
+fmt.Println("Всего:", info.TotalSpace)
+fmt.Println("Занято:", info.UsedSpace)
+fmt.Println("Корзина:", info.TrashSize)
+fmt.Println("Папка «Загрузки»:", info.SystemFolders.Downloads)
 ```
 
-### Операции с файлами
+## Файлы и папки
 
-#### Получение метаданных файла
+<details open>
+<summary><b>Метаданные</b></summary>
 
 ```go
-// Получение метаданных файла или папки
-resource, errResp := client.GetMetadata(ctx, "/путь/к/файлу.txt")
+resource, errResp := client.GetMetadata(ctx, "/Документы/отчёт.pdf")
 if errResp != nil {
-    log.Fatalf("Ошибка: %s", errResp.Error)
+	log.Fatal(errResp.Error)
 }
-
-fmt.Printf("Имя: %s\n", resource.Name)
-fmt.Printf("Размер: %d байт\n", resource.Size)
-fmt.Printf("Тип: %s\n", resource.Type)
-fmt.Printf("Изменён: %s\n", resource.Modified)
+fmt.Println(resource.Name, resource.Size, resource.MimeType)
 ```
 
-#### Копирование файла
+Содержимое папки приходит в поле `_embedded`. Через `GetMetadataWithOptions`
+можно управлять пагинацией, сортировкой и составом ответа:
 
 ```go
-// Копирование файла или папки
-link, err := client.CopyResource(ctx, "/источник/файл.txt", "/назначение/файл.txt", false)
-if err != nil {
-    log.Fatal(err)
-}
-fmt.Printf("Ссылка на операцию копирования: %s\n", link.Href)
-```
+folder, errResp := client.GetMetadataWithOptions(ctx, "/Фото", &disk.ResourceOptions{
+	Limit:       100,
+	Offset:      0,
+	Sort:        "-modified",                       // «-» разворачивает порядок
+	PreviewSize: "M",
+	PreviewCrop: true,
+	Fields:      []string{"name", "_embedded.items.name", "_embedded.items.size"},
+})
 
-#### Перемещение/переименование файла
-
-```go
-// Перемещение или переименование файла
-link, err := client.MoveResource(ctx, "/старый/путь/файл.txt", "/новый/путь/файл.txt", false)
-if err != nil {
-    log.Fatal(err)
+for _, item := range folder.Embedded.Items {
+	fmt.Println(item.Type, item.Name)
 }
 ```
 
-#### Удаление файла
+</details>
+
+<details>
+<summary><b>Создание, копирование, перемещение, удаление</b></summary>
 
 ```go
-// Удаление файла (перемещение в корзину)
-err := client.DeleteResource(ctx, "/путь/к/файлу.txt", false)
-if err != nil {
-    log.Fatal(err)
-}
+// Создать папку
+link, errResp := client.CreateDir(ctx, "/Отчёты")
 
-// Окончательное удаление файла
-err = client.DeleteResource(ctx, "/путь/к/файлу.txt", true)
+// Копировать
+link, errResp = client.CopyResource(ctx, "/a.txt", "/backup/a.txt")
+
+// Переместить или переименовать
+link, errResp = client.MoveResource(ctx, "/a.txt", "/archive/a-2026.txt")
+
+// Удалить в корзину
+err := client.DeleteResource(ctx, "/a.txt", false)
+
+// Удалить безвозвратно
+err = client.DeleteResource(ctx, "/a.txt", true)
 ```
 
-### Операции с папками
+</details>
 
-#### Создание папки
+<details>
+<summary><b>Пользовательские атрибуты</b></summary>
 
 ```go
-// Создание новой папки
-link, err := client.CreateFolder(ctx, "/путь/к/новой/папке")
-if err != nil {
-    log.Fatal(err)
-}
-fmt.Printf("Папка создана: %s\n", link.Href)
+resource, errResp := client.UpdateMetadata(ctx, "/отчёт.pdf",
+	map[string]map[string]string{
+		"custom_properties": {
+			"project": "apollo",
+			"status":  "final",
+		},
+	})
 ```
 
-#### Список содержимого папки
+</details>
+
+<details>
+<summary><b>Плоский список файлов и последние загрузки</b></summary>
 
 ```go
-// Получение содержимого папки
-resource, errResp := client.GetMetadata(ctx, "/путь/к/папке")
+// Все файлы, сначала новые, только изображения и видео
+files, errResp := client.GetSortedFilesWithOptions(ctx,
+	&disk.PaginationOptions{Limit: 50},
+	&disk.FilesOptions{
+		MediaType: []string{"image", "video"},
+		Sort:      "-created",
+	})
+
+// Последние загруженные ресурсы
+recent, errResp := client.GetLastUploadedResources(ctx)
+```
+
+</details>
+
+## Загрузка на диск
+
+| Метод | Когда использовать |
+| --- | --- |
+| `UploadFileFromPath` | Любой локальный файл, полный контроль над опциями |
+| `UploadFileFromPathWithProgress` | Небольшие и средние файлы с прогрессом |
+| `UploadLargeFileFromPath` | Большие файлы, прогресс по чанкам |
+| `UploadFile` | Загрузка по URL силами самого Яндекса |
+
+```go
+resource, err := client.UploadFileFromPath(ctx, "./отчёт.pdf", "/Документы/отчёт.pdf",
+	&disk.UploadOptions{Overwrite: true})
+```
+
+С прогрессом:
+
+```go
+resource, err := client.UploadFileFromPathWithProgress(ctx,
+	"./video.mp4", "/Видео/video.mp4", true,
+	func(p disk.UploadProgress) {
+		fmt.Printf("\r%.1f%% (%s / %s)",
+			p.Percentage,
+			disk.FormatFileSize(p.BytesUploaded),
+			disk.FormatFileSize(p.TotalBytes),
+		)
+	})
+```
+
+Большие файлы, отчёт раз в 10 МБ:
+
+```go
+resource, err := client.UploadLargeFileFromPath(ctx,
+	"./archive.zip", "/Бэкапы/archive.zip", 10,
+	func(p disk.UploadProgress) {
+		log.Printf("загружено %s", disk.FormatFileSize(p.BytesUploaded))
+	})
+```
+
+Чтобы Яндекс сам скачал файл по ссылке, не пропуская трафик через ваш процесс:
+
+```go
+link, errResp := client.UploadFile(ctx, "/Загрузки/image.jpg", "https://example.com/image.jpg")
+```
+
+> [!TIP]
+> `UploadFile` работает асинхронно — узнать, что файл долетел, можно опросив
+> возвращённую ссылку через [`GetOperationStatus`](#асинхронные-операции).
+
+## Скачивание
+
+```go
+err := client.DownloadFileToPath(ctx, "/Фото/image.jpg", "./image.jpg",
+	&disk.DownloadOptions{Overwrite: true})
+```
+
+С прогрессом:
+
+```go
+err := client.DownloadFileToPathWithProgress(ctx,
+	"/Видео/video.mp4", "./video.mp4", true,
+	func(p disk.DownloadProgress) {
+		if p.TotalBytes > 0 {
+			fmt.Printf("\r%.1f%%", p.Percentage)
+		}
+	})
+```
+
+Нужна сама ссылка (для CDN, редиректа в браузере или собственной качалки)?
+
+```go
+link, errResp := client.GetDownloadURL(ctx, "/Фото/image.jpg")
+fmt.Println(link.Href) // короткоживущая, одноразовая
+```
+
+## Публичные ресурсы
+
+```go
+// Опубликовать и снять публикацию
+link, errResp := client.PublishResource(ctx, "/Фото/image.jpg")
+link, errResp = client.UnpublishResource(ctx, "/Фото/image.jpg")
+
+// Всё, что вы опубликовали
+list, errResp := client.GetPublicResources(ctx)
+```
+
+Чтение чужого опубликованного ресурса по ключу или ссылке:
+
+```go
+resource, errResp := client.GetMetadataForPublicResource(ctx, "https://yadi.sk/d/abc123")
+
+// Заглянуть внутрь опубликованной папки
+resource, errResp = client.GetMetadataForPublicResourceWithOptions(ctx, "https://yadi.sk/d/abc123",
+	&disk.PublicResourceOptions{
+		Path:  "/subfolder",
+		Sort:  "name",
+		Limit: 50,
+	})
+
+// Скачать конкретный файл из опубликованной папки
+link, errResp := client.GetDownloadURLForPublicResourceAt(ctx, "https://yadi.sk/d/abc123", "/subfolder/file.txt")
+
+// Сохранить его к себе в «Загрузки» под новым именем
+link, errResp = client.SavePublicResourceWithOptions(ctx, "https://yadi.sk/d/abc123",
+	&disk.SavePublicResourceOptions{Path: "/subfolder/file.txt", Name: "copy.txt"})
+```
+
+## Корзина
+
+```go
+// Просмотр
+trash, err := client.ListTrashResources(ctx, "", 100, 0)
+
+// Метаданные одного элемента
+item, err := client.GetTrashResourceMetadata(ctx, "отчёт.pdf", nil)
+
+// Восстановить, при желании переименовав
+link, err := client.RestoreFromTrash(ctx, "отчёт.pdf", false, "отчёт-восстановлен.pdf")
+
+// Очистить один путь или всю корзину, если передать ""
+err = client.EmptyTrash(ctx, "", false)
+```
+
+> [!NOTE]
+> `forceAsync: true` в `EmptyTrash` заставляет API всегда отвечать `202` со ссылкой
+> на операцию, вместо того чтобы блокироваться на большом удалении.
+
+## Пагинация
+
+Доступны три подхода — от низкоуровневого к высокоуровневому. Подробности в [PAGINATION.md](./PAGINATION.md).
+
+<details open>
+<summary><b>1. Явные limit/offset</b></summary>
+
+```go
+files, errResp := client.GetSortedFilesWithPagination(ctx, &disk.PaginationOptions{
+	Limit:  50,
+	Offset: 100,
+})
+```
+
+</details>
+
+<details>
+<summary><b>2. Страница с метаданными</b></summary>
+
+```go
+page, errResp := client.GetSortedFilesPaged(ctx, &disk.PaginationOptions{Limit: 50})
+fmt.Println(page.Pagination.HasMore, page.Pagination.NextOffset)
+```
+
+</details>
+
+<details>
+<summary><b>3. Итератор</b></summary>
+
+```go
+it := client.GetSortedFilesIterator(&disk.PaginationOptions{Limit: 100})
+
+for it.HasNext() {
+	page, err := it.Next(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, file := range page.Items {
+		fmt.Println(file.Name)
+	}
+}
+```
+
+</details>
+
+## Пакетные операции
+
+Пакетные методы выполняют операции параллельно и собирают результат по каждому
+элементу, а не падают на первой же ошибке.
+
+```go
+status, err := client.BatchDeleteFiles(ctx,
+	[]string{"/tmp/a.txt", "/tmp/b.txt", "/tmp/c.txt"},
+	&disk.BatchDeleteOptions{
+		BatchOptions: disk.BatchOptions{
+			MaxConcurrency:  4,
+			ContinueOnError: true,
+			Progress: func(s disk.BatchOperationStatus) {
+				fmt.Printf("\r%d/%d", s.Completed, s.Total)
+			},
+		},
+		Permanently: false,
+	})
+
+fmt.Println(status.GetSummary())
+
+for _, failure := range status.GetFailedOperations() {
+	log.Printf("%s: %v", failure.Path, failure.Error)
+}
+
+// Повторить только то, что упало
+status, err = client.RetryFailedOperations(ctx, status, 2)
+```
+
+Доступны `BatchDeleteFiles`, `BatchCopyFiles`, `BatchMoveFiles`,
+`BatchUpdateMetadata`, а также обёртки `BatchRenameFiles`,
+`BatchMoveToDirectory`, `BatchCopyToDirectory` и варианты `*Simple`.
+
+## Конфигурация
+
+```go
+client, err := disk.NewWithConfig(&disk.ClientConfig{
+	DefaultTimeout:     60 * time.Second,
+	MaxRetries:         3,
+	RetryBackoff:       200 * time.Millisecond,
+	EnableDebugLogging: true,
+	Logger:             disk.DefaultLoggerConfig(),
+}, "ваш-токен")
+```
+
+| Поле | По умолчанию | Значение |
+| --- | --- | --- |
+| `DefaultTimeout` | `30s` | Таймаут запроса, если у контекста нет дедлайна |
+| `MaxRetries` | `3` | Дополнительные попытки для повторяемых запросов |
+| `RetryBackoff` | `200ms` | Базовая пауза между попытками, удваивается |
+| `EnableDebugLogging` | `false` | Переводит логгер в `DEBUG` и подробный режим |
+| `Logger` | см. ниже | Настройки логгера |
+| `BaseURL` | API Яндекса | Другой адрес API (тесты, прокси) |
+
+> [!IMPORTANT]
+> Повторяются только запросы **без тела** — `GET`, `DELETE` и те `PUT`/`POST`,
+> что передают параметры в query string. Тело-`io.Reader` нельзя перемотать,
+> поэтому такой запрос отправляется ровно один раз. Повтор происходит на ошибках
+> соединения, `429` и `5xx`.
+
+Таймаут можно задать и на конкретный вызов через контекст:
+
+```go
+ctx, cancel := disk.WithTimeout(10 * time.Second)
+defer cancel()
+
+info, err := client.DiskInfo(ctx)
+```
+
+## Логирование
+
+```go
+client.SetLogLevel(disk.DEBUG)   // DEBUG, INFO, WARN, ERROR, SILENT
+client.SetVerbose(true)          // подробности запросов и ответов
+client.SetLogOutput(os.Stderr)   // любой io.Writer
+```
+
+Чувствительные значения заголовков (`Authorization`, токены) скрываются до
+попадания в лог.
+
+## Обработка ошибок
+
+В библиотеке два соглашения об ошибках, и какое сработает — зависит от вызова:
+
+| Тип | Где | Как обрабатывать |
+| --- | --- | --- |
+| `*ErrorResponse` | Ресурсы, публичные ресурсы, пагинация | Не-`nil` означает ошибку; смотрите `.Error` и `.Description` |
+| `error` | Информация о диске, загрузка, скачивание, корзина, пакеты | Обычный Go-подход, ошибки обёрнуты через `%w` |
+
+```go
+resource, errResp := client.GetMetadata(ctx, "/нет-такого.txt")
 if errResp != nil {
-    log.Fatal(errResp.Error)
+	log.Printf("%s: %s", errResp.Error, errResp.Description)
+	return
 }
 
-// Перебор элементов
-if resource.Embedded != nil {
-    for _, item := range resource.Embedded.Items {
-        fmt.Printf("- %s (%s)\n", item.Name, item.Type)
-    }
+if err := client.DownloadFileToPath(ctx, "/a.txt", "./a.txt", nil); err != nil {
+	log.Fatal(err)
 }
 ```
 
-### Загрузка файлов
+## Асинхронные операции
 
-#### Простая загрузка
-
-```go
-// Загрузка небольшого файла
-options := &disk.UploadOptions{
-    Overwrite: true,
-    Progress: func(progress disk.UploadProgress) {
-        fmt.Printf("Загружено: %.2f%%\n", progress.Percentage)
-    },
-}
-
-resource, err := client.UploadFileFromPath(ctx, "локальный/файл.txt", "/диск/файл.txt", options)
-if err != nil {
-    log.Fatal(err)
-}
-fmt.Printf("Файл загружен: %s\n", resource.Name)
-```
-
-#### Загрузка большого файла
+Копирование, перемещение, сохранение публичного ресурса и очистка корзины могут
+ответить `202 Accepted` со ссылкой на фоновую операцию. Опрашивайте её, пока
+статус не перестанет быть `in-progress`:
 
 ```go
-// Загрузка большого файла с автоматическим разбиением на части
-resource, err := client.UploadLargeFileFromPath(ctx, "большой-файл.zip", "/диск/большой-файл.zip", nil)
-if err != nil {
-    log.Fatal(err)
-}
-```
-
-#### Загрузка из Reader
-
-```go
-// Загрузка из io.Reader
-file, _ := os.Open("файл.txt")
-defer file.Close()
-
-resource, err := client.UploadFile(ctx, file, "/диск/файл.txt", options)
-```
-
-### Скачивание файлов
-
-```go
-// Скачивание файла
-err := client.DownloadFile(ctx, "/диск/файл.txt", "локальный/файл.txt")
-if err != nil {
-    log.Fatal(err)
-}
-
-// Или получение ссылки на скачивание
-link, errResp := client.GetDownloadURL(ctx, "/диск/файл.txt")
+link, errResp := client.CopyResource(ctx, "/большая-папка", "/backup/большая-папка")
 if errResp != nil {
-    log.Fatal(errResp.Error)
+	log.Fatal(errResp.Error)
 }
-fmt.Printf("Ссылка на скачивание: %s\n", link.Href)
+
+for {
+	// Принимает и идентификатор операции, и полный href из ответа.
+	operation, err := client.GetOperationStatus(ctx, link.Href)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if operation.Status != disk.OperationInProgress {
+		fmt.Println("готово:", operation.Status)
+		break
+	}
+	time.Sleep(time.Second)
+}
 ```
 
-### Публичные ресурсы
-
-#### Публикация ресурса
+Для пакетных вызовов опрос берёт на себя `WaitForBatchOperation`:
 
 ```go
-// Сделать файл или папку публичными
-link, err := client.PublishResource(ctx, "/путь/к/файлу.txt")
-if err != nil {
-    log.Fatal(err)
-}
-fmt.Printf("Публичная ссылка: %s\n", link.Href)
+err := client.WaitForBatchOperation(ctx, status, time.Second)
 ```
 
-#### Снятие публикации ресурса
-
-```go
-// Удаление публичного доступа
-link, err := client.UnpublishResource(ctx, "/путь/к/файлу.txt")
-if err != nil {
-    log.Fatal(err)
-}
-```
-
-#### Доступ к публичному ресурсу
-
-```go
-// Получение метаданных публичного ресурса
-resource, errResp := client.GetMetadataForPublicResource(ctx, "публичный-ключ")
-if errResp != nil {
-    log.Fatal(errResp.Error)
-}
-
-// Скачивание публичного ресурса
-link, errResp := client.GetDownloadURLForPublicResource(ctx, "публичный-ключ")
-```
-
-#### Список публичных ресурсов
-
-```go
-// Получение всех публичных ресурсов
-options := &disk.PaginationOptions{Limit: 20}
-pagedResources, errResp := client.GetPublicResourcesPaged(ctx, options)
-if errResp != nil {
-    log.Fatal(errResp.Error)
-}
-
-for _, resource := range pagedResources.Items {
-    fmt.Printf("Публичный: %s (%s)\n", resource.Name, resource.PublicURL)
-}
-```
-
-### Управление корзиной
-
-#### Перемещение в корзину
-
-```go
-// Удаление файла (перемещение в корзину)
-err := client.DeleteResource(ctx, "/путь/к/файлу.txt", false)
-```
-
-#### Список содержимого корзины
-
-```go
-// Список элементов в корзине
-trashList, err := client.ListTrashResources(ctx, "", 20, 0)
-if err != nil {
-    log.Fatal(err)
-}
-
-for _, item := range trashList.Embedded.Items {
-    fmt.Printf("Корзина: %s (удалён: %s)\n", item.Name, item.Deleted)
-}
-```
-
-#### Восстановление из корзины
-
-```go
-// Восстановление файла из корзины
-link, err := client.RestoreFromTrash(ctx, "/путь/к/файлу.txt", false, "")
-if err != nil {
-    log.Fatal(err)
-}
-```
-
-#### Очистка корзины
-
-```go
-// Окончательное удаление всей корзины
-link, err := client.EmptyTrash(ctx)
-if err != nil {
-    log.Fatal(err)
-}
-```
-
-#### Окончательное удаление из корзины
-
-```go
-// Окончательное удаление конкретного элемента из корзины
-link, err := client.DeleteFromTrash(ctx, "/путь/к/файлу.txt")
-```
-
-## 🔥 Расширенные возможности
-
-### Пагинация
-
-Библиотека предоставляет всестороннюю поддержку пагинации с множеством стратегий. Подробную документацию смотрите в [PAGINATION.md](./PAGINATION.md).
-
-#### Базовая пагинация
-
-```go
-// Получение файлов с пагинацией
-options := &disk.PaginationOptions{
-    Limit:  20,
-    Offset: 0,
-}
-files, errResp := client.GetSortedFilesWithPagination(ctx, options)
-```
-
-#### Расширенная пагинация с метаданными
-
-```go
-// Получение информации о пагинации
-pagedFiles, errResp := client.GetSortedFilesPaged(ctx, options)
-if errResp == nil {
-    fmt.Printf("Всего элементов: %d\n", len(pagedFiles.Items))
-    fmt.Printf("Есть ещё: %t\n", pagedFiles.Pagination.HasMore)
-    if pagedFiles.Pagination.HasMore {
-        fmt.Printf("Следующее смещение: %d\n", pagedFiles.Pagination.NextOffset)
-    }
-}
-```
-
-#### Паттерн итератора
-
-```go
-// Использование итератора для автоматической пагинации
-iterator := client.GetSortedFilesIterator(&disk.PaginationOptions{Limit: 50})
-
-for iterator.HasNext() {
-    page, err := iterator.Next(ctx)
-    if err != nil {
-        log.Printf("Ошибка: %v", err)
-        break
-    }
-    
-    for _, file := range page.FilesResourceList.Items {
-        fmt.Printf("Файл: %s (%d байт)\n", file.Name, file.Size)
-    }
-    
-    // Ограничение частоты запросов
-    time.Sleep(200 * time.Millisecond)
-}
-```
-
-### Пакетные операции
-
-Эффективная обработка нескольких файлов с параллельным выполнением.
-
-#### Пакетное удаление
-
-```go
-paths := []string{
-    "/файл1.txt",
-    "/файл2.txt",
-    "/папка/файл3.txt",
-}
-
-options := &disk.BatchDeleteOptions{
-    BatchOptions: disk.BatchOptions{
-        MaxConcurrency:  5,
-        ContinueOnError: true,
-        Progress: func(status disk.BatchOperationStatus) {
-            fmt.Printf("Прогресс: %d/%d (%.1f%%)\n", 
-                status.Completed, status.Total, status.Percentage)
-        },
-    },
-    Permanently: false,
-}
-
-status, err := client.BatchDeleteFiles(ctx, paths, options)
-if err != nil {
-    log.Fatal(err)
-}
-
-fmt.Printf("Успешно: %d, Неудачно: %d\n", status.Successful, status.Failed)
-```
-
-#### Пакетное копирование
-
-```go
-sourceDestMap := map[string]string{
-    "/источник/файл1.txt": "/резервная/файл1.txt",
-    "/источник/файл2.txt": "/резервная/файл2.txt",
-}
-
-options := &disk.BatchCopyMoveOptions{
-    BatchOptions: disk.BatchOptions{
-        MaxConcurrency: 3,
-    },
-    Overwrite: false,
-}
-
-status, err := client.BatchCopyFiles(ctx, sourceDestMap, options)
-```
-
-#### Пакетное перемещение
-
-```go
-status, err := client.BatchMoveFiles(ctx, sourceDestMap, options)
-```
-
-### Отслеживание прогресса
-
-Отслеживание прогресса загрузки/скачивания в реальном времени.
-
-```go
-options := &disk.UploadOptions{
-    Progress: func(progress disk.UploadProgress) {
-        percentage := progress.Percentage
-        bytes := progress.BytesUploaded
-        total := progress.TotalBytes
-        
-        fmt.Printf("\rЗагрузка: %.2f%% (%d/%d байт)", 
-            percentage, bytes, total)
-    },
-}
-
-resource, err := client.UploadFileFromPath(ctx, localPath, remotePath, options)
-```
-
-### Пользовательская конфигурация
-
-```go
-// Создание пользовательской конфигурации
-config := &disk.ClientConfig{
-    DefaultTimeout:     60 * time.Second,
-    MaxRetries:         3,
-    EnableDebugLogging: true,
-    Logger: &disk.LoggerConfig{
-        Enabled:      true,
-        Level:        disk.LogLevelInfo,
-        IncludeTime:  true,
-        ColorEnabled: true,
-    },
-}
-
-client := disk.NewClientWithConfig("ВАШ_ТОКЕН", config)
-```
-
-### Логирование
-
-Библиотека включает всесторонние возможности логирования.
-
-```go
-// Доступ к логгеру
-client.Logger.Info("Операция запущена")
-client.Logger.Debug("Отладочная информация: %v", data)
-client.Logger.Error("Произошла ошибка: %v", err)
-
-// Изменение уровня логирования
-client.Logger.SetLevel(disk.LogLevelDebug)
-
-// Включение/отключение логирования
-client.Logger.SetEnabled(true)
-
-// Включение цветного вывода
-client.Logger.SetColorEnabled(true)
-```
-
-**Доступные уровни логирования:**
-
-- `LogLevelDebug` - Подробная отладочная информация
-- `LogLevelInfo` - Общие информационные сообщения
-- `LogLevelWarn` - Предупреждающие сообщения
-- `LogLevelError` - Сообщения об ошибках
-
-## ⚠️ Обработка ошибок
-
-Библиотека предоставляет подробную информацию об ошибках через структурированные ответы об ошибках.
-
-```go
-resource, errResp := client.GetMetadata(ctx, "/путь/к/файлу")
-if errResp != nil {
-    fmt.Printf("Ошибка: %s\n", errResp.Error)
-    fmt.Printf("Описание: %s\n", errResp.Description)
-    fmt.Printf("Сообщение: %s\n", errResp.Message)
-    
-    // Обработка конкретных ошибок
-    switch errResp.Error {
-    case "DiskNotFoundError":
-        fmt.Println("Файл или папка не найдены")
-    case "UnauthorizedError":
-        fmt.Println("Недействительный или просроченный токен")
-    case "DiskPathPointsToExistentDirectoryError":
-        fmt.Println("Путь уже существует")
-    default:
-        fmt.Printf("Неизвестная ошибка: %s\n", errResp.Error)
-    }
-    return
-}
-```
-
-**Распространённые типы ошибок:**
-
-- `UnauthorizedError` - Недействительный или просроченный OAuth-токен
-- `DiskNotFoundError` - Ресурс не найден
-- `DiskPathPointsToExistentDirectoryError` - Путь уже существует
-- `FieldValidationError` - Недопустимые входные параметры
-- `LockedError` - Ресурс заблокирован
-- `LimitExceededError` - Превышен лимит запросов
-
-## 📚 Примеры
-
-Полные рабочие примеры доступны в директории `examples/`:
-
-- **[demo/main.go](./examples/demo/main.go)** - Демо утилит для файлов и валидации
-- **[pagination/main.go](./examples/pagination/main.go)** - Паттерны пагинации и итераторы
-- **[upload/main.go](./examples/upload/main.go)** - Загрузка файлов с отслеживанием прогресса
-
-Запуск примера:
+## Примеры
+
+Готовые программы лежат в [examples/](./examples):
+
+| Пример | Что показывает |
+| --- | --- |
+| [demo](./examples/demo) | Информация о диске, метаданные, операции с файлами и папками |
+| [upload](./examples/upload) | Загрузка с отображением прогресса |
+| [pagination](./examples/pagination) | Все три способа пагинации |
 
 ```bash
-cd examples/upload
-go run main.go
+export YANDEX_DISK_ACCESS_TOKEN=ваш-токен
+go run ./examples/demo
 ```
 
-## 📖 Справочник API
-
-### Методы клиента
-
-#### Информация о диске
-
-- `GetDisk(ctx) (*Disk, error)` - Получить информацию о диске
-
-#### Операции с файлами и папками
-
-- `GetMetadata(ctx, path) (*Resource, *ErrorResponse)` - Получить метаданные ресурса
-- `CreateFolder(ctx, path) (*Link, error)` - Создать папку
-- `CopyResource(ctx, from, to, overwrite) (*Link, error)` - Копировать ресурс
-- `MoveResource(ctx, from, to, overwrite) (*Link, error)` - Переместить ресурс
-- `DeleteResource(ctx, path, permanently) error` - Удалить ресурс
-
-#### Загрузка и скачивание
-
-- `UploadFileFromPath(ctx, local, remote, options) (*Resource, error)` - Загрузить файл
-- `UploadLargeFileFromPath(ctx, local, remote, options) (*Resource, error)` - Загрузить большой файл
-- `UploadFile(ctx, reader, remote, options) (*Resource, error)` - Загрузить из reader
-- `DownloadFile(ctx, remote, local) error` - Скачать файл
-- `GetDownloadURL(ctx, path) (*Link, *ErrorResponse)` - Получить ссылку на скачивание
-
-#### Публичные ресурсы
-
-- `PublishResource(ctx, path) (*Link, error)` - Опубликовать ресурс
-- `UnpublishResource(ctx, path) (*Link, error)` - Снять публикацию ресурса
-- `GetMetadataForPublicResource(ctx, publicKey) (*PublicResource, *ErrorResponse)`
-- `GetDownloadURLForPublicResource(ctx, publicKey) (*Link, *ErrorResponse)`
-- `GetPublicResources(ctx) (*PublicResourcesList, *ErrorResponse)`
-- `GetPublicResourcesPaged(ctx, options) (*PagedPublicResourcesList, *ErrorResponse)`
-- `GetPublicResourcesIterator(options) *OffsetPaginationIterator[*PublicResourcesList]`
-
-#### Операции с корзиной
-
-- `ListTrashResources(ctx, path, limit, offset) (*TrashResourceList, error)`
-- `RestoreFromTrash(ctx, path, overwrite, name) (*Link, error)`
-- `DeleteFromTrash(ctx, path) (*Link, error)`
-- `EmptyTrash(ctx) (*Link, error)`
-
-#### Пакетные операции
-
-- `BatchDeleteFiles(ctx, paths, options) (*BatchOperationStatus, error)`
-- `BatchCopyFiles(ctx, sourceDestMap, options) (*BatchOperationStatus, error)`
-- `BatchMoveFiles(ctx, sourceDestMap, options) (*BatchOperationStatus, error)`
-
-#### Пагинация
-
-- `GetSortedFiles(ctx) (*FilesResourceList, *ErrorResponse)`
-- `GetSortedFilesWithPagination(ctx, options) (*FilesResourceList, *ErrorResponse)`
-- `GetSortedFilesPaged(ctx, options) (*PagedFilesResourceList, *ErrorResponse)`
-- `GetSortedFilesIterator(options) *OffsetPaginationIterator[*FilesResourceList]`
-- `GetLastUploadedResources(ctx) (*LastUploadedResourceList, *ErrorResponse)`
-- `GetLastUploadedResourcesWithPagination(ctx, options) (*LastUploadedResourceList, *ErrorResponse)`
-- `GetLastUploadedResourcesPaged(ctx, options) (*PagedLastUploadedResourceList, *ErrorResponse)`
-- `GetLastUploadedResourcesIterator(options) *OffsetPaginationIterator[*LastUploadedResourceList]`
-
-#### Операции
-
-- `OperationStatus(ctx, operationID) (any, *http.Response, error)` - Проверить статус асинхронной операции
-
-Для подробной документации по API пагинации смотрите [PAGINATION.md](./PAGINATION.md).
-
-## 🧪 Тестирование
-
-Библиотека включает всесторонние модульные тесты.
+## Разработка
 
 ```bash
-# Запуск всех тестов
-go test -v
-
-# Запуск с покрытием
-go test -v -cover
-
-# Создание отчёта о покрытии
-go test -coverprofile=coverage.out
-go tool cover -html=coverage.out
-
-# Запуск конкретных тестов
-go test -v -run TestPagination
-go test -v -run TestBatch
+go test ./...                                  # прогнать тесты
+go test -race -cover ./...                     # с детектором гонок
+go vet ./...                                   # статические проверки
+golangci-lint run                              # полный линт (см. .golangci.yml)
 ```
 
-## 🤝 Вклад в проект
+CI на каждый push и pull request запускает тесты, `go vet`, CodeQL, `govulncheck`
+и gosec; находки gosec публикуются как code scanning alerts.
 
-Вклады приветствуются! Пожалуйста, не стесняйтесь отправлять Pull Request. Для больших изменений, пожалуйста, сначала откройте issue для обсуждения того, что вы хотите изменить.
+Пул-реквесты и issue приветствуются.
 
-### Настройка разработки
+## Лицензия
 
-1. Клонируйте репозиторий:
-
-```bash
-git clone https://github.com/ilyabrin/disk.git
-cd disk
-```
-
-1. Установите зависимости:
-
-```bash
-go mod download
-```
-
-1. Запустите тесты:
-
-```bash
-go test -v
-```
-
-### Рекомендации
-
-- Пишите тесты для новых функций
-- Следуйте лучшим практикам и идиомам Go
-- Обновляйте документацию при изменении API
-- Убедитесь, что все тесты проходят перед отправкой PR
-
-## 📄 Лицензия
-
-Этот проект лицензирован под лицензией MIT - см. файл [LICENSE](./LICENSE) для подробностей.
-
-## 🔗 Ссылки
-
-- [Документация REST API Яндекс.Диска](https://yandex.ru/dev/disk/rest/)
-- [Яндекс OAuth](https://oauth.yandex.ru/)
-- [Репозиторий GitHub](https://github.com/ilyabrin/disk)
-
-## 📝 Журнал изменений
-
-### Последние обновления
-
-- ✅ Всесторонняя поддержка пагинации с множеством стратегий
-- ✅ Пакетные операции для эффективной обработки нескольких файлов
-- ✅ Расширенный функционал загрузки с отслеживанием прогресса
-- ✅ Улучшенная обработка ошибок и логирование
-- ✅ Полная поддержка context.Context
-- ✅ Улучшения безопасности с валидацией путей
-
-## 💬 Поддержка
-
-Если у вас есть вопросы или нужна помощь:
-
-- Откройте [issue](https://github.com/ilyabrin/disk/issues)
-- Проверьте существующие [примеры](./examples/)
-- Прочитайте [документацию по пагинации](./PAGINATION.md)
-
-## ⭐ Благодарности
-
-Создано с ❤️ для Go-сообщества. Если эта библиотека вам помогла, пожалуйста, подумайте о том, чтобы поставить звезду на GitHub!
-
----
-
-**Примечание:** Эта библиотека не является официально связанной с Яндексом. Это поддерживаемая сообществом клиентская библиотека для API Яндекс.Диска.
+[MIT](./LICENSE) © Ilya Brin

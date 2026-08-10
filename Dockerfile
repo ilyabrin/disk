@@ -1,33 +1,31 @@
-#  docker build -t disk:v1 .
-#  docker run -it --rm disk:v1 
+# docker build -t disk:demo .
+# docker run -it --rm -e YANDEX_DISK_ACCESS_TOKEN=<token> disk:demo
 
 FROM golang:alpine AS builder
 
 LABEL stage=gobuilder
 
-ENV CGO_ENABLED 0
-ENV GOOS linux
+ENV CGO_ENABLED=0
+ENV GOOS=linux
 
-RUN apk update --no-cache && apk add --no-cache tzdata
+RUN apk add --no-cache tzdata
 
 WORKDIR /build
 
-ADD go.mod .
-ADD go.sum .
-
+COPY go.mod go.sum ./
 RUN go mod download
+
 COPY . .
-RUN go build -ldflags="-s -w" -o /app/example ./example/example.go
+RUN go build -ldflags="-s -w" -o /app/demo ./examples/demo
 
 
 FROM alpine
 
-RUN apk update --no-cache && apk add --no-cache ca-certificates
-COPY --from=builder /usr/share/zoneinfo/America/New_York /usr/share/zoneinfo/America/New_York
-ENV TZ America/New_York
-ENV YANDEX_DISK_ACCESS_TOKEN 12345678-your-token-paste-here-87654321
+RUN apk add --no-cache ca-certificates
+COPY --from=builder /usr/share/zoneinfo/Europe/Moscow /usr/share/zoneinfo/Europe/Moscow
+ENV TZ=Europe/Moscow
 
 WORKDIR /app
-COPY --from=builder /app/example /app/example
+COPY --from=builder /app/demo /app/demo
 
-CMD ["./example"]
+CMD ["./demo"]

@@ -184,11 +184,11 @@ func TestEmptyTrash(t *testing.T) {
 		}
 	})
 
-	t.Run("EmptyTrash with force", func(t *testing.T) {
+	t.Run("EmptyTrash with forceAsync", func(t *testing.T) {
 		client := mockedHttpClient(func(w http.ResponseWriter, r *http.Request) {
 			forceAsync := r.URL.Query().Get("force_async")
-			if forceAsync != "false" {
-				t.Errorf("Expected force_async=false, got '%s'", forceAsync)
+			if forceAsync != "true" {
+				t.Errorf("Expected force_async=true, got '%s'", forceAsync)
 			}
 
 			w.WriteHeader(200)
