@@ -1,0 +1,14 @@
+# Normalise line endings: the repository stores LF, and so do working trees.
+# Without this, a Windows checkout with core.autocrlf=true can stage CRLF and
+# break "gofmt -l ." in CI.
+* text=auto eol=lf
+
+# Go tooling requires LF; gofmt reports CRLF files as unformatted.
+*.go text eol=lf
+*.mod text eol=lf
+*.sum text eol=lf
+
+# Keep binary assets untouched.
+*.png binary
+*.jpg binary
+*.gif binary
