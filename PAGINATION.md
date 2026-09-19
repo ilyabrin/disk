@@ -18,6 +18,7 @@ The pagination system provides multiple ways to handle large result sets from th
 Get a sorted list of files with pagination support.
 
 **Basic Usage:**
+
 ```go
 // Get first 20 files (default)
 files, err := client.GetSortedFiles(ctx)
@@ -31,6 +32,7 @@ files, err := client.GetSortedFilesWithPagination(ctx, options)
 ```
 
 **Enhanced Pagination:**
+
 ```go
 options := &disk.PaginationOptions{Limit: 15}
 pagedFiles, err := client.GetSortedFilesPaged(ctx, options)
@@ -45,6 +47,7 @@ if err == nil {
 ```
 
 **Iterator Pattern:**
+
 ```go
 iterator := client.GetSortedFilesIterator(&disk.PaginationOptions{Limit: 10})
 
@@ -119,6 +122,7 @@ type PaginationOptions struct {
 ### Validation
 
 All pagination options are automatically validated:
+
 - Negative or zero limits default to 20
 - Limits exceeding 10000 are capped at 10000
 - Negative offsets are set to 0

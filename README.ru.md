@@ -56,31 +56,31 @@ go get github.com/ilyabrin/disk
 package main
 
 import (
-	"context"
-	"fmt"
-	"log"
+ "context"
+ "fmt"
+ "log"
 
-	"github.com/ilyabrin/disk"
+ "github.com/ilyabrin/disk"
 )
 
 func main() {
-	// Если токен не передан явно, он читается из YANDEX_DISK_ACCESS_TOKEN.
-	client, err := disk.New()
-	if err != nil {
-		log.Fatal(err)
-	}
+ // Если токен не передан явно, он читается из YANDEX_DISK_ACCESS_TOKEN.
+ client, err := disk.New()
+ if err != nil {
+  log.Fatal(err)
+ }
 
-	ctx := context.Background()
+ ctx := context.Background()
 
-	info, err := client.DiskInfo(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
+ info, err := client.DiskInfo(ctx)
+ if err != nil {
+  log.Fatal(err)
+ }
 
-	fmt.Printf("Занято %s из %s\n",
-		disk.FormatFileSize(int64(info.UsedSpace)),
-		disk.FormatFileSize(int64(info.TotalSpace)),
-	)
+ fmt.Printf("Занято %s из %s\n",
+  disk.FormatFileSize(int64(info.UsedSpace)),
+  disk.FormatFileSize(int64(info.TotalSpace)),
+ )
 }
 ```
 
@@ -103,7 +103,7 @@ client, err := disk.New()                     // из $YANDEX_DISK_ACCESS_TOKEN
 ```go
 info, err := client.DiskInfo(ctx)
 if err != nil {
-	log.Fatal(err)
+ log.Fatal(err)
 }
 
 fmt.Println("Всего:", info.TotalSpace)
@@ -120,7 +120,7 @@ fmt.Println("Папка «Загрузки»:", info.SystemFolders.Downloads)
 ```go
 resource, errResp := client.GetMetadata(ctx, "/Документы/отчёт.pdf")
 if errResp != nil {
-	log.Fatal(errResp.Error)
+ log.Fatal(errResp.Error)
 }
 fmt.Println(resource.Name, resource.Size, resource.MimeType)
 ```
@@ -130,16 +130,16 @@ fmt.Println(resource.Name, resource.Size, resource.MimeType)
 
 ```go
 folder, errResp := client.GetMetadataWithOptions(ctx, "/Фото", &disk.ResourceOptions{
-	Limit:       100,
-	Offset:      0,
-	Sort:        "-modified",                       // «-» разворачивает порядок
-	PreviewSize: "M",
-	PreviewCrop: true,
-	Fields:      []string{"name", "_embedded.items.name", "_embedded.items.size"},
+ Limit:       100,
+ Offset:      0,
+ Sort:        "-modified",                       // «-» разворачивает порядок
+ PreviewSize: "M",
+ PreviewCrop: true,
+ Fields:      []string{"name", "_embedded.items.name", "_embedded.items.size"},
 })
 
 for _, item := range folder.Embedded.Items {
-	fmt.Println(item.Type, item.Name)
+ fmt.Println(item.Type, item.Name)
 }
 ```
 
@@ -149,8 +149,12 @@ for _, item := range folder.Embedded.Items {
 <summary><b>Создание, копирование, перемещение, удаление</b></summary>
 
 ```go
-// Создать папку
+// Создать папку. Только последний уровень, ровно как os.Mkdir.
 link, errResp := client.CreateDir(ctx, "/Отчёты")
+
+// Создать папку вместе со всеми недостающими родительскими, как os.MkdirAll.
+// Уже существующие папки ошибкой не считаются.
+errResp = client.CreateDirAll(ctx, "/Отчёты/2026/Q1")
 
 // Копировать
 link, errResp = client.CopyResource(ctx, "/a.txt", "/backup/a.txt")
@@ -172,12 +176,12 @@ err = client.DeleteResource(ctx, "/a.txt", true)
 
 ```go
 resource, errResp := client.UpdateMetadata(ctx, "/отчёт.pdf",
-	map[string]map[string]string{
-		"custom_properties": {
-			"project": "apollo",
-			"status":  "final",
-		},
-	})
+ map[string]map[string]string{
+  "custom_properties": {
+   "project": "apollo",
+   "status":  "final",
+  },
+ })
 ```
 
 </details>
@@ -188,11 +192,11 @@ resource, errResp := client.UpdateMetadata(ctx, "/отчёт.pdf",
 ```go
 // Все файлы, сначала новые, только изображения и видео
 files, errResp := client.GetSortedFilesWithOptions(ctx,
-	&disk.PaginationOptions{Limit: 50},
-	&disk.FilesOptions{
-		MediaType: []string{"image", "video"},
-		Sort:      "-created",
-	})
+ &disk.PaginationOptions{Limit: 50},
+ &disk.FilesOptions{
+  MediaType: []string{"image", "video"},
+  Sort:      "-created",
+ })
 
 // Последние загруженные ресурсы
 recent, errResp := client.GetLastUploadedResources(ctx)
@@ -202,40 +206,40 @@ recent, errResp := client.GetLastUploadedResources(ctx)
 
 ## Загрузка на диск
 
-| Метод | Когда использовать |
-| --- | --- |
-| `UploadFileFromPath` | Любой локальный файл, полный контроль над опциями |
-| `UploadFileFromPathWithProgress` | Небольшие и средние файлы с прогрессом |
-| `UploadLargeFileFromPath` | Большие файлы, прогресс по чанкам |
-| `UploadFile` | Загрузка по URL силами самого Яндекса |
+| Метод                            | Когда использовать                                |
+| -------------------------------- | ------------------------------------------------- |
+| `UploadFileFromPath`             | Любой локальный файл, полный контроль над опциями |
+| `UploadFileFromPathWithProgress` | Небольшие и средние файлы с прогрессом            |
+| `UploadLargeFileFromPath`        | Большие файлы, прогресс по чанкам                 |
+| `UploadFile`                     | Загрузка по URL силами самого Яндекса             |
 
 ```go
 resource, err := client.UploadFileFromPath(ctx, "./отчёт.pdf", "/Документы/отчёт.pdf",
-	&disk.UploadOptions{Overwrite: true})
+ &disk.UploadOptions{Overwrite: true})
 ```
 
 С прогрессом:
 
 ```go
 resource, err := client.UploadFileFromPathWithProgress(ctx,
-	"./video.mp4", "/Видео/video.mp4", true,
-	func(p disk.UploadProgress) {
-		fmt.Printf("\r%.1f%% (%s / %s)",
-			p.Percentage,
-			disk.FormatFileSize(p.BytesUploaded),
-			disk.FormatFileSize(p.TotalBytes),
-		)
-	})
+ "./video.mp4", "/Видео/video.mp4", true,
+ func(p disk.UploadProgress) {
+  fmt.Printf("\r%.1f%% (%s / %s)",
+   p.Percentage,
+   disk.FormatFileSize(p.BytesUploaded),
+   disk.FormatFileSize(p.TotalBytes),
+  )
+ })
 ```
 
 Большие файлы, отчёт раз в 10 МБ:
 
 ```go
 resource, err := client.UploadLargeFileFromPath(ctx,
-	"./archive.zip", "/Бэкапы/archive.zip", 10,
-	func(p disk.UploadProgress) {
-		log.Printf("загружено %s", disk.FormatFileSize(p.BytesUploaded))
-	})
+ "./archive.zip", "/Бэкапы/archive.zip", 10,
+ func(p disk.UploadProgress) {
+  log.Printf("загружено %s", disk.FormatFileSize(p.BytesUploaded))
+ })
 ```
 
 Чтобы Яндекс сам скачал файл по ссылке, не пропуская трафик через ваш процесс:
@@ -245,26 +249,26 @@ link, errResp := client.UploadFile(ctx, "/Загрузки/image.jpg", "https://
 ```
 
 > [!TIP]
-> `UploadFile` работает асинхронно — узнать, что файл долетел, можно опросив
+> `UploadFile` работает асинхронно, и узнать, что файл долетел, можно опросив
 > возвращённую ссылку через [`GetOperationStatus`](#асинхронные-операции).
 
 ## Скачивание
 
 ```go
 err := client.DownloadFileToPath(ctx, "/Фото/image.jpg", "./image.jpg",
-	&disk.DownloadOptions{Overwrite: true})
+ &disk.DownloadOptions{Overwrite: true})
 ```
 
 С прогрессом:
 
 ```go
 err := client.DownloadFileToPathWithProgress(ctx,
-	"/Видео/video.mp4", "./video.mp4", true,
-	func(p disk.DownloadProgress) {
-		if p.TotalBytes > 0 {
-			fmt.Printf("\r%.1f%%", p.Percentage)
-		}
-	})
+ "/Видео/video.mp4", "./video.mp4", true,
+ func(p disk.DownloadProgress) {
+  if p.TotalBytes > 0 {
+   fmt.Printf("\r%.1f%%", p.Percentage)
+  }
+ })
 ```
 
 Нужна сама ссылка (для CDN, редиректа в браузере или собственной качалки)?
@@ -292,18 +296,18 @@ resource, errResp := client.GetMetadataForPublicResource(ctx, "https://yadi.sk/d
 
 // Заглянуть внутрь опубликованной папки
 resource, errResp = client.GetMetadataForPublicResourceWithOptions(ctx, "https://yadi.sk/d/abc123",
-	&disk.PublicResourceOptions{
-		Path:  "/subfolder",
-		Sort:  "name",
-		Limit: 50,
-	})
+ &disk.PublicResourceOptions{
+  Path:  "/subfolder",
+  Sort:  "name",
+  Limit: 50,
+ })
 
 // Скачать конкретный файл из опубликованной папки
 link, errResp := client.GetDownloadURLForPublicResourceAt(ctx, "https://yadi.sk/d/abc123", "/subfolder/file.txt")
 
 // Сохранить его к себе в «Загрузки» под новым именем
 link, errResp = client.SavePublicResourceWithOptions(ctx, "https://yadi.sk/d/abc123",
-	&disk.SavePublicResourceOptions{Path: "/subfolder/file.txt", Name: "copy.txt"})
+ &disk.SavePublicResourceOptions{Path: "/subfolder/file.txt", Name: "copy.txt"})
 ```
 
 ## Корзина
@@ -328,15 +332,15 @@ err = client.EmptyTrash(ctx, "", false)
 
 ## Пагинация
 
-Доступны три подхода — от низкоуровневого к высокоуровневому. Подробности в [PAGINATION.md](./PAGINATION.md).
+Доступны три подхода, от низкоуровневого к высокоуровневому. Подробности в [PAGINATION.md](./PAGINATION.md).
 
 <details open>
 <summary><b>1. Явные limit/offset</b></summary>
 
 ```go
 files, errResp := client.GetSortedFilesWithPagination(ctx, &disk.PaginationOptions{
-	Limit:  50,
-	Offset: 100,
+ Limit:  50,
+ Offset: 100,
 })
 ```
 
@@ -359,13 +363,13 @@ fmt.Println(page.Pagination.HasMore, page.Pagination.NextOffset)
 it := client.GetSortedFilesIterator(&disk.PaginationOptions{Limit: 100})
 
 for it.HasNext() {
-	page, err := it.Next(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, file := range page.Items {
-		fmt.Println(file.Name)
-	}
+ page, err := it.Next(ctx)
+ if err != nil {
+  log.Fatal(err)
+ }
+ for _, file := range page.Items {
+  fmt.Println(file.Name)
+ }
 }
 ```
 
@@ -378,22 +382,22 @@ for it.HasNext() {
 
 ```go
 status, err := client.BatchDeleteFiles(ctx,
-	[]string{"/tmp/a.txt", "/tmp/b.txt", "/tmp/c.txt"},
-	&disk.BatchDeleteOptions{
-		BatchOptions: disk.BatchOptions{
-			MaxConcurrency:  4,
-			ContinueOnError: true,
-			Progress: func(s disk.BatchOperationStatus) {
-				fmt.Printf("\r%d/%d", s.Completed, s.Total)
-			},
-		},
-		Permanently: false,
-	})
+ []string{"/tmp/a.txt", "/tmp/b.txt", "/tmp/c.txt"},
+ &disk.BatchDeleteOptions{
+  BatchOptions: disk.BatchOptions{
+   MaxConcurrency:  4,
+   ContinueOnError: true,
+   Progress: func(s disk.BatchOperationStatus) {
+    fmt.Printf("\r%d/%d", s.Completed, s.Total)
+   },
+  },
+  Permanently: false,
+ })
 
 fmt.Println(status.GetSummary())
 
 for _, failure := range status.GetFailedOperations() {
-	log.Printf("%s: %v", failure.Path, failure.Error)
+ log.Printf("%s: %v", failure.Path, failure.Error)
 }
 
 // Повторить только то, что упало
@@ -408,25 +412,25 @@ status, err = client.RetryFailedOperations(ctx, status, 2)
 
 ```go
 client, err := disk.NewWithConfig(&disk.ClientConfig{
-	DefaultTimeout:     60 * time.Second,
-	MaxRetries:         3,
-	RetryBackoff:       200 * time.Millisecond,
-	EnableDebugLogging: true,
-	Logger:             disk.DefaultLoggerConfig(),
+ DefaultTimeout:     60 * time.Second,
+ MaxRetries:         3,
+ RetryBackoff:       200 * time.Millisecond,
+ EnableDebugLogging: true,
+ Logger:             disk.DefaultLoggerConfig(),
 }, "ваш-токен")
 ```
 
-| Поле | По умолчанию | Значение |
-| --- | --- | --- |
-| `DefaultTimeout` | `30s` | Таймаут запроса, если у контекста нет дедлайна |
-| `MaxRetries` | `3` | Дополнительные попытки для повторяемых запросов |
-| `RetryBackoff` | `200ms` | Базовая пауза между попытками, удваивается |
-| `EnableDebugLogging` | `false` | Переводит логгер в `DEBUG` и подробный режим |
-| `Logger` | см. ниже | Настройки логгера |
-| `BaseURL` | API Яндекса | Другой адрес API (тесты, прокси) |
+| Поле                 | По умолчанию | Значение                                        |
+| -------------------- | ------------ | ----------------------------------------------- |
+| `DefaultTimeout`     | `30s`        | Таймаут запроса, если у контекста нет дедлайна  |
+| `MaxRetries`         | `3`          | Дополнительные попытки для повторяемых запросов |
+| `RetryBackoff`       | `200ms`      | Базовая пауза между попытками, удваивается      |
+| `EnableDebugLogging` | `false`      | Переводит логгер в `DEBUG` и подробный режим    |
+| `Logger`             | см. ниже     | Настройки логгера                               |
+| `BaseURL`            | API Яндекса  | Другой адрес API (тесты, прокси)                |
 
 > [!IMPORTANT]
-> Повторяются только запросы **без тела** — `GET`, `DELETE` и те `PUT`/`POST`,
+> Повторяются только запросы **без тела**: `GET`, `DELETE` и те `PUT`/`POST`,
 > что передают параметры в query string. Тело-`io.Reader` нельзя перемотать,
 > поэтому такой запрос отправляется ровно один раз. Повтор происходит на ошибках
 > соединения, `429` и `5xx`.
@@ -453,22 +457,39 @@ client.SetLogOutput(os.Stderr)   // любой io.Writer
 
 ## Обработка ошибок
 
-В библиотеке два соглашения об ошибках, и какое сработает — зависит от вызова:
+В библиотеке два соглашения об ошибках, и какое сработает, зависит от вызова:
 
-| Тип | Где | Как обрабатывать |
-| --- | --- | --- |
-| `*ErrorResponse` | Ресурсы, публичные ресурсы, пагинация | Не-`nil` означает ошибку; смотрите `.Error` и `.Description` |
-| `error` | Информация о диске, загрузка, скачивание, корзина, пакеты | Обычный Go-подход, ошибки обёрнуты через `%w` |
+| Тип              | Где                                                       | Как обрабатывать                                             |
+| ---------------- | --------------------------------------------------------- | ------------------------------------------------------------ |
+| `*ErrorResponse` | Ресурсы, публичные ресурсы, пагинация                     | Не-`nil` означает ошибку; смотрите `.Error` и `.Description` |
+| `error`          | Информация о диске, загрузка, скачивание, корзина, пакеты | Обычный Go-подход, ошибки обёрнуты через `%w`                |
 
 ```go
 resource, errResp := client.GetMetadata(ctx, "/нет-такого.txt")
 if errResp != nil {
-	log.Printf("%s: %s", errResp.Error, errResp.Description)
-	return
+ log.Printf("%s: %s", errResp.Error, errResp.Description)
+ return
 }
 
 if err := client.DownloadFileToPath(ctx, "/a.txt", "./a.txt", nil); err != nil {
-	log.Fatal(err)
+ log.Fatal(err)
+}
+```
+
+`ErrorResponse` несёт также HTTP-статус, который её породил. В ответе API его
+нет, поле заполняет сам пакет:
+
+```go
+if errResp != nil && errResp.StatusCode == http.StatusNotFound {
+ // ресурса просто нет
+}
+```
+
+Для случая, который встречается постоянно, есть готовая проверка:
+
+```go
+if _, errResp := client.CreateDir(ctx, "/Отчёты"); errResp != nil && !errResp.AlreadyExists() {
+ return errResp
 }
 ```
 
@@ -481,20 +502,20 @@ if err := client.DownloadFileToPath(ctx, "/a.txt", "./a.txt", nil); err != nil {
 ```go
 link, errResp := client.CopyResource(ctx, "/большая-папка", "/backup/большая-папка")
 if errResp != nil {
-	log.Fatal(errResp.Error)
+ log.Fatal(errResp.Error)
 }
 
 for {
-	// Принимает и идентификатор операции, и полный href из ответа.
-	operation, err := client.GetOperationStatus(ctx, link.Href)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if operation.Status != disk.OperationInProgress {
-		fmt.Println("готово:", operation.Status)
-		break
-	}
-	time.Sleep(time.Second)
+ // Принимает и идентификатор операции, и полный href из ответа.
+ operation, err := client.GetOperationStatus(ctx, link.Href)
+ if err != nil {
+  log.Fatal(err)
+ }
+ if operation.Status != disk.OperationInProgress {
+  fmt.Println("готово:", operation.Status)
+  break
+ }
+ time.Sleep(time.Second)
 }
 ```
 
@@ -508,11 +529,11 @@ err := client.WaitForBatchOperation(ctx, status, time.Second)
 
 Готовые программы лежат в [examples/](./examples):
 
-| Пример | Что показывает |
-| --- | --- |
-| [demo](./examples/demo) | Информация о диске, метаданные, операции с файлами и папками |
-| [upload](./examples/upload) | Загрузка с отображением прогресса |
-| [pagination](./examples/pagination) | Все три способа пагинации |
+| Пример                              | Что показывает                                               |
+| ----------------------------------- | ------------------------------------------------------------ |
+| [demo](./examples/demo)             | Информация о диске, метаданные, операции с файлами и папками |
+| [upload](./examples/upload)         | Загрузка с отображением прогресса                            |
+| [pagination](./examples/pagination) | Все три способа пагинации                                    |
 
 ```bash
 export YANDEX_DISK_ACCESS_TOKEN=ваш-токен

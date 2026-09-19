@@ -56,31 +56,31 @@ go get github.com/ilyabrin/disk
 package main
 
 import (
-	"context"
-	"fmt"
-	"log"
+ "context"
+ "fmt"
+ "log"
 
-	"github.com/ilyabrin/disk"
+ "github.com/ilyabrin/disk"
 )
 
 func main() {
-	// Reads YANDEX_DISK_ACCESS_TOKEN when no token is passed explicitly.
-	client, err := disk.New()
-	if err != nil {
-		log.Fatal(err)
-	}
+ // Reads YANDEX_DISK_ACCESS_TOKEN when no token is passed explicitly.
+ client, err := disk.New()
+ if err != nil {
+  log.Fatal(err)
+ }
 
-	ctx := context.Background()
+ ctx := context.Background()
 
-	info, err := client.DiskInfo(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
+ info, err := client.DiskInfo(ctx)
+ if err != nil {
+  log.Fatal(err)
+ }
 
-	fmt.Printf("Used %s of %s\n",
-		disk.FormatFileSize(int64(info.UsedSpace)),
-		disk.FormatFileSize(int64(info.TotalSpace)),
-	)
+ fmt.Printf("Used %s of %s\n",
+  disk.FormatFileSize(int64(info.UsedSpace)),
+  disk.FormatFileSize(int64(info.TotalSpace)),
+ )
 }
 ```
 
@@ -103,7 +103,7 @@ client, err := disk.New()                     // from $YANDEX_DISK_ACCESS_TOKEN
 ```go
 info, err := client.DiskInfo(ctx)
 if err != nil {
-	log.Fatal(err)
+ log.Fatal(err)
 }
 
 fmt.Println("Total:", info.TotalSpace)
@@ -120,7 +120,7 @@ fmt.Println("Downloads folder:", info.SystemFolders.Downloads)
 ```go
 resource, errResp := client.GetMetadata(ctx, "/Documents/report.pdf")
 if errResp != nil {
-	log.Fatal(errResp.Error)
+ log.Fatal(errResp.Error)
 }
 fmt.Println(resource.Name, resource.Size, resource.MimeType)
 ```
@@ -130,16 +130,16 @@ to paginate, sort, and trim the response:
 
 ```go
 folder, errResp := client.GetMetadataWithOptions(ctx, "/Photos", &disk.ResourceOptions{
-	Limit:       100,
-	Offset:      0,
-	Sort:        "-modified",                       // "-" reverses the order
-	PreviewSize: "M",
-	PreviewCrop: true,
-	Fields:      []string{"name", "_embedded.items.name", "_embedded.items.size"},
+ Limit:       100,
+ Offset:      0,
+ Sort:        "-modified",                       // "-" reverses the order
+ PreviewSize: "M",
+ PreviewCrop: true,
+ Fields:      []string{"name", "_embedded.items.name", "_embedded.items.size"},
 })
 
 for _, item := range folder.Embedded.Items {
-	fmt.Println(item.Type, item.Name)
+ fmt.Println(item.Type, item.Name)
 }
 ```
 
@@ -149,8 +149,12 @@ for _, item := range folder.Embedded.Items {
 <summary><b>Create, copy, move, delete</b></summary>
 
 ```go
-// Create a folder
+// Create a folder. Only the final level, exactly like os.Mkdir.
 link, errResp := client.CreateDir(ctx, "/Reports")
+
+// Create a folder and any missing parents, like os.MkdirAll.
+// Folders that already exist are not an error.
+errResp = client.CreateDirAll(ctx, "/Reports/2026/Q1")
 
 // Copy
 link, errResp = client.CopyResource(ctx, "/a.txt", "/backup/a.txt")
@@ -172,12 +176,12 @@ err = client.DeleteResource(ctx, "/a.txt", true)
 
 ```go
 resource, errResp := client.UpdateMetadata(ctx, "/report.pdf",
-	map[string]map[string]string{
-		"custom_properties": {
-			"project": "apollo",
-			"status":  "final",
-		},
-	})
+ map[string]map[string]string{
+  "custom_properties": {
+   "project": "apollo",
+   "status":  "final",
+  },
+ })
 ```
 
 </details>
@@ -188,11 +192,11 @@ resource, errResp := client.UpdateMetadata(ctx, "/report.pdf",
 ```go
 // All files, newest first, images and video only
 files, errResp := client.GetSortedFilesWithOptions(ctx,
-	&disk.PaginationOptions{Limit: 50},
-	&disk.FilesOptions{
-		MediaType: []string{"image", "video"},
-		Sort:      "-created",
-	})
+ &disk.PaginationOptions{Limit: 50},
+ &disk.FilesOptions{
+  MediaType: []string{"image", "video"},
+  Sort:      "-created",
+ })
 
 // Last uploaded resources
 recent, errResp := client.GetLastUploadedResources(ctx)
@@ -202,40 +206,40 @@ recent, errResp := client.GetLastUploadedResources(ctx)
 
 ## Upload
 
-| Method | Use for |
-| --- | --- |
-| `UploadFileFromPath` | Any local file, with full option control |
-| `UploadFileFromPathWithProgress` | Small/medium files with a progress bar |
-| `UploadLargeFileFromPath` | Large files, chunked progress reporting |
-| `UploadFile` | Server-side fetch: Yandex downloads a URL for you |
+| Method                           | Use for                                           |
+| -------------------------------- | ------------------------------------------------- |
+| `UploadFileFromPath`             | Any local file, with full option control          |
+| `UploadFileFromPathWithProgress` | Small/medium files with a progress bar            |
+| `UploadLargeFileFromPath`        | Large files, chunked progress reporting           |
+| `UploadFile`                     | Server-side fetch: Yandex downloads a URL for you |
 
 ```go
 resource, err := client.UploadFileFromPath(ctx, "./report.pdf", "/Documents/report.pdf",
-	&disk.UploadOptions{Overwrite: true})
+ &disk.UploadOptions{Overwrite: true})
 ```
 
 With progress:
 
 ```go
 resource, err := client.UploadFileFromPathWithProgress(ctx,
-	"./video.mp4", "/Videos/video.mp4", true,
-	func(p disk.UploadProgress) {
-		fmt.Printf("\r%.1f%% (%s / %s)",
-			p.Percentage,
-			disk.FormatFileSize(p.BytesUploaded),
-			disk.FormatFileSize(p.TotalBytes),
-		)
-	})
+ "./video.mp4", "/Videos/video.mp4", true,
+ func(p disk.UploadProgress) {
+  fmt.Printf("\r%.1f%% (%s / %s)",
+   p.Percentage,
+   disk.FormatFileSize(p.BytesUploaded),
+   disk.FormatFileSize(p.TotalBytes),
+  )
+ })
 ```
 
 Large files, reporting once per 10 MB chunk:
 
 ```go
 resource, err := client.UploadLargeFileFromPath(ctx,
-	"./archive.zip", "/Backups/archive.zip", 10,
-	func(p disk.UploadProgress) {
-		log.Printf("uploaded %s", disk.FormatFileSize(p.BytesUploaded))
-	})
+ "./archive.zip", "/Backups/archive.zip", 10,
+ func(p disk.UploadProgress) {
+  log.Printf("uploaded %s", disk.FormatFileSize(p.BytesUploaded))
+ })
 ```
 
 Let Yandex fetch a remote URL directly, without routing bytes through your process:
@@ -245,26 +249,26 @@ link, errResp := client.UploadFile(ctx, "/Downloads/image.jpg", "https://example
 ```
 
 > [!TIP]
-> `UploadFile` is asynchronous — poll the returned link with
+> `UploadFile` is asynchronous, so poll the returned link with
 > [`GetOperationStatus`](#async-operations) to find out when the file has landed.
 
 ## Download
 
 ```go
 err := client.DownloadFileToPath(ctx, "/Photos/image.jpg", "./image.jpg",
-	&disk.DownloadOptions{Overwrite: true})
+ &disk.DownloadOptions{Overwrite: true})
 ```
 
 With progress:
 
 ```go
 err := client.DownloadFileToPathWithProgress(ctx,
-	"/Videos/video.mp4", "./video.mp4", true,
-	func(p disk.DownloadProgress) {
-		if p.TotalBytes > 0 {
-			fmt.Printf("\r%.1f%%", p.Percentage)
-		}
-	})
+ "/Videos/video.mp4", "./video.mp4", true,
+ func(p disk.DownloadProgress) {
+  if p.TotalBytes > 0 {
+   fmt.Printf("\r%.1f%%", p.Percentage)
+  }
+ })
 ```
 
 Need the raw link instead (for a CDN, a browser redirect, or your own transfer code)?
@@ -292,18 +296,18 @@ resource, errResp := client.GetMetadataForPublicResource(ctx, "https://yadi.sk/d
 
 // Browse inside a published folder
 resource, errResp = client.GetMetadataForPublicResourceWithOptions(ctx, "https://yadi.sk/d/abc123",
-	&disk.PublicResourceOptions{
-		Path:  "/subfolder",
-		Sort:  "name",
-		Limit: 50,
-	})
+ &disk.PublicResourceOptions{
+  Path:  "/subfolder",
+  Sort:  "name",
+  Limit: 50,
+ })
 
 // Download a specific file from a published folder
 link, errResp := client.GetDownloadURLForPublicResourceAt(ctx, "https://yadi.sk/d/abc123", "/subfolder/file.txt")
 
 // Save it into your own Downloads folder under a new name
 link, errResp = client.SavePublicResourceWithOptions(ctx, "https://yadi.sk/d/abc123",
-	&disk.SavePublicResourceOptions{Path: "/subfolder/file.txt", Name: "copy.txt"})
+ &disk.SavePublicResourceOptions{Path: "/subfolder/file.txt", Name: "copy.txt"})
 ```
 
 ## Trash
@@ -335,8 +339,8 @@ Three styles are available, from lowest to highest level. See [PAGINATION.md](./
 
 ```go
 files, errResp := client.GetSortedFilesWithPagination(ctx, &disk.PaginationOptions{
-	Limit:  50,
-	Offset: 100,
+ Limit:  50,
+ Offset: 100,
 })
 ```
 
@@ -359,13 +363,13 @@ fmt.Println(page.Pagination.HasMore, page.Pagination.NextOffset)
 it := client.GetSortedFilesIterator(&disk.PaginationOptions{Limit: 100})
 
 for it.HasNext() {
-	page, err := it.Next(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, file := range page.Items {
-		fmt.Println(file.Name)
-	}
+ page, err := it.Next(ctx)
+ if err != nil {
+  log.Fatal(err)
+ }
+ for _, file := range page.Items {
+  fmt.Println(file.Name)
+ }
 }
 ```
 
@@ -378,22 +382,22 @@ failing on the first error.
 
 ```go
 status, err := client.BatchDeleteFiles(ctx,
-	[]string{"/tmp/a.txt", "/tmp/b.txt", "/tmp/c.txt"},
-	&disk.BatchDeleteOptions{
-		BatchOptions: disk.BatchOptions{
-			MaxConcurrency:  4,
-			ContinueOnError: true,
-			Progress: func(s disk.BatchOperationStatus) {
-				fmt.Printf("\r%d/%d", s.Completed, s.Total)
-			},
-		},
-		Permanently: false,
-	})
+ []string{"/tmp/a.txt", "/tmp/b.txt", "/tmp/c.txt"},
+ &disk.BatchDeleteOptions{
+  BatchOptions: disk.BatchOptions{
+   MaxConcurrency:  4,
+   ContinueOnError: true,
+   Progress: func(s disk.BatchOperationStatus) {
+    fmt.Printf("\r%d/%d", s.Completed, s.Total)
+   },
+  },
+  Permanently: false,
+ })
 
 fmt.Println(status.GetSummary())
 
 for _, failure := range status.GetFailedOperations() {
-	log.Printf("%s: %v", failure.Path, failure.Error)
+ log.Printf("%s: %v", failure.Path, failure.Error)
 }
 
 // Retry only what failed
@@ -408,25 +412,25 @@ Available: `BatchDeleteFiles`, `BatchCopyFiles`, `BatchMoveFiles`,
 
 ```go
 client, err := disk.NewWithConfig(&disk.ClientConfig{
-	DefaultTimeout:     60 * time.Second,
-	MaxRetries:         3,
-	RetryBackoff:       200 * time.Millisecond,
-	EnableDebugLogging: true,
-	Logger:             disk.DefaultLoggerConfig(),
+ DefaultTimeout:     60 * time.Second,
+ MaxRetries:         3,
+ RetryBackoff:       200 * time.Millisecond,
+ EnableDebugLogging: true,
+ Logger:             disk.DefaultLoggerConfig(),
 }, "your-token")
 ```
 
-| Field | Default | Meaning |
-| --- | --- | --- |
-| `DefaultTimeout` | `30s` | Per-request timeout when the context carries no deadline |
-| `MaxRetries` | `3` | Extra attempts for retryable requests |
-| `RetryBackoff` | `200ms` | Base delay between retries; doubles each attempt |
-| `EnableDebugLogging` | `false` | Switches the logger to `DEBUG` and verbose mode |
-| `Logger` | see below | Logger configuration |
-| `BaseURL` | Yandex API | Override the endpoint (tests, proxies) |
+| Field                | Default    | Meaning                                                  |
+| -------------------- | ---------- | -------------------------------------------------------- |
+| `DefaultTimeout`     | `30s`      | Per-request timeout when the context carries no deadline |
+| `MaxRetries`         | `3`        | Extra attempts for retryable requests                    |
+| `RetryBackoff`       | `200ms`    | Base delay between retries; doubles each attempt         |
+| `EnableDebugLogging` | `false`    | Switches the logger to `DEBUG` and verbose mode          |
+| `Logger`             | see below  | Logger configuration                                     |
+| `BaseURL`            | Yandex API | Override the endpoint (tests, proxies)                   |
 
 > [!IMPORTANT]
-> Only requests **without a body** are retried — `GET`, `DELETE`, and the `PUT`/`POST`
+> Only requests **without a body** are retried: `GET`, `DELETE`, and the `PUT`/`POST`
 > calls that carry their parameters in the query string. A request whose body is an
 > `io.Reader` cannot be rewound, so it is sent exactly once. Retries fire on
 > connection errors, `429`, and `5xx`.
@@ -455,20 +459,37 @@ the log output.
 
 The library uses two error conventions, and which one you get depends on the call:
 
-| Return type | Where | How to handle |
-| --- | --- | --- |
-| `*ErrorResponse` | Resource, public and pagination calls | Non-`nil` means failure; read `.Error` and `.Description` |
-| `error` | Disk info, upload, download, trash, batch | Standard Go handling, wrapped with `%w` |
+| Return type      | Where                                     | How to handle                                             |
+| ---------------- | ----------------------------------------- | --------------------------------------------------------- |
+| `*ErrorResponse` | Resource, public and pagination calls     | Non-`nil` means failure; read `.Error` and `.Description` |
+| `error`          | Disk info, upload, download, trash, batch | Standard Go handling, wrapped with `%w`                   |
 
 ```go
 resource, errResp := client.GetMetadata(ctx, "/missing.txt")
 if errResp != nil {
-	log.Printf("%s: %s", errResp.Error, errResp.Description)
-	return
+ log.Printf("%s: %s", errResp.Error, errResp.Description)
+ return
 }
 
 if err := client.DownloadFileToPath(ctx, "/a.txt", "./a.txt", nil); err != nil {
-	log.Fatal(err)
+ log.Fatal(err)
+}
+```
+
+`ErrorResponse` also carries the HTTP status that produced it, which is not part
+of the API payload and is filled in by this package:
+
+```go
+if errResp != nil && errResp.StatusCode == http.StatusNotFound {
+ // the resource is simply not there
+}
+```
+
+For the one case that comes up constantly, there is a helper:
+
+```go
+if _, errResp := client.CreateDir(ctx, "/Reports"); errResp != nil && !errResp.AlreadyExists() {
+ return errResp
 }
 ```
 
@@ -480,20 +501,20 @@ to a background operation. Poll it until it reports `success`:
 ```go
 link, errResp := client.CopyResource(ctx, "/big-folder", "/backup/big-folder")
 if errResp != nil {
-	log.Fatal(errResp.Error)
+ log.Fatal(errResp.Error)
 }
 
 for {
-	// Accepts either an operation ID or the full href from the response.
-	operation, err := client.GetOperationStatus(ctx, link.Href)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if operation.Status != disk.OperationInProgress {
-		fmt.Println("finished:", operation.Status)
-		break
-	}
-	time.Sleep(time.Second)
+ // Accepts either an operation ID or the full href from the response.
+ operation, err := client.GetOperationStatus(ctx, link.Href)
+ if err != nil {
+  log.Fatal(err)
+ }
+ if operation.Status != disk.OperationInProgress {
+  fmt.Println("finished:", operation.Status)
+  break
+ }
+ time.Sleep(time.Second)
 }
 ```
 
@@ -507,11 +528,11 @@ err := client.WaitForBatchOperation(ctx, status, time.Second)
 
 Runnable programs live in [examples/](./examples):
 
-| Example | Shows |
-| --- | --- |
-| [demo](./examples/demo) | Disk info, metadata, folder and file operations |
-| [upload](./examples/upload) | Uploads with progress reporting |
-| [pagination](./examples/pagination) | All three pagination styles |
+| Example                             | Shows                                           |
+| ----------------------------------- | ----------------------------------------------- |
+| [demo](./examples/demo)             | Disk info, metadata, folder and file operations |
+| [upload](./examples/upload)         | Uploads with progress reporting                 |
+| [pagination](./examples/pagination) | All three pagination styles                     |
 
 ```bash
 export YANDEX_DISK_ACCESS_TOKEN=your-token
@@ -530,7 +551,7 @@ golangci-lint run                              # full lint (see .golangci.yml)
 CI runs tests, `go vet`, CodeQL, `govulncheck` and gosec on every push and pull
 request; gosec findings are published as code scanning alerts.
 
-Contributions are welcome — open an issue or a pull request.
+Contributions are welcome, so open an issue or a pull request.
 
 ## License
 
