@@ -10,12 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 )
-
-// multipartUploadTimeout bounds a chunked upload when the caller did not set a
-// deadline of their own.
-const multipartUploadTimeout = 30 * time.Minute
 
 // UploadProgress represents the progress of an upload operation
 type UploadProgress struct {
@@ -134,8 +129,15 @@ func (c *Client) uploadFileSingle(ctx context.Context, localPath string, remoteP
 		}
 	}
 
-	// Step 4: Create the HTTP request for file upload
-	req, err := http.NewRequestWithContext(ctx, uploadLink.Method, uploadLink.Href, reader)
+	// Step 4: Create the HTTP request for file upload.
+	//
+	// The body is streamed, so this must not run on c.HTTPClient: its Timeout
+	// is an absolute deadline over the whole request and would abort any
+	// upload slower than Config.DefaultTimeout. Bound it by the context.
+	upCtx, cancel := transferContext(ctx)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(upCtx, uploadLink.Method, uploadLink.Href, reader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create upload request: %w", err)
 	}
@@ -155,8 +157,8 @@ func (c *Client) uploadFileSingle(ctx context.Context, localPath string, remoteP
 
 	c.Logger.Debug("Uploading file with content type: %s", contentType)
 
-	// Step 5: Execute the upload using the configured HTTP client
-	resp, err := c.HTTPClient.Do(req)
+	// Step 5: Execute the upload using a transfer-scoped HTTP client
+	resp, err := c.transferClient().Do(req)
 	if err != nil {
 		c.Logger.LogError("file upload", err)
 		return nil, fmt.Errorf("upload request failed: %w", err)
@@ -248,21 +250,11 @@ func (c *Client) uploadFileMultipart(ctx context.Context, localPath string, remo
 	c.Logger.Debug("Starting multipart upload with content type: %s", contentType)
 
 	// Large uploads need far more headroom than the default per-request timeout.
-	// Use a client that shares this client's transport but is bounded by the
-	// request context instead, so concurrent callers are not affected — mutating
-	// c.HTTPClient.Timeout here would be a data race.
-	uploadClient := &http.Client{
-		Transport:     c.HTTPClient.Transport,
-		CheckRedirect: c.HTTPClient.CheckRedirect,
-		Jar:           c.HTTPClient.Jar,
-	}
-	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
-		uploadCtx, cancel := context.WithTimeout(ctx, multipartUploadTimeout)
-		defer cancel()
-		req = req.WithContext(uploadCtx)
-	}
+	transferCtx, cancel := transferContext(ctx)
+	defer cancel()
+	req = req.WithContext(transferCtx)
 
-	resp, err := uploadClient.Do(req)
+	resp, err := c.transferClient().Do(req)
 	if err != nil {
 		c.Logger.LogError("multipart file upload", err)
 		return nil, fmt.Errorf("multipart upload request failed: %w", err)

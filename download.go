@@ -59,13 +59,20 @@ func (c *Client) DownloadFileToPath(ctx context.Context, remotePath string, loca
 
 	c.Logger.Debug("Received download link: %s", link.Href)
 
-	// Step 2: Execute the download request
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, link.Href, nil)
+	// Step 2: Execute the download request.
+	//
+	// The body is streamed, so this must not run on c.HTTPClient: its Timeout
+	// is an absolute deadline over the whole request and would abort any
+	// download slower than Config.DefaultTimeout. Bound it by the context.
+	dlCtx, cancel := transferContext(ctx)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(dlCtx, http.MethodGet, link.Href, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create download request: %w", err)
 	}
 
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.transferClient().Do(req)
 	if err != nil {
 		c.Logger.LogError("file download", err)
 		return fmt.Errorf("download request failed: %w", err)
