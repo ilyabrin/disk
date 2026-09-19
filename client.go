@@ -352,6 +352,8 @@ func (c *Client) handleResponse(resp *http.Response, expectedCodes []int) (*Erro
 		}
 	}
 
+	errorResponse.StatusCode = resp.StatusCode
+
 	return &errorResponse, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, errorResponse.Error)
 }
 
@@ -374,8 +376,12 @@ func requestJSON[T any](ctx context.Context, c *Client, method HttpMethod, endpo
 	if !slices.Contains(okCodes, resp.StatusCode) {
 		var errorResponse ErrorResponse
 		if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
-			return nil, &ErrorResponse{Error: fmt.Sprintf("failed to decode error response: %v", err)}
+			return nil, &ErrorResponse{
+				Error:      fmt.Sprintf("failed to decode error response: %v", err),
+				StatusCode: resp.StatusCode,
+			}
 		}
+		errorResponse.StatusCode = resp.StatusCode
 		return nil, &errorResponse
 	}
 
@@ -405,4 +411,38 @@ func (c *Client) safeDecodeJSON(resp *http.Response, target interface{}) error {
 	}
 
 	return nil
+}
+
+// transferTimeout bounds a bulk transfer when the caller did not set a
+// deadline of their own.
+const transferTimeout = 30 * time.Minute
+
+// transferClient returns an HTTP client suited to streaming a file body.
+//
+// c.HTTPClient carries Config.DefaultTimeout, which is an absolute deadline
+// covering the whole request including the body. That is right for the small
+// JSON calls the API is mostly made of, but it silently kills any upload or
+// download that outlives it — a 30s default aborts every transfer slower than
+// 30 seconds, no matter how generous a deadline the caller put on ctx.
+//
+// The returned client shares this client's transport (so connection pooling
+// and TLS settings are preserved) but carries no Timeout of its own: the
+// transfer is bounded by the request context instead. Mutating
+// c.HTTPClient.Timeout in place would be a data race with concurrent callers.
+func (c *Client) transferClient() *http.Client {
+	return &http.Client{
+		Transport:     c.HTTPClient.Transport,
+		CheckRedirect: c.HTTPClient.CheckRedirect,
+		Jar:           c.HTTPClient.Jar,
+	}
+}
+
+// transferContext returns ctx bounded by transferTimeout when the caller did
+// not set a deadline of their own, together with its cancel func. The cancel
+// func is always non-nil and safe to defer.
+func transferContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	if _, hasDeadline := ctx.Deadline(); hasDeadline {
+		return ctx, func() {}
+	}
+	return context.WithTimeout(ctx, transferTimeout)
 }

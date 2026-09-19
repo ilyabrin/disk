@@ -156,7 +156,9 @@ func (c *Client) UpdateMetadata(ctx context.Context, path string, custom_propert
 }
 
 // CreateDir creates a new directory with the specified 'path' name.
-// todo: can't create nested dirs like newDir/subDir/anotherDir
+//
+// Only the final segment is created: the parent must already exist, mirroring
+// os.Mkdir. Use CreateDirAll to create a nested path in one call.
 func (c *Client) CreateDir(ctx context.Context, path string) (*Link, *ErrorResponse) {
 	if len(path) < 1 {
 		return nil, &ErrorResponse{Error: "path cannot be empty"}
@@ -166,6 +168,65 @@ func (c *Client) CreateDir(ctx context.Context, path string) (*Link, *ErrorRespo
 	query.Set("path", path)
 
 	return requestJSON[Link](ctx, c, PUT, "resources?"+query.Encode(), nil, http.StatusCreated)
+}
+
+// AlreadyExists reports whether this error means the resource is already
+// present, which CreateDirAll treats as success rather than failure.
+func (e *ErrorResponse) AlreadyExists() bool {
+	if e == nil {
+		return false
+	}
+	return e.StatusCode == http.StatusConflict &&
+		e.Error == "DiskPathPointsToExistentDirectoryError"
+}
+
+// CreateDirAll creates path along with any missing parent directories,
+// mirroring os.MkdirAll. Directories that already exist are left alone and do
+// not produce an error; if path already exists as a directory, CreateDirAll
+// does nothing and returns nil.
+//
+// The Yandex Disk API creates one level per request, so this issues one
+// request per missing segment, walking from the shallowest to the deepest.
+func (c *Client) CreateDirAll(ctx context.Context, path string) *ErrorResponse {
+	if len(path) < 1 {
+		return &ErrorResponse{Error: "path cannot be empty"}
+	}
+	if err := validatePath(path); err != nil {
+		return &ErrorResponse{Error: err.Error()}
+	}
+
+	// "disk:/a/b" and "/a/b" and "a/b" all address the same place; normalise
+	// to the segments so the prefixes below rebuild a well-formed path.
+	trimmed := strings.TrimPrefix(path, "disk:")
+	absolute := strings.HasPrefix(trimmed, "/")
+
+	var segments []string
+	for _, segment := range strings.Split(trimmed, "/") {
+		if segment != "" && segment != "." {
+			segments = append(segments, segment)
+		}
+	}
+	if len(segments) == 0 {
+		return &ErrorResponse{Error: "path contains no directory names"}
+	}
+
+	prefix := ""
+	if absolute {
+		prefix = "/"
+	}
+
+	for i, segment := range segments {
+		if i > 0 {
+			prefix += "/"
+		}
+		prefix += segment
+
+		if _, errResp := c.CreateDir(ctx, prefix); errResp != nil && !errResp.AlreadyExists() {
+			return errResp
+		}
+	}
+
+	return nil
 }
 
 func (c *Client) CopyResource(ctx context.Context, from, path string) (*Link, *ErrorResponse) {

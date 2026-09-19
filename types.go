@@ -135,6 +135,11 @@ type ErrorResponse struct {
 	Message     string `json:"message"`
 	Description string `json:"description"`
 	Error       string `json:"error"`
+
+	// StatusCode is the HTTP status that produced this error, or 0 when the
+	// request never reached a response (connection failure, decode error).
+	// Not part of the API payload — it is filled in by this package.
+	StatusCode int `json:"-"`
 }
 
 // TrashResource represents a resource in the trash
