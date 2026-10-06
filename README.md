@@ -545,11 +545,23 @@ go run ./examples/demo
 go test ./...                                  # run the suite
 go test -race -cover ./...                     # with the race detector
 go vet ./...                                   # static checks
-golangci-lint run                              # full lint (see .golangci.yml)
+gofmt -l .                                     # must print nothing
+go mod tidy                                    # must leave go.mod untouched
 ```
 
-CI runs tests, `go vet`, CodeQL, `govulncheck` and gosec on every push and pull
-request; gosec findings are published as code scanning alerts.
+For the linter, use the version CI pins so you see the same findings:
+
+```bash
+go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2 run ./...
+```
+
+The config lives in [.golangci.yml](./.golangci.yml). It stays small on
+purpose: gosec, `govulncheck` and dependency review run in their own workflow,
+so the linter covers correctness and clarity rather than repeating the security
+scans.
+
+CI runs all of the above on every push and pull request, plus CodeQL; gosec
+findings are published as code scanning alerts.
 
 Contributions are welcome, so open an issue or a pull request.
 
