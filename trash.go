@@ -3,6 +3,7 @@ package disk
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strconv"
 )
@@ -39,7 +40,7 @@ func (c *Client) RestoreFromTrash(ctx context.Context, path string, overwrite bo
 	// 201 carries a link to the restored resource, 202 a link to the
 	// asynchronous operation. Both are worth returning to the caller.
 	var link Link
-	if resp.StatusCode != 204 {
+	if resp.StatusCode != http.StatusNoContent {
 		if err := c.safeDecodeJSON(resp, &link); err != nil {
 			return nil, fmt.Errorf("failed to decode restore response: %w", err)
 		}
@@ -110,7 +111,7 @@ func (c *Client) EmptyTrash(ctx context.Context, path string, forceAsync bool) e
 		return fmt.Errorf("failed to empty trash: %w", err)
 	}
 
-	if resp.StatusCode == 202 {
+	if resp.StatusCode == http.StatusAccepted {
 		c.Logger.Info("Trash emptying started asynchronously")
 	} else {
 		c.Logger.Info("Successfully emptied trash")
