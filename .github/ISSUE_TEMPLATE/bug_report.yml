@@ -1,0 +1,62 @@
+name: Bug report
+description: A method returns the wrong result, errors unexpectedly, or hangs
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Found a **security** problem instead? Please don't file it here. See [SECURITY.md](https://github.com/ilyabrin/disk/blob/release/SECURITY.md).
+
+        ⚠️ Never paste an OAuth token into an issue. If one ends up in a log you are sharing, cut it out first.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: snippet
+    attributes:
+      label: Minimal code that shows it
+      description: The smallest program that reproduces the problem. Leave out the token.
+      render: go
+      placeholder: |
+        client, _ := disk.New(os.Getenv("YANDEX_DISK_TOKEN"))
+        _, errResp := client.CreateDir(ctx, "/a/b")
+        fmt.Println(errResp)
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: Error or output
+      description: What the code printed or returned. For an *ErrorResponse, include Error, Description and StatusCode.
+      render: text
+
+  - type: input
+    id: version
+    attributes:
+      label: Library version
+      description: From your go.mod, for example v1.2.1
+      placeholder: "v1.2.1"
+    validations:
+      required: true
+
+  - type: input
+    id: go-version
+    attributes:
+      label: Go version
+      description: Output of `go version`
+      placeholder: "go version go1.25.0 linux/amd64"
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: File sizes, path names (non-ASCII, very long), whether it happens every time or only sometimes.
