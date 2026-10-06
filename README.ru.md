@@ -546,11 +546,24 @@ go run ./examples/demo
 go test ./...                                  # прогнать тесты
 go test -race -cover ./...                     # с детектором гонок
 go vet ./...                                   # статические проверки
-golangci-lint run                              # полный линт (см. .golangci.yml)
+gofmt -l .                                     # не должен ничего вывести
+go mod tidy                                    # не должен изменить go.mod
 ```
 
-CI на каждый push и pull request запускает тесты, `go vet`, CodeQL, `govulncheck`
-и gosec; находки gosec публикуются как code scanning alerts.
+Линтер запускайте той версией, что закреплена в CI, иначе набор замечаний будет
+другим:
+
+```bash
+go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2 run ./...
+```
+
+Конфигурация лежит в [.golangci.yml](./.golangci.yml) и намеренно оставлена
+небольшой: gosec, `govulncheck` и dependency review работают в отдельном
+workflow, поэтому линтер отвечает за корректность и ясность, а не повторяет
+проверки безопасности.
+
+CI запускает всё перечисленное на каждый push и pull request, плюс CodeQL;
+находки gosec публикуются как code scanning alerts.
 
 Пул-реквесты и issue приветствуются.
 

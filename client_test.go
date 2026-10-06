@@ -3,7 +3,6 @@ package disk
 import (
 	"context"
 	"io"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -43,20 +42,6 @@ func mockedHttpClient(h http.HandlerFunc) *Client {
 	}
 
 	return client
-}
-
-func testingHTTPClient(handler http.Handler) (*http.Client, func()) {
-	s := httptest.NewServer(handler)
-
-	client := &http.Client{
-		Transport: &http.Transport{
-			DialContext: func(_ context.Context, network, _ string) (net.Conn, error) {
-				return net.Dial(network, s.Listener.Addr().String())
-			},
-		},
-	}
-
-	return client, s.Close
 }
 
 func TestNew(t *testing.T) {
@@ -184,7 +169,7 @@ func TestClientHelperMethods(t *testing.T) {
 		// Test with valid JSON
 		validJSON := `{"name": "test", "value": 123}`
 		resp := &http.Response{
-			StatusCode: 200,
+			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(strings.NewReader(validJSON)),
 		}
 
@@ -201,7 +186,7 @@ func TestClientHelperMethods(t *testing.T) {
 		// Test with invalid JSON
 		invalidJSON := `{invalid json}`
 		resp = &http.Response{
-			StatusCode: 200,
+			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(strings.NewReader(invalidJSON)),
 		}
 
@@ -213,7 +198,7 @@ func TestClientHelperMethods(t *testing.T) {
 
 		// Test with response with nil body
 		respWithNilBody := &http.Response{
-			StatusCode: 200,
+			StatusCode: http.StatusOK,
 			Body:       nil,
 		}
 		err = client.safeDecodeJSON(respWithNilBody, &result)
@@ -227,7 +212,7 @@ func TestClientHelperMethods(t *testing.T) {
 
 		// Test with acceptable status code
 		resp := &http.Response{
-			StatusCode: 200,
+			StatusCode: http.StatusOK,
 			Status:     "200 OK",
 			Body:       io.NopCloser(strings.NewReader(`{"result": "success"}`)),
 		}
@@ -241,7 +226,7 @@ func TestClientHelperMethods(t *testing.T) {
 
 		// Test with unacceptable status code - error response
 		resp = &http.Response{
-			StatusCode: 404,
+			StatusCode: http.StatusNotFound,
 			Status:     "404 Not Found",
 			Body:       io.NopCloser(strings.NewReader(`{"error": "NotFoundError", "description": "Resource not found"}`)),
 		}
@@ -253,7 +238,7 @@ func TestClientHelperMethods(t *testing.T) {
 
 		// Test with unacceptable status code - invalid error JSON
 		resp = &http.Response{
-			StatusCode: 500,
+			StatusCode: http.StatusInternalServerError,
 			Status:     "500 Internal Server Error",
 			Body:       io.NopCloser(strings.NewReader(`{invalid error json}`)),
 		}
