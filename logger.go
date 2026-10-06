@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"maps"
 	"os"
+	"slices"
 	"strings"
 	"time"
 )
@@ -148,26 +150,39 @@ func (l *DiskLogger) SetOutput(output io.Writer) {
 	l.logger.SetOutput(output)
 }
 
-// SanitizeValue sanitizes sensitive information for logging
+// SanitizeValue masks credential-bearing header values for logging.
+//
+// When LoggerConfig.SanitizeAuth is on (the default), a header whose name
+// suggests a credential is replaced by "***". For Authorization the scheme
+// is kept, so the log still shows "OAuth ***" and which kind of credential
+// was sent, but no part of the credential itself ever appears. Other headers
+// are returned unchanged. With SanitizeAuth off, every value is returned as
+// is, so only turn it off on a machine you trust.
 func (l *DiskLogger) SanitizeValue(key, value string) string {
-	if !l.config.SanitizeAuth {
+	if !l.config.SanitizeAuth || !isSensitiveHeader(key) {
 		return value
 	}
-
-	lowerKey := strings.ToLower(key)
-	if strings.Contains(lowerKey, "auth") ||
-		strings.Contains(lowerKey, "token") ||
-		strings.Contains(lowerKey, "key") ||
-		strings.Contains(lowerKey, "secret") {
-		if len(value) <= 8 {
-			return "***"
+	if strings.EqualFold(key, "Authorization") {
+		if scheme, _, ok := strings.Cut(value, " "); ok {
+			return scheme + " ***"
 		}
-		return value[:4] + "***" + value[len(value)-2:]
 	}
-	return value
+	return "***"
 }
 
-// LogRequest logs HTTP request details
+// isSensitiveHeader reports whether a header name suggests it carries a
+// credential. It errs on the side of masking.
+func isSensitiveHeader(key string) bool {
+	k := strings.ToLower(key)
+	return strings.Contains(k, "auth") ||
+		strings.Contains(k, "token") ||
+		strings.Contains(k, "key") ||
+		strings.Contains(k, "secret")
+}
+
+// LogRequest logs an outgoing request at DEBUG level. Headers are included
+// only when LoggerConfig.Verbose is on, sorted by name so that runs can be
+// compared line by line, with credentials masked by SanitizeValue.
 func (l *DiskLogger) LogRequest(method, url string, headers map[string]string) {
 	if !l.shouldLog(DEBUG) {
 		return
@@ -175,15 +190,11 @@ func (l *DiskLogger) LogRequest(method, url string, headers map[string]string) {
 
 	l.Debug("HTTP Request: %s %s", method, url)
 
-	if l.config.Verbose {
-		for key, value := range headers {
-			sanitizedValue := l.SanitizeValue(key, value)
-			if sanitizedValue != value {
-				l.Debug("  Header: %s: %s", key, sanitizedValue)
-			} else {
-				l.Debug("  Header: %s: [sanitized]", key)
-			}
-		}
+	if !l.config.Verbose {
+		return
+	}
+	for _, key := range slices.Sorted(maps.Keys(headers)) {
+		l.Debug("  Header: %s: %s", key, l.SanitizeValue(key, headers[key]))
 	}
 }
 
