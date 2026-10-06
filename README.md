@@ -563,7 +563,10 @@ scans.
 CI runs all of the above on every push and pull request, plus CodeQL; gosec
 findings are published as code scanning alerts.
 
-Contributions are welcome, so open an issue or a pull request.
+Contributions are welcome. [CONTRIBUTING.md](./CONTRIBUTING.md) covers setup,
+what CI checks and how the API stays compatible. Please report security
+problems privately, as described in [SECURITY.md](./SECURITY.md), rather than
+in a public issue.
 
 ## License
 
