@@ -59,7 +59,10 @@ func (c *Client) GetOperationStatus(ctx context.Context, operationIDOrHref strin
 		return nil, errors.New("operation id cannot be empty")
 	}
 
-	result, _, err := c.OperationStatus(ctx, id)
+	// The *http.Response is deliberately discarded: OperationStatus already
+	// closed its body, so the value is of no use to callers. The signature
+	// keeps it only for compatibility and should lose it in a v2.
+	result, _, err := c.OperationStatus(ctx, id) //nolint:bodyclose // closed by OperationStatus
 	if err != nil {
 		return nil, err
 	}
