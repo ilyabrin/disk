@@ -1,0 +1,37 @@
+name: Feature request
+description: Suggest API coverage or a convenience the library is missing
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: Describe the task, not the solution. It often has a simpler answer than expected.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like the library to offer?
+      description: A method signature sketch helps. If it maps to a Yandex.Disk API endpoint, link its documentation.
+      render: go
+    validations:
+      required: true
+
+  - type: dropdown
+    id: compatibility
+    attributes:
+      label: Does this change existing behaviour?
+      description: Changing or removing anything exported has to wait for a new major version.
+      options:
+        - "No, it only adds something"
+        - "Yes, it changes how something existing works"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
