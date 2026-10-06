@@ -3,7 +3,6 @@ package disk
 import (
 	"context"
 	"errors"
-	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -226,36 +225,6 @@ func TestValidateFilePath(t *testing.T) {
 	}
 }
 
-// uploadMockTransport simulates the file upload to Yandex servers
-type uploadMockTransport struct {
-	t               *testing.T
-	expectedContent string
-}
-
-func (u *uploadMockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Read the request body to verify content
-	if req.Body != nil {
-		body, err := io.ReadAll(req.Body)
-		if err != nil {
-			u.t.Errorf("Failed to read request body: %v", err)
-		}
-
-		// Verify content matches expected
-		if string(body) != u.expectedContent {
-			u.t.Errorf("Upload content mismatch. Expected: %s, Got: %s", u.expectedContent, string(body))
-		}
-	}
-
-	// Return successful response
-	return &http.Response{
-		StatusCode: 201,
-		Status:     "201 Created",
-		Header:     make(http.Header),
-		Body:       io.NopCloser(strings.NewReader("")),
-		Request:    req,
-	}, nil
-}
-
 func TestUploadOptions(t *testing.T) {
 	t.Run("UploadOptions validation", func(t *testing.T) {
 		client, _ := New("test-token")
@@ -284,27 +253,6 @@ func TestUploadOptions(t *testing.T) {
 			t.Errorf("Expected file validation error, got: %s", err.Error())
 		}
 	})
-}
-
-// overwriteMockTransport checks for overwrite header
-type overwriteMockTransport struct {
-	t *testing.T
-}
-
-func (o *overwriteMockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Check for overwrite header
-	overwriteHeader := req.Header.Get("X-Overwrite")
-	if overwriteHeader != "true" {
-		o.t.Error("Expected X-Overwrite header to be 'true'")
-	}
-
-	return &http.Response{
-		StatusCode: 201,
-		Status:     "201 Created",
-		Header:     make(http.Header),
-		Body:       io.NopCloser(strings.NewReader("")),
-		Request:    req,
-	}, nil
 }
 
 func TestUtilityFunctions(t *testing.T) {
@@ -439,15 +387,15 @@ func uploadMockHandler(t *testing.T, uploadPath string, uploadStatus int, resour
 	t.Helper()
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.URL.Path == "/v1/disk/resources/upload" && r.Method == "GET":
+		case r.URL.Path == "/v1/disk/resources/upload" && r.Method == http.MethodGet:
 			addr := r.Host
 			href := "http://" + addr + uploadPath
 			w.Write([]byte(`{"href":"` + href + `","method":"PUT","templated":false}`))
 
-		case r.URL.Path == uploadPath && r.Method == "PUT":
+		case r.URL.Path == uploadPath && r.Method == http.MethodPut:
 			w.WriteHeader(uploadStatus)
 
-		case r.URL.Path == "/v1/disk/resources" && r.Method == "GET":
+		case r.URL.Path == "/v1/disk/resources" && r.Method == http.MethodGet:
 			if resourceJSON != "" {
 				w.Write([]byte(resourceJSON))
 			} else {
@@ -506,15 +454,15 @@ func TestUploadFileSingle(t *testing.T) {
 	t.Run("upload with Overwrite option sends X-Overwrite header", func(t *testing.T) {
 		var gotOverwrite string
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			switch {
-			case r.URL.Path == "/v1/disk/resources/upload":
+			switch r.URL.Path {
+			case "/v1/disk/resources/upload":
 				addr := r.Host
 				href := "http://" + addr + "/do-upload"
 				w.Write([]byte(`{"href":"` + href + `","method":"PUT","templated":false}`))
-			case r.URL.Path == "/do-upload":
+			case "/do-upload":
 				gotOverwrite = r.Header.Get("X-Overwrite")
 				w.WriteHeader(http.StatusCreated)
-			case r.URL.Path == "/v1/disk/resources":
+			case "/v1/disk/resources":
 				w.Write([]byte(testResourceJSON))
 			default:
 				http.NotFound(w, r)

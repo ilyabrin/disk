@@ -36,7 +36,7 @@ func TestOperationStatus(t *testing.T) {
 		client.HTTPClient = &http.Client{
 			Transport: &mockRoundTripper{
 				response: &http.Response{
-					StatusCode: 200,
+					StatusCode: http.StatusOK,
 					Status:     "200 OK",
 					Header:     make(http.Header),
 					Body:       stringReadCloser(`{"status": "completed", "operation_id": "test-op-123"}`),
@@ -74,7 +74,7 @@ func TestOperationStatus(t *testing.T) {
 		client.HTTPClient = &http.Client{
 			Transport: &mockRoundTripper{
 				response: &http.Response{
-					StatusCode: 404,
+					StatusCode: http.StatusNotFound,
 					Status:     "404 Not Found",
 					Header:     make(http.Header),
 					Body:       stringReadCloser(`{"error": "OperationNotFoundError", "description": "Operation not found"}`),
@@ -91,7 +91,7 @@ func TestOperationStatus(t *testing.T) {
 			t.Error("Expected response to be returned")
 		}
 
-		if resp != nil && resp.StatusCode != 404 {
+		if resp != nil && resp.StatusCode != http.StatusNotFound {
 			t.Errorf("Expected status code 404, got %d", resp.StatusCode)
 		}
 
@@ -112,7 +112,7 @@ func TestOperationStatus(t *testing.T) {
 		client.HTTPClient = &http.Client{
 			Transport: &mockRoundTripper{
 				response: &http.Response{
-					StatusCode: 400,
+					StatusCode: http.StatusBadRequest,
 					Status:     "400 Bad Request",
 					Header:     make(http.Header),
 					Body:       stringReadCloser(`{"error": "BadRequestError", "description": "Operation ID is required"}`),
@@ -129,7 +129,7 @@ func TestOperationStatus(t *testing.T) {
 			t.Error("Expected response to be returned")
 		}
 
-		if resp != nil && resp.StatusCode != 400 {
+		if resp != nil && resp.StatusCode != http.StatusBadRequest {
 			t.Errorf("Expected status code 400, got %d", resp.StatusCode)
 		}
 
@@ -179,7 +179,7 @@ func TestOperationStatus(t *testing.T) {
 		client.HTTPClient = &http.Client{
 			Transport: &mockRoundTripper{
 				response: &http.Response{
-					StatusCode: 200,
+					StatusCode: http.StatusOK,
 					Status:     "200 OK",
 					Header:     make(http.Header),
 					Body:       stringReadCloser(`{invalid json}`),
@@ -212,7 +212,7 @@ func TestOperationStatus(t *testing.T) {
 		client.HTTPClient = &http.Client{
 			Transport: &mockRoundTripper{
 				response: &http.Response{
-					StatusCode: 404,
+					StatusCode: http.StatusNotFound,
 					Status:     "404 Not Found",
 					Header:     make(http.Header),
 					Body:       stringReadCloser(`{invalid error json}`),

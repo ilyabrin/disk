@@ -45,11 +45,10 @@ type PagedPublicResourcesList struct {
 
 // PaginationIterator provides an iterator interface for paginated results
 type PaginationIterator[T any] struct {
-	client     *Client
-	fetcher    func(ctx context.Context, options *PaginationOptions) (T, error)
-	options    *PaginationOptions
-	hasMore    bool
-	totalItems int
+	client  *Client
+	fetcher func(ctx context.Context, options *PaginationOptions) (T, error)
+	options *PaginationOptions
+	hasMore bool
 }
 
 // NewPaginationIterator creates a new pagination iterator

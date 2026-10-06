@@ -11,7 +11,7 @@ func TestTrashOperations(t *testing.T) {
 	t.Run("RestoreFromTrash with basic parameters", func(t *testing.T) {
 		client := mockedHttpClient(func(w http.ResponseWriter, r *http.Request) {
 			// Verify request method and path
-			if r.Method != "PUT" {
+			if r.Method != http.MethodPut {
 				t.Errorf("Expected PUT method, got %s", r.Method)
 			}
 			if !strings.Contains(r.URL.Path, "trash/resources/restore") {
@@ -24,7 +24,7 @@ func TestTrashOperations(t *testing.T) {
 				t.Errorf("Expected path '/test/file.txt', got '%s'", path)
 			}
 
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(`{"href": "https://example.com", "method": "GET"}`))
 		})
 
@@ -48,7 +48,7 @@ func TestTrashOperations(t *testing.T) {
 				t.Error("Expected name=new_name.txt")
 			}
 
-			w.WriteHeader(202)
+			w.WriteHeader(http.StatusAccepted)
 			w.Write([]byte(`{"href": "https://example.com/operation/123", "method": "GET"}`))
 		})
 
@@ -77,14 +77,14 @@ func TestTrashOperations(t *testing.T) {
 func TestListTrashResources(t *testing.T) {
 	t.Run("ListTrashResources with basic parameters", func(t *testing.T) {
 		client := mockedHttpClient(func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != "GET" {
+			if r.Method != http.MethodGet {
 				t.Errorf("Expected GET method, got %s", r.Method)
 			}
 			if !strings.Contains(r.URL.Path, "trash/resources") {
 				t.Errorf("Expected trash resources endpoint, got %s", r.URL.Path)
 			}
 
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(`{
 				"items": [
 					{
@@ -131,7 +131,7 @@ func TestListTrashResources(t *testing.T) {
 				t.Errorf("Expected offset=20, got %s", offset)
 			}
 
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(`{"items": [], "limit": 10, "offset": 20}`))
 		})
 
@@ -152,14 +152,14 @@ func TestListTrashResources(t *testing.T) {
 func TestEmptyTrash(t *testing.T) {
 	t.Run("EmptyTrash successfully", func(t *testing.T) {
 		client := mockedHttpClient(func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != "DELETE" {
+			if r.Method != http.MethodDelete {
 				t.Errorf("Expected DELETE method, got %s", r.Method)
 			}
 			if !strings.Contains(r.URL.Path, "trash/resources") {
 				t.Errorf("Expected trash resources endpoint, got %s", r.URL.Path)
 			}
 
-			w.WriteHeader(204) // No content
+			w.WriteHeader(http.StatusNoContent) // No content
 		})
 
 		err := client.EmptyTrash(context.Background(), "", false)
@@ -175,7 +175,7 @@ func TestEmptyTrash(t *testing.T) {
 				t.Errorf("Expected path '/trash/folder', got '%s'", path)
 			}
 
-			w.WriteHeader(202) // Async operation
+			w.WriteHeader(http.StatusAccepted) // Async operation
 		})
 
 		err := client.EmptyTrash(context.Background(), "/trash/folder", false)
@@ -191,7 +191,7 @@ func TestEmptyTrash(t *testing.T) {
 				t.Errorf("Expected force_async=true, got '%s'", forceAsync)
 			}
 
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
 		})
 
 		err := client.EmptyTrash(context.Background(), "", true)
@@ -204,7 +204,7 @@ func TestEmptyTrash(t *testing.T) {
 func TestGetTrashResourceMetadata(t *testing.T) {
 	t.Run("GetTrashResourceMetadata successfully", func(t *testing.T) {
 		client := mockedHttpClient(func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != "GET" {
+			if r.Method != http.MethodGet {
 				t.Errorf("Expected GET method, got %s", r.Method)
 			}
 
@@ -213,7 +213,7 @@ func TestGetTrashResourceMetadata(t *testing.T) {
 				t.Errorf("Expected path '/trash/test_file.txt', got '%s'", path)
 			}
 
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(`{
 				"path": "/trash/test_file.txt",
 				"name": "test_file.txt",
@@ -256,7 +256,7 @@ func TestGetTrashResourceMetadata(t *testing.T) {
 				}
 			}
 
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(`{"name": "test_file.txt", "size": 2048, "md5": "abcdef123456"}`))
 		})
 
