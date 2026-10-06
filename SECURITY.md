@@ -55,9 +55,9 @@ sends the token only in the `Authorization` header of requests to the API.
 
 Debug logging masks the token by default. Headers are logged only when
 `LoggerConfig.Verbose` is on, and even then `SanitizeAuth: true`, the default,
-reduces the header to its last two characters. Turning `SanitizeAuth` off
-writes the token to the log in full, so do that only on a machine you trust and
-never in production.
+logs the Authorization header as `OAuth ***`: the scheme stays visible and no
+part of the credential does. Turning `SanitizeAuth` off writes the token to the
+log in full, so do that only on a machine you trust and never in production.
 
 Keep tokens out of source control, logs and shared configuration. If one
 leaks, revoke it at
