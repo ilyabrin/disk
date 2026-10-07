@@ -47,7 +47,7 @@ func validatePath(p string) error {
 func (c *Client) buildDeleteResourceURL(path string, permanently bool) string {
 	query := url.Values{}
 	query.Set("path", path)
-	query.Set("permanent", strconv.FormatBool(permanently))
+	query.Set("permanently", strconv.FormatBool(permanently))
 	return fmt.Sprintf("resources?%s", query.Encode())
 }
 

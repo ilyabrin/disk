@@ -13,9 +13,7 @@ import (
 
 // TODO: add tests and use generics instead of interface{}
 func (c *Client) OperationStatus(ctx context.Context, operationID string) (any, *http.Response, error) {
-	query := url.Values{}
-	query.Set("operation_id", operationID)
-	resp, err := c.doRequest(ctx, GET, "operations?"+query.Encode(), nil)
+	resp, err := c.doRequest(ctx, GET, "operations/"+url.PathEscape(operationID), nil)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to make request: %w", err)
 	}

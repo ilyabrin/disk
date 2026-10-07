@@ -26,8 +26,9 @@ func TestOperationIDFromHref(t *testing.T) {
 func TestGetOperationStatus(t *testing.T) {
 	t.Run("returns the operation", func(t *testing.T) {
 		client := mockedHttpClient(func(w http.ResponseWriter, r *http.Request) {
-			if got := r.URL.Query().Get("operation_id"); got != "123abc" {
-				t.Errorf("operation_id = %q, want %q", got, "123abc")
+			// The ID is a path segment, as documented, not a query parameter.
+			if r.URL.Path != "/v1/disk/operations/123abc" {
+				t.Errorf("path = %q, want /v1/disk/operations/123abc", r.URL.Path)
 			}
 			_, _ = w.Write([]byte(`{"status":"success"}`))
 		})
