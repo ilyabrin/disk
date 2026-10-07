@@ -92,10 +92,16 @@ func (c *Client) GetDownloadURLForPublicResourceAt(ctx context.Context, publicKe
 }
 
 // SavePublicResourceOptions contains optional parameters for saving a published
-// resource to the authenticated user's Downloads folder.
+// resource to the authenticated user's Disk.
 type SavePublicResourceOptions struct {
 	Path string // Path to a resource inside a published folder
 	Name string // Name to save the resource under
+	// SavePath is the folder to save into, such as "disk:/Inbox". Empty
+	// means the Downloads folder.
+	SavePath string
+	// ForceAsync makes the API copy in the background even when the
+	// resource is small.
+	ForceAsync bool
 }
 
 // SavePublicResource copies a published file or folder into the user's
@@ -123,6 +129,12 @@ func (c *Client) SavePublicResourceWithOptions(ctx context.Context, publicKey st
 		}
 		if opts.Name != "" {
 			query.Set("name", opts.Name)
+		}
+		if opts.SavePath != "" {
+			query.Set("save_path", opts.SavePath)
+		}
+		if opts.ForceAsync {
+			query.Set("force_async", "true")
 		}
 	}
 

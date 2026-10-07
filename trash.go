@@ -6,21 +6,46 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 // RestoreFromTrash restores a resource from trash to its original location or a new path
 func (c *Client) RestoreFromTrash(ctx context.Context, path string, overwrite bool, name string) (*Link, error) {
+	return c.RestoreFromTrashWithOptions(ctx, path, &RestoreOptions{Overwrite: overwrite, Name: name})
+}
+
+// RestoreOptions are the optional parameters of
+// [Client.RestoreFromTrashWithOptions].
+type RestoreOptions struct {
+	// Overwrite replaces whatever is now at the original path.
+	Overwrite bool
+	// Name restores the resource under another name.
+	Name string
+	// ForceAsync makes the API restore in the background even when the
+	// resource is small.
+	ForceAsync bool
+}
+
+// RestoreFromTrashWithOptions is [Client.RestoreFromTrash] with the choice to
+// run in the background.
+func (c *Client) RestoreFromTrashWithOptions(ctx context.Context, path string, opts *RestoreOptions) (*Link, error) {
 	if path == "" {
 		return nil, fmt.Errorf("path cannot be empty")
+	}
+	if opts == nil {
+		opts = &RestoreOptions{}
 	}
 
 	query := url.Values{}
 	query.Set("path", path)
-	if overwrite {
+	if opts.Overwrite {
 		query.Set("overwrite", "true")
 	}
-	if name != "" {
-		query.Set("name", name)
+	if opts.Name != "" {
+		query.Set("name", opts.Name)
+	}
+	if opts.ForceAsync {
+		query.Set("force_async", "true")
 	}
 
 	c.Logger.Debug("Restoring resource from trash: %s", path)
@@ -52,15 +77,47 @@ func (c *Client) RestoreFromTrash(ctx context.Context, path string, overwrite bo
 
 // ListTrashResources lists resources in the trash, optionally filtered by path
 func (c *Client) ListTrashResources(ctx context.Context, path string, limit int, offset int) (*TrashResourceList, error) {
+	return c.ListTrashResourcesWithOptions(ctx, path, &TrashListOptions{Limit: limit, Offset: offset})
+}
+
+// TrashListOptions are the optional parameters of
+// [Client.ListTrashResourcesWithOptions].
+type TrashListOptions struct {
+	Limit       int      // Page size (0 = API default)
+	Offset      int      // Items to skip
+	Sort        string   // "deleted" or "created" (prefix "-" to reverse)
+	PreviewSize string   // Thumbnail size, e.g. "M" or "120x240"
+	PreviewCrop bool     // Crop previews to the requested size
+	Fields      []string // Response fields to return (empty = all)
+}
+
+// ListTrashResourcesWithOptions is [Client.ListTrashResources] with sorting
+// and thumbnails.
+func (c *Client) ListTrashResourcesWithOptions(ctx context.Context, path string, opts *TrashListOptions) (*TrashResourceList, error) {
+	if opts == nil {
+		opts = &TrashListOptions{}
+	}
 	query := url.Values{}
 	if path != "" {
 		query.Set("path", path)
 	}
-	if limit > 0 {
-		query.Set("limit", strconv.Itoa(limit))
+	if opts.Limit > 0 {
+		query.Set("limit", strconv.Itoa(opts.Limit))
 	}
-	if offset > 0 {
-		query.Set("offset", strconv.Itoa(offset))
+	if opts.Offset > 0 {
+		query.Set("offset", strconv.Itoa(opts.Offset))
+	}
+	if opts.Sort != "" {
+		query.Set("sort", opts.Sort)
+	}
+	if opts.PreviewSize != "" {
+		query.Set("preview_size", opts.PreviewSize)
+	}
+	if opts.PreviewCrop {
+		query.Set("preview_crop", "true")
+	}
+	if len(opts.Fields) > 0 {
+		query.Set("fields", strings.Join(opts.Fields, ","))
 	}
 
 	c.Logger.Debug("Listing trash resources with path: %s", path)

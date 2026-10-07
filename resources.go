@@ -45,20 +45,53 @@ func validatePath(p string) error {
 }
 
 func (c *Client) buildDeleteResourceURL(path string, permanently bool) string {
+	return c.deleteURL(path, &DeleteOptions{Permanently: permanently})
+}
+
+func (c *Client) deleteURL(path string, opts *DeleteOptions) string {
+	if opts == nil {
+		opts = &DeleteOptions{}
+	}
 	query := url.Values{}
 	query.Set("path", path)
-	query.Set("permanently", strconv.FormatBool(permanently))
+	query.Set("permanently", strconv.FormatBool(opts.Permanently))
+	if opts.ForceAsync {
+		query.Set("force_async", "true")
+	}
+	if opts.MD5 != "" {
+		query.Set("md5", opts.MD5)
+	}
 	return fmt.Sprintf("resources?%s", query.Encode())
+}
+
+// DeleteOptions are the optional parameters of
+// [Client.DeleteResourceWithOptions].
+type DeleteOptions struct {
+	// Permanently removes the resource for good instead of moving it to the
+	// trash.
+	Permanently bool
+	// ForceAsync makes the API delete in the background even when the
+	// resource is small.
+	ForceAsync bool
+	// MD5, when set, deletes a file only if its contents still have this
+	// hash, so a file changed in the meantime is kept. Files only.
+	MD5 string
 }
 
 // DeleteResource deletes the file or folder at path. It goes to the trash,
 // or is removed for good when permanently is true.
 func (c *Client) DeleteResource(ctx context.Context, path string, permanently bool) error {
+	return c.DeleteResourceWithOptions(ctx, path, &DeleteOptions{Permanently: permanently})
+}
+
+// DeleteResourceWithOptions is [Client.DeleteResource] with the choice to
+// run in the background or to delete a file only if it is unchanged.
+func (c *Client) DeleteResourceWithOptions(ctx context.Context, path string, opts *DeleteOptions) error {
 	if err := validatePath(path); err != nil {
 		return fmt.Errorf("delete error: %w", err)
 	}
 
-	url := c.buildDeleteResourceURL(path, permanently)
+	url := c.deleteURL(path, opts)
 
 	resp, err := c.doRequest(ctx, DELETE, url, nil)
 	if err != nil {
@@ -235,6 +268,35 @@ func (c *Client) CreateDirAll(ctx context.Context, path string) *ErrorResponse {
 // already exists. Copying a large folder may continue in the background; the
 // returned [Link] then points to the operation, see [Client.GetOperationStatus].
 func (c *Client) CopyResource(ctx context.Context, from, path string) (*Link, *ErrorResponse) {
+	return c.CopyResourceWithOptions(ctx, from, path, nil)
+}
+
+// CopyMoveOptions are the optional parameters of
+// [Client.CopyResourceWithOptions] and [Client.MoveResourceWithOptions].
+type CopyMoveOptions struct {
+	// Overwrite replaces whatever is at the target path. Without it, an
+	// existing target makes the request fail with 409.
+	Overwrite bool
+	// ForceAsync makes the API run the operation in the background even
+	// when it is small, and return a link to it.
+	ForceAsync bool
+}
+
+func (o *CopyMoveOptions) apply(query url.Values) {
+	if o == nil {
+		return
+	}
+	if o.Overwrite {
+		query.Set("overwrite", "true")
+	}
+	if o.ForceAsync {
+		query.Set("force_async", "true")
+	}
+}
+
+// CopyResourceWithOptions is [Client.CopyResource] with the choice to
+// overwrite the target or to run in the background.
+func (c *Client) CopyResourceWithOptions(ctx context.Context, from, path string, opts *CopyMoveOptions) (*Link, *ErrorResponse) {
 	if len(from) < 1 || len(path) < 1 {
 		return nil, &ErrorResponse{Error: "from and path cannot be empty"}
 	}
@@ -242,6 +304,7 @@ func (c *Client) CopyResource(ctx context.Context, from, path string) (*Link, *E
 	query := url.Values{}
 	query.Set("from", from)
 	query.Set("path", path)
+	opts.apply(query)
 
 	return requestJSON[Link](ctx, c, POST, "resources/copy?"+query.Encode(), nil,
 		http.StatusOK, http.StatusCreated, http.StatusAccepted)
@@ -371,10 +434,21 @@ func (c *Client) GetLastUploadedResources(ctx context.Context) (*LastUploadedRes
 
 // GetLastUploadedResourcesWithPagination gets last uploaded resources with pagination support
 func (c *Client) GetLastUploadedResourcesWithPagination(ctx context.Context, options *PaginationOptions) (*LastUploadedResourceList, *ErrorResponse) {
+	return c.GetLastUploadedResourcesWithOptions(ctx, options, nil)
+}
+
+// GetLastUploadedResourcesWithOptions is
+// [Client.GetLastUploadedResourcesWithPagination] with filters: only some
+// media types, and thumbnails of a chosen size. The API does not sort this
+// list, so filters.Sort is ignored.
+func (c *Client) GetLastUploadedResourcesWithOptions(ctx context.Context, options *PaginationOptions, filters *FilesOptions) (*LastUploadedResourceList, *ErrorResponse) {
 	options = ValidatePaginationOptions(options)
 
 	query := url.Values{}
 	addPaginationParams(query, options)
+	filters.apply(query)
+	query.Del("sort")
+	query.Del("offset")
 
 	endpoint := "resources/last-uploaded"
 	if len(query) > 0 {
@@ -427,6 +501,12 @@ func (c *Client) GetLastUploadedResourcesIterator(options *PaginationOptions) *P
 // background; the returned [Link] then points to the operation, see
 // [Client.GetOperationStatus].
 func (c *Client) MoveResource(ctx context.Context, from, path string) (*Link, *ErrorResponse) {
+	return c.MoveResourceWithOptions(ctx, from, path, nil)
+}
+
+// MoveResourceWithOptions is [Client.MoveResource] with the choice to
+// overwrite the target or to run in the background.
+func (c *Client) MoveResourceWithOptions(ctx context.Context, from, path string, opts *CopyMoveOptions) (*Link, *ErrorResponse) {
 	if len(from) < 1 || len(path) < 1 {
 		return nil, &ErrorResponse{Error: "from and path cannot be empty"}
 	}
@@ -434,6 +514,7 @@ func (c *Client) MoveResource(ctx context.Context, from, path string) (*Link, *E
 	query := url.Values{}
 	query.Set("from", from)
 	query.Set("path", path)
+	opts.apply(query)
 
 	return requestJSON[Link](ctx, c, POST, "resources/move?"+query.Encode(), nil,
 		http.StatusCreated, http.StatusAccepted)
@@ -447,10 +528,41 @@ func (c *Client) GetPublicResources(ctx context.Context) (*PublicResourcesList, 
 
 // GetPublicResourcesWithPagination gets public resources with pagination support
 func (c *Client) GetPublicResourcesWithPagination(ctx context.Context, options *PaginationOptions) (*PublicResourcesList, *ErrorResponse) {
+	return c.GetPublicResourcesWithOptions(ctx, options, nil)
+}
+
+// PublicResourcesOptions are the filters of
+// [Client.GetPublicResourcesWithOptions].
+type PublicResourcesOptions struct {
+	// Type is "file" or "dir" to list only files or only folders; empty
+	// lists both.
+	Type        string
+	PreviewSize string   // Thumbnail size, e.g. "M" or "120x240"
+	PreviewCrop bool     // Crop previews to the requested size
+	Fields      []string // Response fields to return (empty = all)
+}
+
+// GetPublicResourcesWithOptions is [Client.GetPublicResourcesWithPagination]
+// with filters: only files or only folders, and thumbnails of a chosen size.
+func (c *Client) GetPublicResourcesWithOptions(ctx context.Context, options *PaginationOptions, filters *PublicResourcesOptions) (*PublicResourcesList, *ErrorResponse) {
 	options = ValidatePaginationOptions(options)
 
 	query := url.Values{}
 	addPaginationParams(query, options)
+	if filters != nil {
+		if filters.Type != "" {
+			query.Set("type", filters.Type)
+		}
+		if filters.PreviewSize != "" {
+			query.Set("preview_size", filters.PreviewSize)
+		}
+		if filters.PreviewCrop {
+			query.Set("preview_crop", "true")
+		}
+		if len(filters.Fields) > 0 {
+			query.Set("fields", strings.Join(filters.Fields, ","))
+		}
+	}
 
 	endpoint := "resources/public"
 	if len(query) > 0 {
@@ -543,6 +655,20 @@ func (c *Client) GetLinkForUpload(ctx context.Context, path string) (*ResourceUp
 // in the background; the returned [Link] points to the operation, see
 // [Client.GetOperationStatus].
 func (c *Client) UploadFile(ctx context.Context, path, uploadURL string) (*Link, *ErrorResponse) {
+	return c.UploadFileWithOptions(ctx, path, uploadURL, nil)
+}
+
+// UploadFromURLOptions are the optional parameters of
+// [Client.UploadFileWithOptions].
+type UploadFromURLOptions struct {
+	// DisableRedirects makes Yandex refuse to follow redirects from
+	// uploadURL.
+	DisableRedirects bool
+}
+
+// UploadFileWithOptions is [Client.UploadFile] with the choice not to follow
+// redirects.
+func (c *Client) UploadFileWithOptions(ctx context.Context, path, uploadURL string, opts *UploadFromURLOptions) (*Link, *ErrorResponse) {
 	if len(path) < 1 || len(uploadURL) < 1 {
 		return nil, &ErrorResponse{Error: "path and url cannot be empty"}
 	}
@@ -550,6 +676,9 @@ func (c *Client) UploadFile(ctx context.Context, path, uploadURL string) (*Link,
 	queryParams := url.Values{}
 	queryParams.Set("path", path)
 	queryParams.Set("url", uploadURL)
+	if opts != nil && opts.DisableRedirects {
+		queryParams.Set("disable_redirects", "true")
+	}
 
 	return requestJSON[Link](ctx, c, POST, "resources/upload?"+queryParams.Encode(), nil,
 		http.StatusOK, http.StatusAccepted)
