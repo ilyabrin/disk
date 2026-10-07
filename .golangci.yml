@@ -18,11 +18,12 @@ linters:
   settings:
     revive:
       rules:
-        # Most of the exported API still lacks doc comments, which is worth
-        # fixing because they show on pkg.go.dev. Until that pass is done,
-        # leaving this on would keep CI permanently red.
+        # Every exported symbol needs a doc comment: they are the API
+        # reference on pkg.go.dev. Stuttering names such as disk.DiskLogger
+        # are allowed, since renaming them would break callers.
         - name: exported
-          disabled: true
+          arguments:
+            - disableStutteringCheck
 
   exclusions:
     presets:

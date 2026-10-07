@@ -11,7 +11,13 @@ import (
 	"strings"
 )
 
-// TODO: add tests and use generics instead of interface{}
+// OperationStatus asks for the state of a background operation by its ID.
+// The result is an [*Operation], or an [*ErrorResponse] (with a nil err)
+// when the API reports an error. The returned response's body is already
+// closed.
+//
+// Prefer [Client.GetOperationStatus], which returns an [*Operation] directly
+// and also accepts the href from a [Link].
 func (c *Client) OperationStatus(ctx context.Context, operationID string) (any, *http.Response, error) {
 	query := url.Values{}
 	query.Set("operation_id", operationID)

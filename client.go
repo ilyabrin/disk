@@ -14,12 +14,14 @@ import (
 	"time"
 )
 
-// Context management and timeout handling implemented
-
+// API_URL is the Yandex.Disk REST API endpoint the client talks to unless
+// [ClientConfig.BaseURL] says otherwise.
 const API_URL = "https://cloud-api.yandex.net/v1/disk/"
 
+// HttpMethod is an HTTP method used for requests to the API.
 type HttpMethod string
 
+// HTTP methods used by the client.
 const (
 	GET    HttpMethod = "GET"
 	POST   HttpMethod = "POST"
@@ -63,14 +65,24 @@ func (c *Client) baseURL() string {
 	return API_URL
 }
 
+// Client talks to the Yandex.Disk REST API on behalf of one user. Create it
+// with [New] or [NewWithConfig]. A Client is safe for concurrent use.
+//
+// Most methods take a context, which bounds how long the request may take,
+// and paths such as "disk:/Photos" or "/Photos" (the two are the same).
 type Client struct {
+	// AccessToken is the user's OAuth token, sent with every request.
 	AccessToken string
-	HTTPClient  *http.Client
-	Logger      *DiskLogger
-	Config      *ClientConfig
+	// HTTPClient sends the requests. Replace it to use your own transport.
+	HTTPClient *http.Client
+	// Logger receives what the client logs; see [ClientConfig.Logger].
+	Logger *DiskLogger
+	// Config is the configuration the client was created with.
+	Config *ClientConfig
 }
 
-// NewWithConfig creates a new Client with custom configuration
+// NewWithConfig creates a Client with the given configuration, or with
+// [DefaultClientConfig] when config is nil. The token works as in [New].
 func NewWithConfig(config *ClientConfig, token ...string) (*Client, error) {
 	if len(token) == 0 {
 		envToken := os.Getenv("YANDEX_DISK_ACCESS_TOKEN")
@@ -124,8 +136,9 @@ func NewWithConfig(config *ClientConfig, token ...string) (*Client, error) {
 	}, nil
 }
 
-// New(token ...string) fetch token from OS env var if has not direct defined
-// Uses default configuration for backward compatibility
+// New creates a Client with [DefaultClientConfig] and the given OAuth token.
+// Without a token argument, it reads one from the YANDEX_DISK_ACCESS_TOKEN
+// environment variable, and fails if that is empty too.
 func New(token ...string) (*Client, error) {
 	return NewWithConfig(nil, token...)
 }

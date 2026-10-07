@@ -507,7 +507,9 @@ func (c *Client) BatchUpdateMetadata(ctx context.Context, paths []string, custom
 	return status, nil
 }
 
-// GetBatchOperationsSummary provides a summary of batch operation results
+// GetSummary returns the state of a batch operation as a map with the keys
+// "total", "completed", "successful", "failed", "percentage" and "duration",
+// plus "completed_at" (RFC 3339) once the batch has finished.
 func (status *BatchOperationStatus) GetSummary() map[string]interface{} {
 	summary := map[string]interface{}{
 		"total":      status.Total,
