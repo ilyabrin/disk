@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for the report. Found a **security** problem instead? Please don't file it here. See [SECURITY.md](https://github.com/ilyabrin/disk/blob/release/SECURITY.md).
+        Thanks for the report. Found a **security** problem instead? Please don't file it here. See [SECURITY.md](https://github.com/ilyabrin/disk/blob/main/SECURITY.md).
 
         ⚠️ Never paste an OAuth token into an issue. If one ends up in a log you are sharing, cut it out first.
 
