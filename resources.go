@@ -65,8 +65,9 @@ func (c *Client) DeleteResource(ctx context.Context, path string, permanently bo
 	}
 	defer resp.Body.Close()
 
-	// Use centralized response handling
-	if _, err := c.handleResponse(resp, []int{200}); err != nil {
+	// The API answers 204 once the resource is gone, and 202 when a large
+	// folder is being deleted in the background. 200 is kept for proxies.
+	if _, err := c.handleResponse(resp, []int{http.StatusOK, http.StatusAccepted, http.StatusNoContent}); err != nil {
 		return fmt.Errorf("delete request failed: %w", err)
 	}
 
