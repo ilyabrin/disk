@@ -245,7 +245,7 @@ func (c *Client) doWithRetries(ctx context.Context, req *http.Request, retryable
 			// The body has to be drained and closed before the connection can
 			// be reused for the next attempt.
 			_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 
 		c.Logger.Debug("Retrying request %s %s (attempt %d/%d)", req.Method, req.URL.Path, attempt+1, maxRetries)
