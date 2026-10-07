@@ -34,7 +34,7 @@ jobs:
           git diff --exit-code -- go.mod go.sum
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v8
+        uses: golangci/golangci-lint-action@v9
         with:
           # Pinned: "latest" lets a new linter release turn CI red with no
           # change of ours. Upgrade this deliberately.
