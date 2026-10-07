@@ -73,11 +73,13 @@ jobs:
           check-latest: true
 
       # -no-fail keeps the job green so the SARIF report is always uploaded;
-      # findings show up as code scanning alerts instead.
+      # findings show up as code scanning alerts instead. examples/ is left
+      # out because SECURITY.md puts it out of scope: it is illustrative code,
+      # not part of the library.
       - name: Run Gosec Security Scanner
         uses: securego/gosec@v2.28.0
         with:
-          args: "-no-fail -fmt=sarif -out=gosec.sarif ./..."
+          args: "-no-fail -fmt=sarif -out=gosec.sarif -exclude-dir=examples ./..."
 
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v4
