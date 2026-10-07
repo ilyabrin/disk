@@ -51,8 +51,8 @@ func TestClientGetDiskInfo(t *testing.T) {
 	// check response data
 	assert.Nil(t, err)
 	assert.Equal(t, true, disk.IsPaid)
-	assert.Equal(t, 53687091200, disk.MaxFileSize)
-	assert.Equal(t, 1190242811904, disk.TotalSpace)
+	assert.Equal(t, int64(53687091200), disk.MaxFileSize)
+	assert.Equal(t, int64(1190242811904), disk.TotalSpace)
 	assert.Equal(t, "User Name", disk.User.DisplayName)
 
 	// check types

@@ -181,7 +181,7 @@ func (c *Client) uploadFileSingle(ctx context.Context, localPath string, remoteP
 			Path: remotePath,
 			Name: filepath.Base(localPath),
 			Type: "file",
-			Size: int(fileInfo.Size()),
+			Size: fileInfo.Size(),
 		}, nil
 	}
 
@@ -275,7 +275,7 @@ func (c *Client) uploadFileMultipart(ctx context.Context, localPath string, remo
 			Path: remotePath,
 			Name: filepath.Base(localPath),
 			Type: "file",
-			Size: int(fileInfo.Size()),
+			Size: fileInfo.Size(),
 		}, nil
 	}
 

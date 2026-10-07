@@ -3,14 +3,14 @@ package disk
 // GET /v1/disk
 type Disk struct {
 	UnlimitedAutouploadEnabled bool           `json:"unlimited_autoupload_enabled,omitempty"` // boolean, optional:
-	MaxFileSize                int            `json:"max_file_size,omitempty"`                // integer, optional:
-	TotalSpace                 int            `json:"total_space,omitempty"`                  // integer, optional:
-	TrashSize                  int            `json:"trash_size,omitempty"`                   // integer, optional:
+	MaxFileSize                int64          `json:"max_file_size,omitempty"`                // integer, optional:
+	TotalSpace                 int64          `json:"total_space,omitempty"`                  // integer, optional:
+	TrashSize                  int64          `json:"trash_size,omitempty"`                   // integer, optional:
 	IsPaid                     bool           `json:"is_paid,omitempty"`                      // boolean, optional:
-	UsedSpace                  int            `json:"used_space,omitempty"`                   // integer, optional:
+	UsedSpace                  int64          `json:"used_space,omitempty"`                   // integer, optional:
 	SystemFolders              *SystemFolders `json:"system_folders,omitempty"`               // (SystemFolders, optional)
 	User                       *User          `json:"user,omitempty"`                         // (User, optional)
-	Revision                   int            `json:"revision,omitempty"`                     // (integer, optional):
+	Revision                   int64          `json:"revision,omitempty"`                     // (integer, optional):
 }
 
 type SystemFolders struct {
@@ -39,7 +39,7 @@ type Resource struct {
 	ResourceID       string        `json:"resource_id,omitempty"`       // (string, optional): <Идентификатор ресурса>,
 	Share            *ShareInfo    `json:"share,omitempty"`             // (ShareInfo, optional),
 	File             string        `json:"file,omitempty"`              // (string, optional): <URL для скачивания файла>,
-	Size             int           `json:"size,omitempty"`              // (integer, optional): <Размер файла>,
+	Size             int64         `json:"size,omitempty"`              // (integer, optional): <Размер файла>,
 	PhotosliceTime   string        `json:"photoslice_time,omitempty"`   // (string, optional): <Дата создания фото или видео файла>,
 	Embedded         *ResourceList `json:"_embedded,omitempty"`         // (ResourceList, optional),
 	Exif             *Exif         `json:"exif,omitempty"`              // (Exif, optional),
@@ -48,7 +48,7 @@ type Resource struct {
 	Preview          string        `json:"preview,omitempty"`           // (string, optional): <URL превью файла>,
 	Type             string        `json:"type"`                        // (string): <Тип>,
 	MimeType         string        `json:"mime_type,omitempty"`         // (string, optional): <MIME-тип файла>,
-	Revision         int           `json:"revision,omitempty"`          // (integer, optional): <Ревизия Диска в которой этот ресурс был изменён последний раз>,
+	Revision         int64         `json:"revision,omitempty"`          // (integer, optional): <Ревизия Диска в которой этот ресурс был изменён последний раз>,
 	PublicURL        string        `json:"public_url,omitempty"`        // (string, optional): <Публичный URL>,
 	Path             string        `json:"path"`                        // (string): <Путь к ресурсу>,
 	Md5              string        `json:"md5,omitempty"`               // (string, optional): <MD5-хэш>,
