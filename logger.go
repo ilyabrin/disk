@@ -14,6 +14,7 @@ import (
 // LogLevel represents the severity level of a log message
 type LogLevel int
 
+// Log levels, from the most to the least verbose. SILENT turns logging off.
 const (
 	DEBUG LogLevel = iota
 	INFO

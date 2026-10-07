@@ -47,6 +47,8 @@ func (o *PublicResourceOptions) apply(query url.Values) {
 	}
 }
 
+// GetMetadataForPublicResource returns a published file or folder by its
+// public key or public link. It works for anyone's published resources.
 func (c *Client) GetMetadataForPublicResource(ctx context.Context, public_key string) (*PublicResource, *ErrorResponse) {
 	return c.GetMetadataForPublicResourceWithOptions(ctx, public_key, nil)
 }
@@ -66,6 +68,8 @@ func (c *Client) GetMetadataForPublicResourceWithOptions(ctx context.Context, pu
 	return requestJSON[PublicResource](ctx, c, GET, "public/resources?"+query.Encode(), nil)
 }
 
+// GetDownloadURLForPublicResource returns a link to download a published
+// file, or a published folder as a zip archive, by its public key or link.
 func (c *Client) GetDownloadURLForPublicResource(ctx context.Context, public_key string) (*Link, *ErrorResponse) {
 	return c.GetDownloadURLForPublicResourceAt(ctx, public_key, "")
 }
@@ -94,6 +98,9 @@ type SavePublicResourceOptions struct {
 	Name string // Name to save the resource under
 }
 
+// SavePublicResource copies a published file or folder into the user's
+// Downloads folder. See [Client.SavePublicResourceWithOptions] for what the
+// returned [Link] points to.
 func (c *Client) SavePublicResource(ctx context.Context, public_key string) (*Link, *ErrorResponse) {
 	return c.SavePublicResourceWithOptions(ctx, public_key, nil)
 }

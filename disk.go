@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+// DiskInfo returns the user's Disk: its size, how much is used, and who owns
+// it.
 func (c *Client) DiskInfo(ctx context.Context) (*Disk, error) {
 	var disk *Disk
 	resp, err := c.doRequest(ctx, GET, "", nil)

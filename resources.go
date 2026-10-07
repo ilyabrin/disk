@@ -51,7 +51,8 @@ func (c *Client) buildDeleteResourceURL(path string, permanently bool) string {
 	return fmt.Sprintf("resources?%s", query.Encode())
 }
 
-// todo: add *ErrorResponse to return
+// DeleteResource deletes the file or folder at path. It goes to the trash,
+// or is removed for good when permanently is true.
 func (c *Client) DeleteResource(ctx context.Context, path string, permanently bool) error {
 	if err := validatePath(path); err != nil {
 		return fmt.Errorf("delete error: %w", err)
@@ -109,6 +110,9 @@ func (o *ResourceOptions) apply(query url.Values) {
 	}
 }
 
+// GetMetadata returns the file or folder at path. For a folder, Embedded
+// holds the first page of its contents; use [Client.GetMetadataWithOptions]
+// to choose the page, the order or the fields.
 func (c *Client) GetMetadata(ctx context.Context, path string) (*Resource, *ErrorResponse) {
 	return c.GetMetadataWithOptions(ctx, path, nil)
 }
@@ -128,17 +132,14 @@ func (c *Client) GetMetadataWithOptions(ctx context.Context, path string, opts *
 	return requestJSON[Resource](ctx, c, GET, "resources?"+query.Encode(), nil)
 }
 
-/*
-todo: add examples to README
-
-	newMeta := map[string]map[string]string{
-		"custom_properties": {
-			"key_01": "value_01",
-			"key_02": "value_02",
-			"key_07": "value_07",
-		},
-	}
-*/
+// UpdateMetadata sets custom attributes on the file or folder at path and
+// returns it with [Resource.CustomProperties] updated. The map is sent as
+// the request body, so the attributes go under "custom_properties":
+//
+//	props := map[string]map[string]string{
+//		"custom_properties": {"project": "yad", "reviewed": "yes"},
+//	}
+//	res, errResp := client.UpdateMetadata(ctx, "disk:/report.pdf", props)
 func (c *Client) UpdateMetadata(ctx context.Context, path string, custom_properties map[string]map[string]string) (*Resource, *ErrorResponse) {
 	if len(path) < 1 {
 		return nil, &ErrorResponse{Error: "path cannot be empty"}
@@ -229,6 +230,9 @@ func (c *Client) CreateDirAll(ctx context.Context, path string) *ErrorResponse {
 	return nil
 }
 
+// CopyResource copies the file or folder at from to path. It fails if path
+// already exists. Copying a large folder may continue in the background; the
+// returned [Link] then points to the operation, see [Client.GetOperationStatus].
 func (c *Client) CopyResource(ctx context.Context, from, path string) (*Link, *ErrorResponse) {
 	if len(from) < 1 || len(path) < 1 {
 		return nil, &ErrorResponse{Error: "from and path cannot be empty"}
@@ -242,6 +246,9 @@ func (c *Client) CopyResource(ctx context.Context, from, path string) (*Link, *E
 		http.StatusOK, http.StatusCreated, http.StatusAccepted)
 }
 
+// GetDownloadURL returns a link to download the file at path. The link
+// works without the access token for a limited time. For a folder, it
+// downloads a zip archive.
 func (c *Client) GetDownloadURL(ctx context.Context, path string) (*Link, *ErrorResponse) {
 	if len(path) < 1 {
 		return nil, &ErrorResponse{Error: "path cannot be empty"}
@@ -288,6 +295,9 @@ func (o *FilesOptions) apply(query url.Values) {
 	}
 }
 
+// GetSortedFiles returns the first page of all files on the Disk, regardless
+// of folder, in the API's default order. See
+// [Client.GetSortedFilesWithOptions] to filter, sort or page through them.
 func (c *Client) GetSortedFiles(ctx context.Context) (*FilesResourceList, *ErrorResponse) {
 	return c.GetSortedFilesWithPagination(ctx, nil)
 }
@@ -352,7 +362,8 @@ func (c *Client) GetSortedFilesIterator(options *PaginationOptions) *PaginationI
 	return NewPaginationIterator(c, fetcher, options)
 }
 
-// get | sortBy = [name = default, uploadDate]
+// GetLastUploadedResources returns the files uploaded most recently, newest
+// first.
 func (c *Client) GetLastUploadedResources(ctx context.Context) (*LastUploadedResourceList, *ErrorResponse) {
 	return c.GetLastUploadedResourcesWithPagination(ctx, nil)
 }
@@ -410,6 +421,10 @@ func (c *Client) GetLastUploadedResourcesIterator(options *PaginationOptions) *P
 	return NewPaginationIterator(c, fetcher, options)
 }
 
+// MoveResource moves or renames the file or folder at from to path. It fails
+// if path already exists. Moving a large folder may continue in the
+// background; the returned [Link] then points to the operation, see
+// [Client.GetOperationStatus].
 func (c *Client) MoveResource(ctx context.Context, from, path string) (*Link, *ErrorResponse) {
 	if len(from) < 1 || len(path) < 1 {
 		return nil, &ErrorResponse{Error: "from and path cannot be empty"}
@@ -423,6 +438,8 @@ func (c *Client) MoveResource(ctx context.Context, from, path string) (*Link, *E
 		http.StatusCreated, http.StatusAccepted)
 }
 
+// GetPublicResources returns the first page of the user's published files
+// and folders.
 func (c *Client) GetPublicResources(ctx context.Context) (*PublicResourcesList, *ErrorResponse) {
 	return c.GetPublicResourcesWithPagination(ctx, nil)
 }
@@ -480,6 +497,9 @@ func (c *Client) GetPublicResourcesIterator(options *PaginationOptions) *Paginat
 	return NewPaginationIterator(c, fetcher, options)
 }
 
+// PublishResource publishes the file or folder at path, so anyone with the
+// link can open it. The returned [Link] points to the resource; fetch it with
+// [Client.GetMetadata] to read [Resource.PublicURL].
 func (c *Client) PublishResource(ctx context.Context, path string) (*Link, *ErrorResponse) {
 	if len(path) < 1 {
 		return nil, &ErrorResponse{Error: "path cannot be empty"}
@@ -491,6 +511,7 @@ func (c *Client) PublishResource(ctx context.Context, path string) (*Link, *Erro
 	return requestJSON[Link](ctx, c, PUT, "resources/publish?"+query.Encode(), nil)
 }
 
+// UnpublishResource withdraws the public link of the file or folder at path.
 func (c *Client) UnpublishResource(ctx context.Context, path string) (*Link, *ErrorResponse) {
 	if len(path) < 1 {
 		return nil, &ErrorResponse{Error: "path cannot be empty"}
@@ -502,6 +523,9 @@ func (c *Client) UnpublishResource(ctx context.Context, path string) (*Link, *Er
 	return requestJSON[Link](ctx, c, PUT, "resources/unpublish?"+query.Encode(), nil)
 }
 
+// GetLinkForUpload returns where to send the contents of a new file at path.
+// Most callers want [Client.UploadFileFromPath] instead, which does both
+// steps.
 func (c *Client) GetLinkForUpload(ctx context.Context, path string) (*ResourceUploadLink, *ErrorResponse) {
 	if len(path) < 1 {
 		return nil, &ErrorResponse{Error: "path cannot be empty"}
@@ -513,8 +537,10 @@ func (c *Client) GetLinkForUpload(ctx context.Context, path string) (*ResourceUp
 	return requestJSON[ResourceUploadLink](ctx, c, GET, "resources/upload?"+query.Encode(), nil)
 }
 
-// UploadFile asks Yandex Disk to fetch the file at uploadURL and store it at path.
-// todo: empty resonses - fix it
+// UploadFile asks Yandex.Disk to download the file at uploadURL from the
+// internet and store it at path. The download happens on Yandex's side and
+// in the background; the returned [Link] points to the operation, see
+// [Client.GetOperationStatus].
 func (c *Client) UploadFile(ctx context.Context, path, uploadURL string) (*Link, *ErrorResponse) {
 	if len(path) < 1 || len(uploadURL) < 1 {
 		return nil, &ErrorResponse{Error: "path and url cannot be empty"}
