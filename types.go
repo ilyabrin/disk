@@ -1,5 +1,10 @@
 package disk
 
+import (
+	"encoding/json"
+	"strconv"
+)
+
 // Disk describes the user's Disk as a whole: space, limits and the owner.
 // [Client.DiskInfo] returns it.
 //
@@ -10,14 +15,44 @@ type Disk struct {
 	UnlimitedAutouploadEnabled bool `json:"unlimited_autoupload_enabled,omitempty"`
 	// MaxFileSize is the largest file that can be uploaded.
 	MaxFileSize int64 `json:"max_file_size,omitempty"`
+	// PaidMaxFileSize is the largest file a paid plan can upload.
+	PaidMaxFileSize int64 `json:"paid_max_file_size,omitempty"`
+	// FileSizeLimitUpgrades lists the larger file limits paid plans offer.
+	FileSizeLimitUpgrades *FileSizeLimit `json:"file_size_limit_upgrades,omitempty"`
 	// TotalSpace is the size of the Disk.
 	TotalSpace int64 `json:"total_space,omitempty"`
 	// TrashSize is how much the trash takes up. It counts towards UsedSpace.
 	TrashSize int64 `json:"trash_size,omitempty"`
 	// IsPaid reports whether the user has a paid plan.
 	IsPaid bool `json:"is_paid,omitempty"`
-	// UsedSpace is how much of TotalSpace is taken, trash included.
+	// UsedSpace is how much of TotalSpace is taken, trash and mail included.
 	UsedSpace int64 `json:"used_space,omitempty"`
+	// DiskSize is how much the files on the Disk take up.
+	DiskSize int64 `json:"disk_size,omitempty"`
+	// MailSize is how much Yandex Mail takes up. It counts towards UsedSpace.
+	MailSize int64 `json:"mail_size,omitempty"`
+	// PhotounlimSize is how much the unlimited photo upload from phones
+	// takes up.
+	PhotounlimSize int64 `json:"photounlim_size,omitempty"`
+	// FreePhotounlimEndDate is when the free unlimited photo upload ends, as
+	// a Unix time in milliseconds, or 0.
+	FreePhotounlimEndDate int64 `json:"free_photounlim_end_date,omitempty"`
+	// WillBeOverdrawn reports whether the user will be over the limit once
+	// the free unlimited photo upload ends.
+	WillBeOverdrawn bool `json:"will_be_overdrawn,omitempty"`
+	// MonthlyTrafficLimit is how much can be uploaded in a month, or 0 when
+	// there is no limit.
+	MonthlyTrafficLimit int64 `json:"monthly_traffic_limit,omitempty"`
+	// MonthlyTrafficLimitUpgrades lists the larger monthly limits paid plans
+	// offer.
+	MonthlyTrafficLimitUpgrades *UploadTrafficLimit `json:"monthly_traffic_limit_upgrades,omitempty"`
+	// DeletionRestrictionDays is how many days files are kept after the
+	// account is blocked.
+	DeletionRestrictionDays int `json:"deletion_restriction_days,omitempty"`
+	// IsLegalEntity reports whether the account belongs to a company.
+	IsLegalEntity bool `json:"is_legal_entity,omitempty"`
+	// RegTime is when the Disk was created, as an ISO 8601 string.
+	RegTime string `json:"reg_time,omitempty"`
 	// SystemFolders holds the paths of folders the Disk manages itself.
 	SystemFolders *SystemFolders `json:"system_folders,omitempty"`
 	// User is the owner of the Disk.
@@ -42,6 +77,25 @@ type SystemFolders struct {
 	Social        string `json:"social,omitempty"`
 	Screenshots   string `json:"screenshots,omitempty"`
 	Photostream   string `json:"photostream,omitempty"`
+	Scans         string `json:"scans,omitempty"`
+	Attach        string `json:"attach,omitempty"`    // mail attachments
+	Messenger     string `json:"messenger,omitempty"` // files from Yandex Messenger
+	Calendar      string `json:"calendar,omitempty"`  // meeting materials
+}
+
+// FileSizeLimit lists the largest file each paid plan can upload, in bytes.
+type FileSizeLimit struct {
+	// Paid is the limit on a paid plan.
+	Paid int64 `json:"paid,omitempty"`
+	// Pro is the limit on the Pro plan.
+	Pro int64 `json:"pro,omitempty"`
+}
+
+// UploadTrafficLimit lists the monthly upload limit each paid plan offers,
+// in bytes.
+type UploadTrafficLimit struct {
+	// Pro is the limit on the Pro plan.
+	Pro int64 `json:"pro,omitempty"`
 }
 
 // User is the owner of a Disk, as part of [Disk].
@@ -54,6 +108,10 @@ type User struct {
 	DisplayName string `json:"display_name,omitempty"`
 	// Uid is the numeric user ID, as a string.
 	Uid string `json:"uid,omitempty"`
+	// IsChild reports whether this is a child account.
+	IsChild bool `json:"is_child,omitempty"`
+	// RegTime is when the Disk was created, as an ISO 8601 string.
+	RegTime string `json:"reg_time,omitempty"`
 }
 
 // Resource is a file or a folder on the Disk.
@@ -87,6 +145,8 @@ type Resource struct {
 	MediaType string `json:"media_type,omitempty"`
 	// Preview is a link to a thumbnail. Fetching it needs the access token.
 	Preview string `json:"preview,omitempty"`
+	// Sizes lists the thumbnail in every available size.
+	Sizes []PreviewSize `json:"sizes,omitempty"`
 	// Type is "file" or "dir".
 	Type string `json:"type"`
 	// MimeType is the MIME type of a file, such as "image/jpeg".
@@ -157,6 +217,41 @@ type ResourceList struct {
 type Exif struct {
 	// DateTime is when the photo was taken, as an ISO 8601 string.
 	DateTime string `json:"date_time,omitempty"`
+	// Latitude and Longitude are where the photo was taken, if the camera
+	// recorded it, and 0 otherwise.
+	Latitude  Coordinate `json:"gps_latitude,omitempty"`
+	Longitude Coordinate `json:"gps_longitude,omitempty"`
+}
+
+// Coordinate is a GPS coordinate in degrees. The API schema does not fix its
+// type, so a number or a numeric string is read, and anything else, such as
+// an empty object, counts as no coordinate instead of failing the request.
+type Coordinate float64
+
+// UnmarshalJSON implements [encoding/json.Unmarshaler].
+func (c *Coordinate) UnmarshalJSON(data []byte) error {
+	var f float64
+	if err := json.Unmarshal(data, &f); err == nil {
+		*c = Coordinate(f)
+		return nil
+	}
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		if f, err := strconv.ParseFloat(s, 64); err == nil {
+			*c = Coordinate(f)
+			return nil
+		}
+	}
+	*c = 0
+	return nil
+}
+
+// PreviewSize is one size of a resource's thumbnail.
+type PreviewSize struct {
+	// Name is the size, such as "S", "XL" or "ORIGINAL".
+	Name string `json:"name"`
+	// URL is where to download the thumbnail. It needs the access token.
+	URL string `json:"url"`
 }
 
 // CommentIds identify the comment threads attached to a resource.
