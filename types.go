@@ -155,4 +155,5 @@ type TrashResourceList struct {
 	Limit  int              `json:"limit,omitempty"`  // Number of items per page
 	Offset int              `json:"offset,omitempty"` // Offset from the beginning of the list
 	Path   string           `json:"path"`             // Path in trash
+	Total  int              `json:"total,omitempty"`  // Number of items in the trash
 }

@@ -74,6 +74,9 @@ func TestTrashOperations(t *testing.T) {
 	})
 }
 
+// TestListTrashResources sends the list at the top level of the response.
+// Yandex nests it under "_embedded" (see trash_list_shape_test.go); this
+// shape is still accepted, and these cases make sure it stays that way.
 func TestListTrashResources(t *testing.T) {
 	t.Run("ListTrashResources with basic parameters", func(t *testing.T) {
 		client := mockedHttpClient(func(w http.ResponseWriter, r *http.Request) {
