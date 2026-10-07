@@ -23,19 +23,19 @@ func TestBuildDeleteResourceURL(t *testing.T) {
 			name:        "Delete temporary file",
 			path:        "/path/to/file.txt",
 			permanently: false,
-			want:        "resources?path=%2Fpath%2Fto%2Ffile.txt&permanent=false",
+			want:        "resources?path=%2Fpath%2Fto%2Ffile.txt&permanently=false",
 		},
 		{
 			name:        "Delete permanent file",
 			path:        "/another/path/to/file.jpg",
 			permanently: true,
-			want:        "resources?path=%2Fanother%2Fpath%2Fto%2Ffile.jpg&permanent=true",
+			want:        "resources?path=%2Fanother%2Fpath%2Fto%2Ffile.jpg&permanently=true",
 		},
 		{
 			name:        "Delete file with special characters",
 			path:        "/path with spaces/file with &.txt",
 			permanently: false,
-			want:        "resources?path=%2Fpath+with+spaces%2Ffile+with+%26.txt&permanent=false",
+			want:        "resources?path=%2Fpath+with+spaces%2Ffile+with+%26.txt&permanently=false",
 		},
 	}
 

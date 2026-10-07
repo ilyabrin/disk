@@ -3,8 +3,10 @@ package disk
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -451,34 +453,37 @@ func TestUploadFileSingle(t *testing.T) {
 		}
 	})
 
-	t.Run("upload with Overwrite option sends X-Overwrite header", func(t *testing.T) {
-		var gotOverwrite string
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			switch r.URL.Path {
-			case "/v1/disk/resources/upload":
-				addr := r.Host
-				href := "http://" + addr + "/do-upload"
-				w.Write([]byte(`{"href":"` + href + `","method":"PUT","templated":false}`))
-			case "/do-upload":
-				gotOverwrite = r.Header.Get("X-Overwrite")
-				w.WriteHeader(http.StatusCreated)
-			case "/v1/disk/resources":
-				w.Write([]byte(testResourceJSON))
-			default:
-				http.NotFound(w, r)
+	// The API takes overwrite as a query parameter of the upload link request;
+	// without it, uploading over an existing file fails with 409.
+	for _, overwrite := range []bool{true, false} {
+		t.Run(fmt.Sprintf("upload link asks for overwrite=%t", overwrite), func(t *testing.T) {
+			var gotOverwrite string
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/v1/disk/resources/upload":
+					gotOverwrite = r.URL.Query().Get("overwrite")
+					href := "http://" + r.Host + "/do-upload"
+					w.Write([]byte(`{"href":"` + href + `","method":"PUT","templated":false}`))
+				case "/do-upload":
+					w.WriteHeader(http.StatusCreated)
+				case "/v1/disk/resources":
+					w.Write([]byte(testResourceJSON))
+				default:
+					http.NotFound(w, r)
+				}
+			})
+			client := mockedHttpClient(handler)
+
+			localPath := makeTempFile(t, "overwrite me")
+			_, err := client.UploadFileFromPath(context.Background(), localPath, "/test/file.txt", &UploadOptions{Overwrite: overwrite})
+			if err != nil {
+				t.Fatalf("expected no error, got: %v", err)
+			}
+			if want := strconv.FormatBool(overwrite); gotOverwrite != want {
+				t.Errorf("overwrite = %q, want %q", gotOverwrite, want)
 			}
 		})
-		client := mockedHttpClient(handler)
-
-		localPath := makeTempFile(t, "overwrite me")
-		_, err := client.UploadFileFromPath(context.Background(), localPath, "/test/file.txt", &UploadOptions{Overwrite: true})
-		if err != nil {
-			t.Fatalf("expected no error, got: %v", err)
-		}
-		if gotOverwrite != "true" {
-			t.Errorf("expected X-Overwrite: true, got %q", gotOverwrite)
-		}
-	})
+	}
 
 	t.Run("upload link API error returns error", func(t *testing.T) {
 		client := mockedHttpClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

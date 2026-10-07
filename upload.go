@@ -7,8 +7,10 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -100,7 +102,7 @@ func (c *Client) validateLocalFile(localPath string) (os.FileInfo, error) {
 // uploadFileSingle handles single file upload without chunking
 func (c *Client) uploadFileSingle(ctx context.Context, localPath string, remotePath string, fileInfo os.FileInfo, options *UploadOptions) (*Resource, error) {
 	// Step 1: Get upload link from Yandex Disk API
-	uploadLink, linkErr := c.GetLinkForUpload(ctx, remotePath)
+	uploadLink, linkErr := c.GetLinkForUploadWithOverwrite(ctx, remotePath, options.Overwrite)
 	if linkErr != nil {
 		c.Logger.LogError("get upload link", fmt.Errorf("failed to get upload link: %v", linkErr))
 		return nil, fmt.Errorf("failed to get upload link: %v", linkErr)
@@ -149,11 +151,6 @@ func (c *Client) uploadFileSingle(ctx context.Context, localPath string, remoteP
 	}
 	req.Header.Set("Content-Type", contentType)
 	req.ContentLength = fileInfo.Size()
-
-	// Handle overwrite policy
-	if options.Overwrite {
-		req.Header.Set("X-Overwrite", "true")
-	}
 
 	c.Logger.Debug("Uploading file with content type: %s", contentType)
 
@@ -211,7 +208,7 @@ func (c *Client) uploadFileMultipart(ctx context.Context, localPath string, remo
 	defer file.Close()
 
 	// Get upload link
-	uploadLink, linkErr := c.GetLinkForUpload(ctx, remotePath)
+	uploadLink, linkErr := c.GetLinkForUploadWithOverwrite(ctx, remotePath, options.Overwrite)
 	if linkErr != nil {
 		c.Logger.LogError("get upload link for multipart", fmt.Errorf("failed to get upload link: %v", linkErr))
 		return nil, fmt.Errorf("failed to get upload link: %v", linkErr)
@@ -242,10 +239,6 @@ func (c *Client) uploadFileMultipart(ctx context.Context, localPath string, remo
 	}
 	req.Header.Set("Content-Type", contentType)
 	req.ContentLength = fileInfo.Size()
-
-	if options.Overwrite {
-		req.Header.Set("X-Overwrite", "true")
-	}
 
 	c.Logger.Debug("Starting multipart upload with content type: %s", contentType)
 
@@ -423,6 +416,21 @@ func GetFileSize(filePath string) (int64, error) {
 		return 0, fmt.Errorf("cannot get file size: %w", err)
 	}
 	return fileInfo.Size(), nil
+}
+
+// GetLinkForUploadWithOverwrite is [Client.GetLinkForUpload] with a choice of
+// what happens when a file already exists at path: with overwrite it is
+// replaced, without it the API refuses with 409.
+func (c *Client) GetLinkForUploadWithOverwrite(ctx context.Context, path string, overwrite bool) (*ResourceUploadLink, *ErrorResponse) {
+	if len(path) < 1 {
+		return nil, &ErrorResponse{Error: "path cannot be empty"}
+	}
+
+	query := url.Values{}
+	query.Set("path", path)
+	query.Set("overwrite", strconv.FormatBool(overwrite))
+
+	return requestJSON[ResourceUploadLink](ctx, c, GET, "resources/upload?"+query.Encode(), nil)
 }
 
 // FormatFileSize formats a file size in bytes to a human-readable string
