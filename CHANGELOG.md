@@ -6,9 +6,22 @@ project uses [semantic versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [v1.4.0] - 2026-10-08
+
+### Added
+
+- `*WithOptions` variants for copy, move, delete, restore, the trash list, last uploaded and public resources, and upload by URL: `overwrite`, `force_async`, `md5`, filters, sorting and previews
+- `SavePublicResourceOptions.SavePath` and `ForceAsync`
+- `GetLinkForUploadWithOverwrite`
+- Fields the API returns: paid file size limit, mail, disk and photo sizes, overdraft warning, monthly traffic limit and more in `Disk`; `Resource.Sizes`; `User.IsChild` and `RegTime`
+- Back from v1.0.1: the `Scans`, `Attach`, `Messenger` and `Calendar` system folders, and GPS coordinates in `Exif`, as a `Coordinate` type that tolerates odd values
+
 ### Fixed
 
-- **`DeleteResource` reported every successful delete as an error.** The API answers 204 once a resource is gone, and 202 when a large folder is deleted in the background, but only 200 was accepted. Batch deletes went through the same path
+- **`DeleteResource` reported every successful delete as an error.** The API answers 204, or 202 for a large folder, and only 200 was accepted. Batch deletes went through the same path
+- **A permanent delete went to the trash:** the parameter was sent as `permanent` instead of `permanently`
+- **Uploading over an existing file failed with 409:** overwrite was sent as an `X-Overwrite` header the API does not know, instead of `overwrite=true` on the link request
+- **`OperationStatus` asked the wrong URL:** the operation ID belongs in the path, `operations/{id}`
 
 ### Changed
 
@@ -133,7 +146,8 @@ project uses [semantic versioning](https://semver.org/).
 
 - First release: disk info, metadata, creating, copying, moving and deleting resources, upload and download links, publishing, public resources and the list of recently uploaded files
 
-[Unreleased]: https://github.com/ilyabrin/disk/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/ilyabrin/disk/compare/v1.4.0...HEAD
+[v1.4.0]: https://github.com/ilyabrin/disk/compare/v1.3.0...v1.4.0
 [v1.3.0]: https://github.com/ilyabrin/disk/compare/v1.2.3...v1.3.0
 [v1.2.3]: https://github.com/ilyabrin/disk/compare/v1.2.2...v1.2.3
 [v1.2.2]: https://github.com/ilyabrin/disk/compare/v1.2.1...v1.2.2
