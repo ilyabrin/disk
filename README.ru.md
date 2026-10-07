@@ -50,6 +50,21 @@ go get github.com/ilyabrin/disk
 > [!NOTE]
 > Требуется Go 1.23 или новее. Кроме стандартной библиотеки у пакета нет зависимостей времени выполнения.
 
+### Переход на v1.3
+
+Размеры и ревизии теперь `int64`: `Resource.Size`, `Resource.Revision`,
+а также `Disk.TotalSpace`, `UsedSpace`, `TrashSize`, `MaxFileSize` и `Revision`.
+В виде `int` они переполнялись на 32-битных системах: Диск больше 2 ГБ или
+файл больше 2 ГБ не разбирались.
+
+Большая часть кода продолжит собираться. Если у вас такое значение
+сохраняется в `int`, компилятор укажет строку; приведите тип там или сделайте
+переменную `int64`:
+
+```go
+var size int = int(resource.Size) // было: var size int = resource.Size
+```
+
 ## Быстрый старт
 
 ```go
@@ -78,8 +93,8 @@ func main() {
  }
 
  fmt.Printf("Занято %s из %s\n",
-  disk.FormatFileSize(int64(info.UsedSpace)),
-  disk.FormatFileSize(int64(info.TotalSpace)),
+  disk.FormatFileSize(info.UsedSpace),
+  disk.FormatFileSize(info.TotalSpace),
  )
 }
 ```

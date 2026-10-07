@@ -57,6 +57,10 @@ jobs:
           check-latest: true
       - name: Vet
         run: go vet ./...
+      - name: Test on 32-bit
+        # Sizes and revisions from the API exceed 2^31; this catches a field
+        # that would overflow int on 386 and 32-bit ARM.
+        run: GOARCH=386 go test ./...
       - name: Run tests with coverage
         run: go test -race -v -covermode=atomic -coverprofile=coverage.out ./...
       - name: Coveralls

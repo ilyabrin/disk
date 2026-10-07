@@ -50,6 +50,20 @@ go get github.com/ilyabrin/disk
 > [!NOTE]
 > Requires Go 1.23 or newer. The library has no runtime dependencies beyond the standard library.
 
+### Upgrading to v1.3
+
+Sizes and revisions are now `int64`: `Resource.Size`, `Resource.Revision`,
+and `Disk.TotalSpace`, `UsedSpace`, `TrashSize`, `MaxFileSize` and `Revision`.
+As `int` they overflowed on 32-bit systems, where a Disk over 2 GB or a file
+over 2 GB failed to decode.
+
+Most code keeps compiling. If yours stores one of these in an `int`, the
+compiler points at the line; convert there, or make the variable `int64`:
+
+```go
+var size int = int(resource.Size) // was: var size int = resource.Size
+```
+
 ## Quick start
 
 ```go
@@ -78,8 +92,8 @@ func main() {
  }
 
  fmt.Printf("Used %s of %s\n",
-  disk.FormatFileSize(int64(info.UsedSpace)),
-  disk.FormatFileSize(int64(info.TotalSpace)),
+  disk.FormatFileSize(info.UsedSpace),
+  disk.FormatFileSize(info.TotalSpace),
  )
 }
 ```
