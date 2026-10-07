@@ -76,9 +76,19 @@ func (c *Client) ListTrashResources(ctx context.Context, path string, limit int,
 		return nil, fmt.Errorf("failed to list trash resources: %w", err)
 	}
 
-	var trashList TrashResourceList
-	if err := c.safeDecodeJSON(resp, &trashList); err != nil {
+	// Yandex answers with the trash root as a resource, its contents under
+	// "_embedded", exactly as for an ordinary folder. A list at the top level
+	// is still accepted, for servers and fixtures that send that shape.
+	var body struct {
+		TrashResourceList
+		Embedded *TrashResourceList `json:"_embedded"`
+	}
+	if err := c.safeDecodeJSON(resp, &body); err != nil {
 		return nil, fmt.Errorf("failed to decode trash list: %w", err)
+	}
+	trashList := body.TrashResourceList
+	if body.Embedded != nil {
+		trashList = *body.Embedded
 	}
 
 	c.Logger.Info("Successfully listed %d trash resources", len(trashList.Items))
