@@ -12,7 +12,7 @@
 [![Go Version](https://img.shields.io/github/go-mod/go-version/ilyabrin/disk)](https://go.dev/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 
-[Русская версия](./README.ru.md) · [API reference](https://pkg.go.dev/github.com/ilyabrin/disk) · [Pagination guide](./PAGINATION.md)
+[Русская версия](./README.ru.md) · [API reference](https://pkg.go.dev/github.com/ilyabrin/disk) · [Pagination guide](./PAGINATION.md) · [Changelog](./CHANGELOG.md)
 
 </div>
 
