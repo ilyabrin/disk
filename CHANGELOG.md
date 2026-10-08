@@ -6,6 +6,19 @@ project uses [semantic versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [v1.5.0] - 2026-10-08
+
+### Added
+
+- Public links protected with a password or an expiry: `PublishResourceWithSettings`, `UpdatePublicSettings` and `GetPublicSettings`, with `PublicSettings`. Built on what the live API does, which differs from its reference; forbidding downloads is not available through the public API
+- An integration suite against the real API, behind the `integration` build tag. It works in a folder it deletes, behind a guard that refuses any change outside it
+
+### Fixed
+
+- **Request bodies went out chunked, and the API read them as empty.** `UpdateMetadata` never stored anything
+- Batch copy and move ignored `Overwrite`
+- Waiting for a batch failed with "Operation not found" when a copy or move had finished at once
+
 ## [v1.4.0] - 2026-10-08
 
 ### Added
@@ -146,7 +159,8 @@ project uses [semantic versioning](https://semver.org/).
 
 - First release: disk info, metadata, creating, copying, moving and deleting resources, upload and download links, publishing, public resources and the list of recently uploaded files
 
-[Unreleased]: https://github.com/ilyabrin/disk/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/ilyabrin/disk/compare/v1.5.0...HEAD
+[v1.5.0]: https://github.com/ilyabrin/disk/compare/v1.4.0...v1.5.0
 [v1.4.0]: https://github.com/ilyabrin/disk/compare/v1.3.0...v1.4.0
 [v1.3.0]: https://github.com/ilyabrin/disk/compare/v1.2.3...v1.3.0
 [v1.2.3]: https://github.com/ilyabrin/disk/compare/v1.2.2...v1.2.3
