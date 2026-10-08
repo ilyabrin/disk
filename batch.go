@@ -233,7 +233,7 @@ func (c *Client) BatchCopyFiles(ctx context.Context, operations map[string]strin
 			}
 
 			// Perform the copy operation
-			link, errResp := c.CopyResource(opCtx, from, to)
+			link, errResp := c.CopyResourceWithOptions(opCtx, from, to, &CopyMoveOptions{Overwrite: options.Overwrite})
 			result.Duration = time.Since(startTime)
 
 			if errResp != nil {
@@ -346,7 +346,7 @@ func (c *Client) BatchMoveFiles(ctx context.Context, operations map[string]strin
 			}
 
 			// Perform the move operation
-			link, errResp := c.MoveResource(opCtx, from, to)
+			link, errResp := c.MoveResourceWithOptions(opCtx, from, to, &CopyMoveOptions{Overwrite: options.Overwrite})
 			result.Duration = time.Since(startTime)
 
 			if errResp != nil {
@@ -693,7 +693,7 @@ func (c *Client) WaitForBatchOperation(ctx context.Context, status *BatchOperati
 	// Check if there are any async operations (operations that returned Links)
 	asyncOps := 0
 	for _, result := range status.Results {
-		if result != nil && result.Link != nil {
+		if result != nil && isOperationLink(result.Link) {
 			asyncOps++
 		}
 	}
@@ -715,7 +715,7 @@ func (c *Client) WaitForBatchOperation(ctx context.Context, status *BatchOperati
 		case <-ticker.C:
 			completed := 0
 			for _, result := range status.Results {
-				if result == nil || result.Link == nil {
+				if result == nil || !isOperationLink(result.Link) {
 					continue
 				}
 
@@ -814,4 +814,11 @@ func (c *Client) RetryFailedOperations(ctx context.Context, status *BatchOperati
 	}
 
 	return retryStatus, nil
+}
+
+// isOperationLink reports whether link points to a background operation.
+// An operation that finished at once returns a link to its result instead,
+// such as the copied file, and there is nothing to wait for.
+func isOperationLink(link *Link) bool {
+	return link != nil && strings.Contains(link.Href, "/operations/")
 }

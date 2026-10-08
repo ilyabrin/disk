@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 )
 
 // request is what a test server saw.
@@ -187,5 +188,42 @@ func TestCoordinateToleratesOddShapes(t *testing.T) {
 		if err := c.UnmarshalJSON([]byte(in)); err != nil || c != want {
 			t.Errorf("%s -> %v, %v; want %v", in, c, err, want)
 		}
+	}
+}
+
+func TestBatchCopyAndMoveHonourOverwrite(t *testing.T) {
+	opts := &BatchCopyMoveOptions{Overwrite: true}
+	ops := map[string]string{"disk:/a": "disk:/b"}
+
+	client, got := recordingClient(http.StatusCreated, linkJSON)
+	if _, err := client.BatchCopyFiles(context.Background(), ops, opts); err != nil {
+		t.Fatal(err)
+	}
+	expectQuery(t, got, http.MethodPost, "/v1/disk/resources/copy", map[string]string{"overwrite": "true"})
+
+	client, got = recordingClient(http.StatusCreated, linkJSON)
+	if _, err := client.BatchMoveFiles(context.Background(), ops, opts); err != nil {
+		t.Fatal(err)
+	}
+	expectQuery(t, got, http.MethodPost, "/v1/disk/resources/move", map[string]string{"overwrite": "true"})
+}
+
+// A copy that finished at once returns a link to the copied file, not to an
+// operation; waiting must not try to poll it.
+func TestWaitForBatchOperationSkipsFinishedResults(t *testing.T) {
+	client, got := recordingClient(http.StatusCreated,
+		`{"href": "https://cloud-api.yandex.net/v1/disk/resources?path=disk%3A%2Fb", "method": "GET"}`)
+	status, err := client.BatchCopyFiles(context.Background(), map[string]string{"disk:/a": "disk:/b"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got.path = ""
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := client.WaitForBatchOperation(ctx, status, 10*time.Millisecond); err != nil {
+		t.Fatalf("wait: %v", err)
+	}
+	if got.path != "" {
+		t.Errorf("waiting polled %s", got.path)
 	}
 }

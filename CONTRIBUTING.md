@@ -95,6 +95,24 @@ fix. Tests talk to an `httptest` server rather than to Yandex; look at
 Keep tests deterministic. If one needs to wait, give it a timeout measured in
 milliseconds, not seconds, so the suite stays fast.
 
+### Against the real API
+
+`integration_test.go` checks the library against Yandex itself. It is behind
+a build tag, so `go test ./...` skips it. Run it with a token of an account
+you can spare:
+
+```sh
+YANDEX_DISK_ACCESS_TOKEN=... go test -tags integration -run Integration -v ./
+```
+
+It takes about two minutes and needs a few megabytes. Everything it creates
+lives in a new `disk:/disk-it-<date>-<time>` folder, which it deletes for
+good at the end. A guard in the HTTP transport refuses any change outside
+that folder, any trash item the test did not put there, and emptying the
+whole trash. Calls that read the whole Disk log only counts, never names.
+
+Run it before a release, and whenever you change how a request is built.
+
 ## Commit messages
 
 We use [Conventional Commits](https://www.conventionalcommits.org/):
