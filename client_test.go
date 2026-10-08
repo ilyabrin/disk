@@ -26,6 +26,8 @@ func (t *testTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Keep the length, so tests see the body as the real server would.
+	testReq.ContentLength = req.ContentLength
 
 	// Copy headers
 	testReq.Header = req.Header.Clone()

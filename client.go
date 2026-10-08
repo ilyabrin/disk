@@ -1,6 +1,7 @@
 package disk
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -182,8 +183,15 @@ func (c *Client) doRequest(ctx context.Context, method HttpMethod, resource stri
 	if method == GET || method == DELETE {
 		body = nil
 	} else if data != nil {
-		// Limit request body size to prevent memory exhaustion
-		body = io.LimitReader(data, 100*1024*1024) // 100MB limit
+		switch data.(type) {
+		case *bytes.Reader, *bytes.Buffer, *strings.Reader:
+			// The length is known, so the request carries Content-Length.
+			// Wrapping these would send the body chunked, which the API
+			// ignores: PATCH and PUT bodies arrived empty.
+		default:
+			// Limit request body size to prevent memory exhaustion
+			body = io.LimitReader(data, 100*1024*1024) // 100MB limit
+		}
 	}
 
 	requestURL := c.baseURL() + resource
